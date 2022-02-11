@@ -1,2 +1,2 @@
 # SCHEDULING_MODEL
-<a href="scheduling_modell.pdf"></a>
+https://github.com/dhutter-fhv/SCHEDULING_MODEL/blob/main/scheduling_modell.pdf
