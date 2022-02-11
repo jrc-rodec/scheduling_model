@@ -1,2 +1,3 @@
 # SCHEDULING_MODEL
-<image src="scheduling_modell.pdf"/>
+
+<embed src="scheduling_modell.pdf" type="application/pdf">
