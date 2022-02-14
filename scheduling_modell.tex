@@ -256,6 +256,9 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 \autoref{objective_function_1} Minimize tardy jobs\linebreak
 \autoref{objective_function_2} Maximize earning\linebreak
 \autoref{objective_function_3} Minimize deviation from the expected delivery date\linebreak
+\autoref{objective_function_4} Maximize Set Size of scheduled jobs\linebreak
+\autoref{objective_function_5} Maximize Set Size of scheduled jobs with least tardy jobs\linebreak
+\autoref{objective_function_6} Maximize Set Size of scheduled jobs with least deviations\linebreak
 	\begin{equation}
 	\label{objective_function_1}
 	\begin{split}
@@ -278,7 +281,28 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		minimize \sum_{i=0}^{J} |(j_{s} + d_{y,w}) - j_{dt}|
 	\end{split}
 	\end{equation}
-
+	\begin{equation}
+	\label{objective_function_4}
+	\begin{split}
+		maximize |O_{c}|
+	\end{split}
+	\end{equation}
+	\begin{equation}
+	\label{objective_function_5}
+	\begin{split}
+		j := J_{i} \\
+		maximize |O_{c}| - \sum_{i=0}^{J}l_{j}
+	\end{split}
+	\end{equation}
+	\begin{equation}
+	\label{objective_function_6}
+	\begin{split}
+		j := J_{i} \\
+		y := x_{j} \\
+		x := \sum_{i=0}^{J} (|(j_{s} + d_{y,w}) - j_{dt}| > 0)\\
+		maximize |O_{c}| - x
+	\end{split}
+	\end{equation}
 \end{flushleft}
 \subsubsection*{Nebenbedingungen}
 \begin{flushleft}
