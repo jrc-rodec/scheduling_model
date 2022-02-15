@@ -1,6 +1,9 @@
 import json
+from datetime import datetime
+from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order
 
-from models import SimulationEnvironment, Task, Resource, Recipe, Workstation
+def string_to_date(date_string : str) -> datetime:
+    return datetime.fromisoformat(date_string)
 
 f = open('example.json')
 data = json.load(f)
@@ -37,5 +40,18 @@ for workstation in workstation_data:
         workstation_tasks.append((task['task_id'], task['duration']))
     workstations.append(Workstation(workstation['id'], workstation['name'], basic_resources, workstation_tasks))
 print(f'Created {len(tasks)} Tasks, {len(resources)} Resources, {len(recipes)} Recipes and {len(workstations)} Workstations')
+# TODO: validate system information
+simulation_environment = SimulationEnvironment(workstations, tasks, resources, recipes)
 
-orders = data['orders']
+order_data = data['orders']
+orders = []
+for order in order_data:
+    arrival_time = string_to_date(order['arrival_time'])
+    delivery_time = string_to_date(order['delivery_time'])
+    latest_acceptable_time = string_to_date(order['latest_acceptable_time'])
+    order_resources = []
+    for resource in order['resources']:
+        order_resources.append([resource['id'], resource['amount'], resource['price']])
+    orders.append(Order(order['id'], arrival_time, delivery_time, latest_acceptable_time, order_resources, order['penalty'], order['tardiness_fee'], order['divisible'], order['customer_id']))
+print(f'Created {len(orders)} Orders')
+# TODO: generate orders for testing

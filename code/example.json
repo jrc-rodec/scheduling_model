@@ -146,9 +146,9 @@
     [
         {
             "id": 0,
-            "arrival_time": "07.02.2022 00:00:00",
-            "delivery_time": "20.02.2022 14:30:00",
-            "latest_acceptable_time": "26.02.2022 00:00:00",
+            "arrival_time": "2022-02-07 00:00:00",
+            "delivery_time": "2022-02-20 14:30:00",
+            "latest_acceptable_time": "2022-02-26 00:00:00",
             "resources":
             [
                 {
@@ -169,9 +169,9 @@
         },
         {
             "id": 0,
-            "arrival_time": "09.02.2022 13:00:00",
-            "delivery_time": "25.02.2022 15:00:00",
-            "latest_acceptable_time": "26.02.2022 00:00:00",
+            "arrival_time": "2022-02-09 13:00:00",
+            "delivery_time": "2022-02-25 15:00:00",
+            "latest_acceptable_time": "2022-02-26 00:00:00",
             "resources":
             [
                 {

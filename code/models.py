@@ -98,7 +98,7 @@ class Order:
         self.arrival_time = arrival_time
         self.delivery_time = delivery_time
         self.latest_acceptable_time = latest_acceptable_time
-        self.resources = resources # <Resource, (Amount + Price)>
+        self.resources = resources # <Resource, (Amount + Price)>, currently [resource_id, amount, price]
         self.penalty = penalty
         self.tardiness_fee = tardiness_fee
         self.divisible = divisible
@@ -111,7 +111,7 @@ class Order:
         self.arrival_time = arrival_time
         self.delivery_time = delivery_time
         self.latest_acceptable_time = latest_acceptable_time
-        self.resources = resources # <Resource, (Amount + Price)>
+        self.resources = resources # <Resource, (Amount + Price)> currently [resource_id, amount, price]
         self.penalty = penalty
         self.tardiness_fee = tardiness_fee
         self.divisible = divisible
@@ -151,12 +151,17 @@ class Schedule:
 
 class SimulationEnvironment:
     
-    def __init__(self, workstations, tasks, resources, inventory):
+    def __init__(self, workstations, tasks, resources, recipes):
         self.workstations = workstations # set of all workstations
         self.tasks = tasks # set of all possible tasks
         self.resources = resources # set of all existing resources
-        self.inventory = inventory # <Resource, amount> starting state of the systems resources
-        
+        self.recipes = recipes # set of all available recipes
+        self.inventory = dict() # <Resource, amount> starting state of the systems resources
+        for resource in self.resources:
+            if not resource in self.inventory:
+                self.inventory[resource] = 0
+            self.inventory[resource] += resource.stock
+    
     def create_input(self, orders) -> tuple[list, list]:
         jobs = list()
         assignments = list()
@@ -192,6 +197,54 @@ class SimulationEnvironment:
         for i in range(len(output)):
             schedule.add(output[i][0], (jobs[i], output[i][1]))
         return schedule
+
+    def get_workstation(self, workstation_id):
+        for workstation in self.workstations:
+            if workstation.id == workstation_id:
+                return workstation
+        return None
+    
+    def get_workstation_by_external_id(self, workstation_id):
+        for workstation in self.workstations:
+            if workstation.external_id == workstation_id:
+                return workstation
+        return None
+
+    def get_task(self, task_id):
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        return None
+    
+    def get_task_by_external_id(self, task_id):
+        for task in self.tasks:
+            if task.external_id == task_id:
+                return task
+        return None
+
+    def get_resource(self, resource_id):
+        for resource in self.resources:
+            if resource.id == resource_id:
+                return resource
+        return None
+    
+    def get_resource_by_external_id(self, resource_id):
+        for resource in self.resources:
+            if resource.external_id == resource_id:
+                return resource
+        return None
+    
+    def get_recipe(self, recipe_id):
+        for recipe in self.recipe:
+            if recipe.id == recipe_id:
+                return recipe
+        return None
+    
+    def get_recipe_by_external_id(self, recipe_id):
+        for recipe in self.recipes:
+            if recipe.external_id == recipe_id:
+                return recipe
+        return None
 
     def simulate(self):
         pass
