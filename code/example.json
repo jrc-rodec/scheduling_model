@@ -1,0 +1,199 @@
+{
+    "system-info":
+    {
+        "tasks":
+        [
+            {
+                "id": 0,
+                "name": "example_task",
+                "resources":
+                [
+                    {
+                        "id": 4,
+                        "amount": 20
+                    },
+                    {
+                        "id": 6,
+                        "amount": 2
+                    }
+                ],
+                "result_resources": 
+                [
+                    {
+                        "resource_id": 1,
+                        "amount": 100
+                    },
+                    {
+                        "resource_id": 2,
+                        "amount": 10
+                    }
+                ],
+                "preceding_tasks":
+                [
+                    1, 2, 3
+                ],
+                "follow_up_tasks":
+                [ ],
+                "independent": true,
+                "prepare_time": 10,
+                "unprepare_time": 5
+            },
+            {
+                "id": 1,
+                "name": "example_task 2",
+                "resources":
+                [
+                    {
+                        "id": 7,
+                        "amount": 4
+                    }
+                ],
+                "result_resources": 
+                [
+                    {
+                        "resource_id": 3,
+                        "amount": 4
+                    }
+                ],
+                "preceding_tasks":
+                [ ],
+                "follow_up_tasks":
+                [
+                    4, 5
+                ],
+                "independent": false,
+                "prepare_time": 10,
+                "unprepare_time": 5
+            }
+        ],
+        "recipes":
+        [
+            {
+                "id": 0,
+                "name": "example_recipe",
+                "tasks":
+                [
+                    0, 4
+                ]
+            },
+            {
+                "id": 1,
+                "name": "example_recipe 2",
+                "tasks":
+                [
+                    5, 6
+                ]
+            }
+        ],
+        "resources":
+        [
+            {
+                "id": 0,
+                "name": "example_resource",
+                "stock": 500,
+                "price": 10,
+                "renewable": false,
+                "recipes":
+                [
+                    0, 1
+                ]
+            },
+            {
+                "id": 1,
+                "name": "example_resource 2",
+                "stock": 300,
+                "price": 15,
+                "renewable": true,
+                "recipes":
+                [ ]
+            }
+        ],
+        "workstations":
+        [
+            {
+                "id": 0,
+                "name": "example_machine",
+                "basic_resources": 
+                [
+                    {
+                        "id": 10,
+                        "amount": 5
+                    },
+                    {
+                        "id": 12,
+                        "amount": 3
+                    }
+                ],
+                "tasks": 
+                [
+                    {
+                        "task_id": 0,
+                        "duration": 10
+                    }, 
+                    {
+                        "task_id": 3,
+                        "duration": 5
+                    },
+                    {
+                        "task_id": 4,
+                        "duration": 20
+                    }
+                ]
+            }
+        ]
+    },
+    "orders":
+    [
+        {
+            "id": 0,
+            "arrival_time": "07.02.2022 00:00:00",
+            "delivery_time": "20.02.2022 14:30:00",
+            "latest_acceptable_time": "26.02.2022 00:00:00",
+            "resources":
+            [
+                {
+                    "id": 1,
+                    "amount": 20,
+                    "price": 700
+                },
+                {
+                    "id": 3,
+                    "amount": 10,
+                    "price": 300
+                }
+            ],
+            "penalty": 100,
+            "tardiness_fee": 10,
+            "divisible": true,
+            "customer_id": 1
+        },
+        {
+            "id": 0,
+            "arrival_time": "09.02.2022 13:00:00",
+            "delivery_time": "25.02.2022 15:00:00",
+            "latest_acceptable_time": "26.02.2022 00:00:00",
+            "resources":
+            [
+                {
+                    "id": 0,
+                    "amount": 15,
+                    "price": 500
+                },
+                {
+                    "id": 1,
+                    "amount": 30,
+                    "price": 1000
+                },
+                {
+                    "id": 2,
+                    "amount": 10,
+                    "price": 200
+                }
+            ],
+            "penalty": 100,
+            "tardiness_fee": 10,
+            "divisible": false,
+            "customer_id": 0
+        }
+    ]
+}
