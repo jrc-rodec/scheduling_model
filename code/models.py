@@ -120,11 +120,12 @@ class Order:
 class Job:
     
     next_id = 0
-    def __init__(self, order : Order, task : Task, index : int):
+
+    def __init__(self, order : Order, task : int, index : int):
         self.id = Job.next_id
         Job.next_id += 1
         self.order_id = order.id # could just add order instead
-        self.task_id = task.id # could just add task instead
+        self.task_id = task # could just add task instead
         self.to_id = index # tasks index in orders tasks list (in case the same task happens more than once for an order)
 
 class Schedule:
@@ -166,16 +167,18 @@ class SimulationEnvironment:
         jobs = list()
         assignments = list()
         for order in orders:
-            for resource in order.resources.keys():
+            for resource in order.resources:
+                r = self.get_resource_by_external_id(resource[0])
                 # <resource, (amount, price)
                 #amount = order.resources[resource][0]
                 #price = order.resources[resource][1]
-                if len(resource.recipes) > 0: # if resource can be produced
+                if len(r.recipes) > 0: # if resource can be produced
                     # choose first available recipe for now
-                    recipe = resource.recipes[0]
+                    recipe = self.get_recipe_by_external_id(r.recipes[0])
                     index = 0
                     for task in recipe.tasks:
-                        for preceding_task in task.preceding_tasks:
+                        t = self.get_task_by_external_id(task)
+                        for preceding_task in t.preceding_tasks:
                             # assigning all tasks to workstation 0 by default for now
                             jobs.append(Job(order, preceding_task, index))
                             assignments.append([0, 0])
@@ -183,7 +186,7 @@ class SimulationEnvironment:
                         jobs.append(Job(order, task, index))
                         index += 1
                         assignments.append([0, 0])
-                        for follow_up_task in task.follow_up_tasks:
+                        for follow_up_task in t.follow_up_tasks:
                             jobs.append(Job(order, follow_up_task, index))
                             assignments.append([0, 0])
                             index += 1

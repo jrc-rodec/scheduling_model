@@ -157,7 +157,7 @@
                     "price": 700
                 },
                 {
-                    "id": 3,
+                    "id": 0,
                     "amount": 10,
                     "price": 300
                 }
@@ -183,11 +183,6 @@
                     "id": 1,
                     "amount": 30,
                     "price": 1000
-                },
-                {
-                    "id": 2,
-                    "amount": 10,
-                    "price": 200
                 }
             ],
             "penalty": 100,
