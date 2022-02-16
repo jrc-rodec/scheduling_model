@@ -6,6 +6,9 @@ from optimizer import Randomizer
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
 
+"""
+Loading the test data from json file
+"""
 f = open('test.json')
 data = json.load(f)
 
@@ -20,6 +23,9 @@ resource_data = system_info['resources']
 recipe_data = system_info['recipes']
 workstation_data = system_info['workstations']
 
+"""
+Building the simulation environment and orders from the data
+"""
 for task in task_data:
     task_resources = []
     for task_resource in task['resources']:
@@ -56,7 +62,9 @@ for order in order_data:
     orders.append(Order(order['id'], arrival_time, delivery_time, latest_acceptable_time, order_resources, order['penalty'], order['tardiness_fee'], order['divisible'], order['customer_id']))
 print(f'Created {len(orders)} Orders')
 # TODO: generate orders for testing
-
+"""
+Creating input from the loaded data for the optimizer and running the optimization
+"""
 jobs, assignments = simulation_environment.create_input(orders)
 print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} Assignments)')
 
@@ -65,6 +73,9 @@ optimizer = Randomizer()
 last_possible_timeslot = 1000
 result = optimizer.optimize(assignments, jobs, simulation_environment, last_possible_timeslot)
 print(f'Result created with optimizer: {optimizer.name}\nResult:\n{result}')
+"""
+Creating a usable schedule from the optimization result
+"""
 schedule = Schedule()
 for i in range(len(result)):
     schedule.add(result[i], jobs[i].id)
