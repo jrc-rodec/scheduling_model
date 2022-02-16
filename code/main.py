@@ -62,7 +62,8 @@ print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} As
 
 # example with randomized result
 optimizer = Randomizer()
-result = optimizer.optimize(assignments, jobs, simulation_environment, 1000)
+last_possible_timeslot = 1000
+result = optimizer.optimize(assignments, jobs, simulation_environment, last_possible_timeslot)
 print(f'Result created with optimizer: {optimizer.name}\nResult:\n{result}')
 schedule = Schedule()
 for i in range(len(result)):
