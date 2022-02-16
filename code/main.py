@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order
+from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order, Schedule
 from optimizer import Randomizer
 
 def string_to_date(date_string : str) -> datetime:
@@ -64,3 +64,11 @@ print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} As
 optimizer = Randomizer()
 result = optimizer.optimize(assignments, jobs, simulation_environment, 1000)
 print(f'Result created with optimizer: {optimizer.name}\nResult:\n{result}')
+schedule = Schedule()
+for i in range(len(result)):
+    schedule.add(result[i], jobs[i].id)
+print(f'\nThis results in the schedule: (job_id, start timeslot)')
+for i in range(len(workstations)):
+    slots = schedule.assignments_for(i)
+    print(f'{workstations[i].name}: {slots}')
+print(f'(Durations, associated Task and Order of each job can be looked up through the job_id)')

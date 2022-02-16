@@ -133,19 +133,16 @@ class Schedule:
     def __init__(self):
         self.assignments = dict() # <workstation_id, list of jobs>
 
-    def assignments_for(self, workstation : Workstation) -> list:
-        return self.assignments[workstation.id]
+    def assignments_for(self, workstation_id : int) -> list:
+        return self.assignments[workstation_id]
 
     def assignment_for(self, workstation_id : int) -> list:
         return self.assignments[workstation_id]
 
-    def add(self, workstation, assignment):
-        self.add(workstation.id, assignment)
-
-    def add(self, workstation_id : int, assignment : tuple):
-        if workstation_id not in self.assignments:
-            self.assignments[workstation_id] = list()
-        self.assignments[workstation_id].append(assignment)
+    def add(self, assignment : tuple, task_id : int):
+        if assignment[0] not in self.assignments:
+            self.assignments[assignment[0]] = list()
+        self.assignments[assignment[0]].append((task_id, assignment[1]))
 
     def is_feasible(self) -> bool:
         pass
