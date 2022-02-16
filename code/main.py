@@ -59,11 +59,8 @@ print(f'Created {len(orders)} Orders')
 
 jobs, assignments = simulation_environment.create_input(orders)
 print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} Assignments)')
-"""
-for job in jobs:
-    print(f'{job.order_id}, {job.task_id}, {job.to_id}')
-"""
+
 # example with randomized result
 optimizer = Randomizer()
 result = optimizer.optimize(assignments, jobs, simulation_environment, 1000)
-print(result)
+print(f'Result created with optimizer: {optimizer.name}\nResult:\n{result}')
