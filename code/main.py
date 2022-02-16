@@ -5,7 +5,7 @@ from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, O
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
 
-f = open('example.json')
+f = open('test.json')
 data = json.load(f)
 
 tasks = []
@@ -56,4 +56,9 @@ for order in order_data:
 print(f'Created {len(orders)} Orders')
 # TODO: generate orders for testing
 
-# jobs, assignments = simulation_environment.create_input(orders)
+jobs, assignments = simulation_environment.create_input(orders)
+print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} Assignments)')
+"""
+for job in jobs:
+    print(f'{job.order_id}, {job.task_id}, {job.to_id}')
+"""
