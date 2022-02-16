@@ -153,6 +153,7 @@ class Schedule:
 class SimulationEnvironment:
     
     def __init__(self, workstations, tasks, resources, recipes):
+        # TODO: change all lists to dictionaries
         self.workstations = workstations # set of all workstations
         self.tasks = tasks # set of all possible tasks
         self.resources = resources # set of all existing resources
