@@ -214,6 +214,14 @@ class SimulationEnvironment:
                 return workstation
         return None
 
+    def get_valid_workstations(self, task_id):
+        result = []
+        for workstation in self.workstations:
+            for task in workstation.tasks:
+                if task[0] == task_id:
+                    result.append(workstation)
+        return result
+
     def get_task(self, task_id):
         for task in self.tasks:
             if task.id == task_id:

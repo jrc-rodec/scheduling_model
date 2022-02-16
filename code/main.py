@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order
+from optimizer import Randomizer
 
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
@@ -62,3 +63,7 @@ print(f'Created {len(jobs)} Jobs for {len(orders)} Orders ({len(assignments)} As
 for job in jobs:
     print(f'{job.order_id}, {job.task_id}, {job.to_id}')
 """
+# example with randomized result
+optimizer = Randomizer()
+result = optimizer.optimize(assignments, jobs, simulation_environment, 1000)
+print(result)
