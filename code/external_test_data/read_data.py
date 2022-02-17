@@ -1,3 +1,5 @@
+import random
+
 def read_operation_on_machine(data, index):
     n_machines = int(data[index])
     index += 1
@@ -51,8 +53,8 @@ def read_files_1():
 
                     j_id += 1
                     jobs.append(operations)
-            instances.append(jobs)
-    return [n_jobs, n_machines, n_workers], instances
+            instances.append([[n_jobs, n_machines, n_workers], jobs])
+    return instances
 
 def read_files_2():
     return None
@@ -60,27 +62,29 @@ def read_files_2():
 def read(source):
     instances = []
     if source == 1:
-        meta, found_instances = read_files_1()
+        found_instances = read_files_1()
         for instance in found_instances:
-                instances.append([meta, instance])
+                instances.append(instance)
     elif source == 2:
         instances = read_files_2()
     else:
         pass
     return instances
-    
+
+def generate_orders(instance, amount, last_date):
+    meta = instance[0]
+    jobs = instance[1]
+    orders = []
+    for i in range(amount):
+        orders.append([random.randint(0, len(jobs)-1), random.randint(0, last_date)])
+    return orders
+
 selected_source = 1
 
 data = read(selected_source)
-#print(len(data))
-j = 1
-for instance in data:
-    i = 1
-    print(f'Instance {j}: Details: {instance[0]}')
-    j+=1
-    for job in instance[1]:
-        print(f'Operations for Job {i} are (Machine ID, Worker ID, Duration):')
-        i+=1
-        for operation in job:
-            print(operation)
-        print('\n')
+use_instance = 13 # between 0 and 13 for example data 1
+instance = data[use_instance]
+order_amount = 100 # how many orders should be generated
+planning_horizon = 1000 # what is the last possible date for orders' delivery date
+orders = generate_orders(instance, order_amount, planning_horizon)
+print(orders)
