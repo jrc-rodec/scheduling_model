@@ -71,12 +71,12 @@ def read(source):
         pass
     return instances
 
-def generate_orders(instance, amount, last_date):
+def generate_orders(instance, amount, earliest_date, last_date):
     meta = instance[0]
     jobs = instance[1]
     orders = []
     for i in range(amount):
-        orders.append([random.randint(0, len(jobs)-1), random.randint(0, last_date)])
+        orders.append([random.randint(0, len(jobs)-1), random.randint(earliest_date, last_date)])
     return orders
 
 selected_source = 1
@@ -85,6 +85,7 @@ data = read(selected_source)
 use_instance = 13 # between 0 and 13 for example data 1
 instance = data[use_instance]
 order_amount = 100 # how many orders should be generated
+earliest_time = 50 # can not expect delivery before 50 time units into the schedule are done
 planning_horizon = 1000 # what is the last possible date for orders' delivery date
-orders = generate_orders(instance, order_amount, planning_horizon)
+orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
 print(orders)
