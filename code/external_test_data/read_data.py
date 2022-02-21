@@ -96,9 +96,9 @@ print(f'Generatted orders(<job, delivery time>):\n{orders}')
 #   for each operation necessary for job from order
 #       (<machine id> <worker id> <start time>)
 # feasible if
-#   machine m + worker w is an available option for operation o
+#   machine m + worker w is an available option for operation n
 #   operation n+1 starttime > operation n starttime + operation n duration using machine m and worker w
-#   startime + duration of machine m + worker w for operation o < order delivery date
+#   startime + duration of machine m + worker w for operation n < order o delivery date
 #   no overlap of timeslots for each machine and each worker
 # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
 input = []
