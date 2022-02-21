@@ -1,5 +1,8 @@
+from tkinter import W
 from external_test_data.read_data import read_dataset_1
 import random
+
+from visualize import visualize
 def get_amount_operations_for_job(index : int, jobs) -> int:
     return len(jobs[index])
 
@@ -31,9 +34,11 @@ def get_available_worker_for_machine_for_operation(machine_id : int, operation_i
     return workers
 
 def get_duration(machine_id : int, worker_id : int, operation_index : int, job_index : int, jobs):
-    for operation in jobs[job_index][operation_index]:
-        if operation[0] == machine_id and operation[1] == worker_id:
-            return operation[2]
+    for combinations in jobs[job_index][operation_index]:
+        for combination in combinations:
+            if combination[0] == machine_id and combination[1] == worker_id:
+                return combination[2]
+    # print(f'Did not find duratin for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for {job_index} :(')
     return 0
 
 def map_index_to_operation(index, orders, jobs):
@@ -208,8 +213,29 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 100, 50, 70, earliest_slot, last_slot)
+result = ga.run(input, orders, system_info, jobs, 50, 50, 70, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 #for operation in result.genes:
 #    print(operation)
+# sort operations to machines, ignore worker for now
+workstations = dict()
+i = 0
+for operation in result.genes:
+    if operation[0] not in workstations:
+        workstations[operation[0]] = []
+    operation_id, order = map_index_to_operation(i, orders, jobs)
+    #print(f'Looking for duration for machine {operation[0]} and worker {operation[1]} in operation {operation_id} in job {order[0]}')
+    workstations[operation[0]].append([order[0], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)]) # job id, start_time, duration
+    i+=1
+sum = 0
+keys = list(workstations.keys())
+keys.sort()
+for workstation in keys:
+    print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled:\n')
+    print(workstations[workstation])
+    print('\n')
+    sum += len(workstations[workstation])
+print(f'For a total of {sum} scheduled operations!')
+#from visualize import visualize
+#visualize(workstations)
