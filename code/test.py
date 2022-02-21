@@ -34,6 +34,16 @@ def get_duration(machine_id : int, worker_id : int, operation_index : int, job_i
             return operation[2]
     return 0
 
+# input structure:
+# for each order
+#   for each operation necessary for job from order
+#       (<machine id> <worker id> <start time>)
+# feasible if
+#   machine m + worker w is an available option for operation n
+#   operation n+1 starttime > operation n starttime + operation n duration using machine m and worker w
+#   startime + duration of machine m with worker w for operation n < order o delivery date
+#   no overlap of timeslots for each machine and each worker
+# in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
 input, orders, instance = read_dataset_1(use_instance=13)
 print(orders)
 system_info = instance[0]
