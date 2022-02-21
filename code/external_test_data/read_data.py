@@ -79,32 +79,33 @@ def generate_orders(instance, amount, earliest_date, last_date):
         orders.append([random.randint(0, len(jobs)-1), random.randint(earliest_date, last_date)])
     return orders
 
-selected_source = 1
+def read_dataset_1():
+    selected_source = 1
 
-data = read(selected_source)
-use_instance = 13 # between 0 and 13 for example data 1
-instance = data[use_instance]
-order_amount = 100 # how many orders should be generated
-earliest_time = 500 # can not expect delivery before 50 time units into the schedule are done
-planning_horizon = 10000 # what is the last possible date for orders' delivery date
-orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
-#print(instance[1][0]) # print operations of job 1
-#print(instance[1][0][0]) # print possibilities for operation 1 of the operations of job 1 (which machines (first index), which workers per machine (second index), how long (3.)))
-print(f'Generated orders(<job, delivery time>):\n{orders}')
+    data = read(selected_source)
+    use_instance = 13 # between 0 and 13 for example data 1
+    instance = data[use_instance]
+    order_amount = 100 # how many orders should be generated
+    earliest_time = 500 # can not expect delivery before 50 time units into the schedule are done
+    planning_horizon = 10000 # what is the last possible date for orders' delivery date
+    orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
+    #print(instance[1][0]) # print operations of job 1
+    #print(instance[1][0][0]) # print possibilities for operation 1 of the operations of job 1 (which machines (first index), which workers per machine (second index), how long (3.)))
+    #print(f'Generated orders(<job, delivery time>):\n{orders}')
 
-# for each order
-#   for each operation necessary for job from order
-#       (<machine id> <worker id> <start time>)
-# feasible if
-#   machine m + worker w is an available option for operation n
-#   operation n+1 starttime > operation n starttime + operation n duration using machine m and worker w
-#   startime + duration of machine m + worker w for operation n < order o delivery date
-#   no overlap of timeslots for each machine and each worker
-# in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
-input = []
-meta = instance[0] # amount of jobs (not needed), amount of machines, amount of workers
-jobs = instance[1]
-for order in orders:
-    for i in range(len(jobs[order[0]])): # amount of necessary operations for job n
-        input.append([0,0,0])
-# print(input)
+    # for each order
+    #   for each operation necessary for job from order
+    #       (<machine id> <worker id> <start time>)
+    # feasible if
+    #   machine m + worker w is an available option for operation n
+    #   operation n+1 starttime > operation n starttime + operation n duration using machine m and worker w
+    #   startime + duration of machine m + worker w for operation n < order o delivery date
+    #   no overlap of timeslots for each machine and each worker
+    # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
+    input = []
+    meta = instance[0] # amount of jobs (not needed), amount of machines, amount of workers
+    jobs = instance[1]
+    for order in orders:
+        for i in range(len(jobs[order[0]])): # amount of necessary operations for job n
+            input.append([0,0,0])
+    return input, orders, instance
