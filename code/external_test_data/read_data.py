@@ -88,4 +88,6 @@ order_amount = 100 # how many orders should be generated
 earliest_time = 50 # can not expect delivery before 50 time units into the schedule are done
 planning_horizon = 1000 # what is the last possible date for orders' delivery date
 orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
+print(instance[1][0]) # print operations of job 1
+print(instance[1][0][0]) # print possibilities for operation 1 of the operations of job 1 (which machines (first index), which workers per machine (second index), how long (3.)))
 print(orders)
