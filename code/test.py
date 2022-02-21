@@ -1,4 +1,3 @@
-from math import comb
 from external_test_data.read_data import read_dataset_1
 import random
 def get_amount_operations_for_job(index : int, jobs) -> int:
@@ -207,7 +206,10 @@ n_machines = system_info[1]
 n_workers = system_info[2]
 # print_instance(instance)
 # ready to start optimization
-
+print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 500, 50, 70, earliest_slot, last_slot)
-print(result.fitness)
+result = ga.run(input, orders, system_info, jobs, 100, 50, 70, earliest_slot, last_slot)
+print(f'Finished with fitness: {result.fitness}!')
+result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
+#for operation in result.genes:
+#    print(operation)
