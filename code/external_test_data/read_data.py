@@ -88,6 +88,23 @@ order_amount = 100 # how many orders should be generated
 earliest_time = 50 # can not expect delivery before 50 time units into the schedule are done
 planning_horizon = 1000 # what is the last possible date for orders' delivery date
 orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
-print(instance[1][0]) # print operations of job 1
-print(instance[1][0][0]) # print possibilities for operation 1 of the operations of job 1 (which machines (first index), which workers per machine (second index), how long (3.)))
-print(orders)
+#print(instance[1][0]) # print operations of job 1
+#print(instance[1][0][0]) # print possibilities for operation 1 of the operations of job 1 (which machines (first index), which workers per machine (second index), how long (3.)))
+print(f'Generatted orders(<job, delivery time>):\n{orders}')
+
+# for each order
+#   for each operation necessary for job from order
+#       (<machine id> <worker id> <start time>)
+# feasible if
+#   machine m + worker w is an available option for operation o
+#   operation n+1 starttime > operation n starttime + operation n duration using machine m and worker w
+#   startime + duration of machine m + worker w for operation o < order delivery date
+#   no overlap of timeslots for each machine and each worker
+# in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
+input = []
+meta = instance[0] # amount of jobs (not needed), amount of machines, amount of workers
+jobs = instance[1]
+for order in orders:
+    for i in range(len(jobs[order[0]])): # amount of necessary operations for job n
+        input.append([0,0,0])
+# print(input)
