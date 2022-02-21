@@ -164,7 +164,7 @@ class SimpleGA:
             self.evaluate(offsprings)
             # select new population
             all = population + offsprings # use elitism
-            all.sort(key=lambda x: x.fitness)
+            all.sort(key=lambda x: x.fitness, reverse=True)
             population = all[0:population_size]
             if population[0].fitness < self.current_best.fitness:
                 self.current_best = population[0]
