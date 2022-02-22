@@ -387,558 +387,558 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 \label{json_example}
 \begin{lstlisting}[language=json,firstnumber=1]
 {
-	"system-info":
-		{
-		"tasks":
-		[
-			{
-				"id": 0,
-				"name": "Task 1",
-				"resources":
-				[
-					{
-						"id": 0,
-						"amount": 10
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 1,
-						"amount": 1
-					}
-				],
-				"preceding_tasks":
-				[],
-				"follow_up_tasks":
-				[
-					1
-				],
-				"independent": true,
-				"prepare_time": 5,
-				"unprepare_time": 5
-			},
-			{
-				"id": 1,
-				"name": "Task 2",
-				"resources":
-				[
-					{
-						"id": 1,
-						"amount": 1
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 2,
-						"amount": 1
-					}
-				],
-				"preceding_tasks":
-				[],
-				"follow_up_tasks":
-				[],
-				"independent": false,
-				"prepare_time": 0,
-				"unprepare_time": 5
-			},
-			{
-				"id": 2,
-				"name": "Task 3",
-				"resources":
-				[
-					{
-						"id": 3,
-						"amount": 20
-					},
-					{
-						"id": 4,
-						"amount": 10
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 5,
-						"amount": 2
-					},
-					{
-						"resource_id": 6,
-						"amount": 1
-					}
-				],
-				"preceding_tasks":
-				[
-					3, 4
-				],
-				"follow_up_tasks":
-				[],
-				"independent": true,
-				"prepare_time": 10,
-				"unprepare_time": 5
-			},
-			{
-				"id": 3,
-				"name": "Task 4",
-				"resources": 
-				[
-					{
-						"id": 7,
-						"amount": 5
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 3,
-						"amount": 20
-					}
-				],
-				"preceding_tasks":
-				[],
-				"follow_up_tasks":
-				[],
-				"independent": false,
-				"prepare_time": 5,
-				"unprepare_time": 5
-			},
-			{
-				"id": 4,
-				"name": "Task 5",
-				"resources":
-				[
-					{
-						"id": 8,
-						"amount": 1
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 4,
-						"amount": 5
-					}                
-				],
-				"preceding_tasks":
-				[],
-				"follow_up_tasks":
-				[],
-				"independent": true,
-				"prepare_time": 1,
-				"unprepare_time": 5
-			},
-			{
-				"id": 5,
-				"name": "Task 6",
-				"resources":
-				[
-					{
-						"id": 9,
-						"amount": 20
-					},
-					{
-						"id": 10,
-						"amount": 1
-					}
-				],
-				"products":
-				[
-					{
-						"resource_id": 8,
-						"amount": 2
-					}
-				],
-				"independent": true,
-				"preceding_tasks":
-				[],
-				"follow_up_tasks":
-				[],
-				"prepare_time": 5,
-				"unprepare_time": 5
-			}
-		],
-		"recipes":
-		[
-			{
-				"id": 0,
-				"name": "Recipe 1",
-				"tasks":
-				[
-					5
-				]
-			},
-			{
-				"id": 1,
-				"name": "Recipe 2",
-				"tasks":
-				[
-					2
-				]
-			},
-			{
-				"id": 2,
-				"name": "Recipe 3",
-				"tasks":
-				[
-					0
-				]
-			},
-			{
-				"id": 3,
-				"name": "Recipe 4",
-				"tasks":
-				[
-					4
-				]
-			}
-			],
-		"resources":
-		[
-			{
-				"id": 0,
-				"name": "Resource 1",
-				"stock": 50,
-				"price": 20,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			},
-			{
-				"id": 1,
-				"name": "Resource 2",
-				"stock": 0,
-				"price": 300,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			},
-			{
-				"id": 2,
-				"name": "Resource 3",
-				"stock": 10,
-				"price": 1000,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[
-					2
-				]
-			},
-			{
-				"id": 3,
-				"name": "Resource 4",
-				"stock": 100,
-				"price": 10,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			},
-			{
-				"id": 4,
-				"name": "Resource 5",
-				"stock": 10,
-				"price": 100,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[
-					3
-				]
-			},
-			{
-				"id": 5,
-				"name": "Resource 6",
-				"stock": 4,
-				"price": 50,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[
-					1
-				]
-			},
-			{
-				"id": 6,
-				"name": "Resource 7",
-				"stock": 3,
-				"price": 70,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[
-					1
-				]
-				},
-			{
-				"id": 7,
-				"name": "Resource 8",
-				"stock": 15,
-				"price": 15,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			},
-			{
-				"id": 8,
-				"name": "Resource 9",
-				"stock": 6,
-				"price": 700,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[
-					0
-				]
-			},
-			{
-				"id": 9,
-				"name": "Resource 10",
-				"stock": 40,
-				"price": 200,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			},
-			{
-				"id": 10,
-				"name": "Resource 11 (Employee)",
-				"stock": 10,
-				"price": 0,
-				"delivery_delay": 0,
-				"renewable": true,
-				"recipes":
-				[]
-			},
-			{
-				"id": 11,
-				"name": "Resource 12",
-				"stock": 1000,
-				"price": 5,
-				"delivery_delay": 0,
-				"renewable": false,
-				"recipes":
-				[]
-			}
-		],
-		"workstations":
-		[
-			{
-				"id": 0,
-				"name": "Workstation 1",
-				"basic_resources":
-				[
-					{
-						"id": 10,
-						"amount": 1
-					}
-				],
-				"tasks":
-				[
-					{
-						"task_id": 0,
-						"duration": 10
-					},
-					{
-						"task_id": 2,
-						"duration": 5
-					}
-				]
-			},
-			{
-				"id": 1,
-				"name": "Workstation 2",
-				"basic_resources":
-				[
-					{
-						"id": 10,
-						"amount": 1
-					},
-					{
-						"id": 11,
-						"amount": 2
-					}
-				],
-				"tasks":
-				[
-					{
-						"task_id": 1,
-						"duration": 20
-					},
-					{
-						"task_id": 2,
-						"duration": 7
-					}
-				]
-			},
-			{
-				"id": 2,
-				"name": "Workstation 3",
-				"basic_resources":
-				[],
-				"tasks":
-				[
-					{
-						"task_id": 3,
-						"duration": 1
-					},
-					{
-						"task_id": 4,
-						"duration": 2
-					},
-					{
-						"task_id": 5,
-						"duration": 15
-					}
-				]
-			},
-			{
-				"id": 3,
-				"name": "Workstation 4",
-				"basic_resources":
-				[
-					{
-						"id": 10,
-						"amount": 1
-					}
-				],
-				"tasks":
-				[
-					{
-						"task_id": 4,
-						"duration": 1
-					},
-					{
-						"task_id": 5,
-						"duration": 10
-					}
-				]
-			}
-		]
-	},
-	"orders":
+"system-info":
+	{
+	"tasks":
 	[
 		{
 			"id": 0,
-			"arrival_time": "2022-02-07 00:00:00",
-			"delivery_time": "2022-02-20 14:30:00",
-			"latest_acceptable_time": "2022-02-22 00:00:00",
+			"name": "Task 1",
 			"resources":
 			[
 				{
-					"id": 2,
-					"amount": 5,
-					"price": 700
-				},
-				{
-					"id": 4,
-					"amount": 10,
-					"price": 300
+					"id": 0,
+					"amount": 10
 				}
 			],
-			"penalty": 300,
-			"tardiness_fee": 100,
-			"divisible": false,
-			"customer_id": 1
+			"products":
+			[
+				{
+					"resource_id": 1,
+					"amount": 1
+				}
+			],
+			"preceding_tasks":
+			[],
+			"follow_up_tasks":
+			[
+				1
+			],
+			"independent": true,
+			"prepare_time": 5,
+			"unprepare_time": 5
 		},
 		{
 			"id": 1,
-			"arrival_time": "2022-02-17 00:00:00",
-			"delivery_time": "2022-02-21 15:30:00",
-			"latest_acceptable_time": "2022-02-24 00:00:00",
+			"name": "Task 2",
 			"resources":
 			[
 				{
-					"id": 4,
-					"amount": 20,
-					"price": 600
-				},
-				{
-					"id": 5,
-					"amount": 10,
-					"price": 2000
+					"id": 1,
+					"amount": 1
 				}
 			],
-			"penalty": 500,
-			"tardiness_fee": 100,
-			"divisible": false,
-			"customer_id": 1
+			"products":
+			[
+				{
+					"resource_id": 2,
+					"amount": 1
+				}
+			],
+			"preceding_tasks":
+			[],
+			"follow_up_tasks":
+			[],
+			"independent": false,
+			"prepare_time": 0,
+			"unprepare_time": 5
 		},
 		{
 			"id": 2,
-			"arrival_time": "2022-02-10 00:00:00",
-			"delivery_time": "2022-02-19 14:00:00",
-			"latest_acceptable_time": "2022-02-26 00:00:00",
+			"name": "Task 3",
 			"resources":
 			[
 				{
-					"id": 2,
-					"amount": 20,
-					"price": 2700
+					"id": 3,
+					"amount": 20
 				},
 				{
-					"id": 5,
-					"amount": 10,
-					"price": 2000
+					"id": 4,
+					"amount": 10
 				}
 			],
-			"penalty": 1000,
-			"tardiness_fee": 100,
-			"divisible": false,
-			"customer_id": 1
+			"products":
+			[
+				{
+					"resource_id": 5,
+					"amount": 2
+				},
+				{
+					"resource_id": 6,
+					"amount": 1
+				}
+			],
+			"preceding_tasks":
+			[
+				3, 4
+			],
+			"follow_up_tasks":
+			[],
+			"independent": true,
+			"prepare_time": 10,
+			"unprepare_time": 5
 		},
 		{
 			"id": 3,
-			"arrival_time": "2022-02-08 00:00:00",
-			"delivery_time": "2022-02-23 17:00:00",
-			"latest_acceptable_time": "2022-02-26 00:00:00",
-			"resources":
+			"name": "Task 4",
+			"resources": 
 			[
 				{
-					"id": 5,
-					"amount": 17,
-					"price": 3500
-				},
-				{
-					"id": 6,
-					"amount": 10,
-					"price": 1200
+					"id": 7,
+					"amount": 5
 				}
 			],
-			"penalty": 700,
-			"tardiness_fee": 200,
-			"divisible": false,
-			"customer_id": 1
+			"products":
+			[
+				{
+					"resource_id": 3,
+					"amount": 20
+				}
+			],
+			"preceding_tasks":
+			[],
+			"follow_up_tasks":
+			[],
+			"independent": false,
+			"prepare_time": 5,
+			"unprepare_time": 5
 		},
 		{
 			"id": 4,
-			"arrival_time": "2022-02-15 00:00:00",
-			"delivery_time": "2022-02-23 12:00:00",
-			"latest_acceptable_time": "2022-02-26 00:00:00",
+			"name": "Task 5",
 			"resources":
 			[
 				{
-					"id": 4,
-					"amount": 34,
-					"price": 800
-				},
-				{
 					"id": 8,
-					"amount": 10,
-					"price": 3000
+					"amount": 1
 				}
 			],
-			"penalty": 200,
-			"tardiness_fee": 100,
-			"divisible": false,
-			"customer_id": 1
+			"products":
+			[
+				{
+					"resource_id": 4,
+					"amount": 5
+				}                
+			],
+			"preceding_tasks":
+			[],
+			"follow_up_tasks":
+			[],
+			"independent": true,
+			"prepare_time": 1,
+			"unprepare_time": 5
+		},
+		{
+			"id": 5,
+			"name": "Task 6",
+			"resources":
+			[
+				{
+					"id": 9,
+					"amount": 20
+				},
+				{
+					"id": 10,
+					"amount": 1
+				}
+			],
+			"products":
+			[
+				{
+					"resource_id": 8,
+					"amount": 2
+				}
+			],
+			"independent": true,
+			"preceding_tasks":
+			[],
+			"follow_up_tasks":
+			[],
+			"prepare_time": 5,
+			"unprepare_time": 5
+		}
+	],
+	"recipes":
+	[
+		{
+			"id": 0,
+			"name": "Recipe 1",
+			"tasks":
+			[
+				5
+			]
+		},
+		{
+			"id": 1,
+			"name": "Recipe 2",
+			"tasks":
+			[
+				2
+			]
+		},
+		{
+			"id": 2,
+			"name": "Recipe 3",
+			"tasks":
+			[
+				0
+			]
+		},
+		{
+			"id": 3,
+			"name": "Recipe 4",
+			"tasks":
+			[
+				4
+			]
+		}
+		],
+	"resources":
+	[
+		{
+			"id": 0,
+			"name": "Resource 1",
+			"stock": 50,
+			"price": 20,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		},
+		{
+			"id": 1,
+			"name": "Resource 2",
+			"stock": 0,
+			"price": 300,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		},
+		{
+			"id": 2,
+			"name": "Resource 3",
+			"stock": 10,
+			"price": 1000,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[
+				2
+			]
+		},
+		{
+			"id": 3,
+			"name": "Resource 4",
+			"stock": 100,
+			"price": 10,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		},
+		{
+			"id": 4,
+			"name": "Resource 5",
+			"stock": 10,
+			"price": 100,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[
+				3
+			]
+		},
+		{
+			"id": 5,
+			"name": "Resource 6",
+			"stock": 4,
+			"price": 50,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[
+				1
+			]
+		},
+		{
+			"id": 6,
+			"name": "Resource 7",
+			"stock": 3,
+			"price": 70,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[
+				1
+			]
+			},
+		{
+			"id": 7,
+			"name": "Resource 8",
+			"stock": 15,
+			"price": 15,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		},
+		{
+			"id": 8,
+			"name": "Resource 9",
+			"stock": 6,
+			"price": 700,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[
+				0
+			]
+		},
+		{
+			"id": 9,
+			"name": "Resource 10",
+			"stock": 40,
+			"price": 200,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		},
+		{
+			"id": 10,
+			"name": "Resource 11 (Employee)",
+			"stock": 10,
+			"price": 0,
+			"delivery_delay": 0,
+			"renewable": true,
+			"recipes":
+			[]
+		},
+		{
+			"id": 11,
+			"name": "Resource 12",
+			"stock": 1000,
+			"price": 5,
+			"delivery_delay": 0,
+			"renewable": false,
+			"recipes":
+			[]
+		}
+	],
+	"workstations":
+	[
+		{
+			"id": 0,
+			"name": "Workstation 1",
+			"basic_resources":
+			[
+				{
+					"id": 10,
+					"amount": 1
+				}
+			],
+			"tasks":
+			[
+				{
+					"task_id": 0,
+					"duration": 10
+				},
+				{
+					"task_id": 2,
+					"duration": 5
+				}
+			]
+		},
+		{
+			"id": 1,
+			"name": "Workstation 2",
+			"basic_resources":
+			[
+				{
+					"id": 10,
+					"amount": 1
+				},
+				{
+					"id": 11,
+					"amount": 2
+				}
+			],
+			"tasks":
+			[
+				{
+					"task_id": 1,
+					"duration": 20
+				},
+				{
+					"task_id": 2,
+					"duration": 7
+				}
+			]
+		},
+		{
+			"id": 2,
+			"name": "Workstation 3",
+			"basic_resources":
+			[],
+			"tasks":
+			[
+				{
+					"task_id": 3,
+					"duration": 1
+				},
+				{
+					"task_id": 4,
+					"duration": 2
+				},
+				{
+					"task_id": 5,
+					"duration": 15
+				}
+			]
+		},
+		{
+			"id": 3,
+			"name": "Workstation 4",
+			"basic_resources":
+			[
+				{
+					"id": 10,
+					"amount": 1
+				}
+			],
+			"tasks":
+			[
+				{
+					"task_id": 4,
+					"duration": 1
+				},
+				{
+					"task_id": 5,
+					"duration": 10
+				}
+			]
 		}
 	]
+},
+"orders":
+[
+	{
+		"id": 0,
+		"arrival_time": "2022-02-07 00:00:00",
+		"delivery_time": "2022-02-20 14:30:00",
+		"latest_acceptable_time": "2022-02-22 00:00:00",
+		"resources":
+		[
+			{
+				"id": 2,
+				"amount": 5,
+				"price": 700
+			},
+			{
+				"id": 4,
+				"amount": 10,
+				"price": 300
+			}
+		],
+		"penalty": 300,
+		"tardiness_fee": 100,
+		"divisible": false,
+		"customer_id": 1
+	},
+	{
+		"id": 1,
+		"arrival_time": "2022-02-17 00:00:00",
+		"delivery_time": "2022-02-21 15:30:00",
+		"latest_acceptable_time": "2022-02-24 00:00:00",
+		"resources":
+		[
+			{
+				"id": 4,
+				"amount": 20,
+				"price": 600
+			},
+			{
+				"id": 5,
+				"amount": 10,
+				"price": 2000
+			}
+		],
+		"penalty": 500,
+		"tardiness_fee": 100,
+		"divisible": false,
+		"customer_id": 1
+	},
+	{
+		"id": 2,
+		"arrival_time": "2022-02-10 00:00:00",
+		"delivery_time": "2022-02-19 14:00:00",
+		"latest_acceptable_time": "2022-02-26 00:00:00",
+		"resources":
+		[
+			{
+				"id": 2,
+				"amount": 20,
+				"price": 2700
+			},
+			{
+				"id": 5,
+				"amount": 10,
+				"price": 2000
+			}
+		],
+		"penalty": 1000,
+		"tardiness_fee": 100,
+		"divisible": false,
+		"customer_id": 1
+	},
+	{
+		"id": 3,
+		"arrival_time": "2022-02-08 00:00:00",
+		"delivery_time": "2022-02-23 17:00:00",
+		"latest_acceptable_time": "2022-02-26 00:00:00",
+		"resources":
+		[
+			{
+				"id": 5,
+				"amount": 17,
+				"price": 3500
+			},
+			{
+				"id": 6,
+				"amount": 10,
+				"price": 1200
+			}
+		],
+		"penalty": 700,
+		"tardiness_fee": 200,
+		"divisible": false,
+		"customer_id": 1
+	},
+	{
+		"id": 4,
+		"arrival_time": "2022-02-15 00:00:00",
+		"delivery_time": "2022-02-23 12:00:00",
+		"latest_acceptable_time": "2022-02-26 00:00:00",
+		"resources":
+		[
+			{
+				"id": 4,
+				"amount": 34,
+				"price": 800
+			},
+			{
+				"id": 8,
+				"amount": 10,
+				"price": 3000
+			}
+		],
+		"penalty": 200,
+		"tardiness_fee": 100,
+		"divisible": false,
+		"customer_id": 1
+	}
+]
 }
 \end{lstlisting}
 \end{document}
