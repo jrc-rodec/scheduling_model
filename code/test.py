@@ -1,8 +1,7 @@
-from tkinter import W
 from external_test_data.read_data import read_dataset_1
 import random
 
-from visualize import visualize
+#from visualize import visualize
 def get_amount_operations_for_job(index : int, jobs) -> int:
     return len(jobs[index])
 
@@ -13,15 +12,15 @@ def get_available_machines_for_operation(operation_index : int, job_index : int,
     machines = []
     for combinations in jobs[job_index][operation_index]:
         for combination in combinations:
-            if combination[0] not in machines:
-                machines.append(combination[0])
+            #if combination[0] not in machines:
+            machines.append(combination[0])
     return machines
 
 def get_available_workers_for_operation(operation_index : int, job_index : int, jobs):
     workers = []
     for operation in jobs[job_index][operation_index]:
-        if operation[1] not in workers:
-            workers.append(operation[1])
+        #if operation[1] not in workers:
+        workers.append(operation[1])
     return workers
 
 def get_available_worker_for_machine_for_operation(machine_id : int, operation_index : int, job_index : int, jobs):
@@ -29,8 +28,8 @@ def get_available_worker_for_machine_for_operation(machine_id : int, operation_i
     for combinations in jobs[job_index][operation_index]:
         for combination in combinations:
             if combination[0] == machine_id:
-                if combination[1] not in workers:
-                    workers.append(combination[1])
+                #if combination[1] not in workers:
+                workers.append(combination[1])
     return workers
 
 def get_duration(machine_id : int, worker_id : int, operation_index : int, job_index : int, jobs):
@@ -38,7 +37,7 @@ def get_duration(machine_id : int, worker_id : int, operation_index : int, job_i
         for combination in combinations:
             if combination[0] == machine_id and combination[1] == worker_id:
                 return combination[2]
-    # print(f'Did not find duratin for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for {job_index} :(')
+    # print(f'Did not find duration for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for operation {operation_index} in job {job_index} :(')
     return 0
 
 def map_index_to_operation(index, orders, jobs):
@@ -81,6 +80,7 @@ class SimpleGA:
         individual.genes[index][0] = random.choice(get_available_machines_for_operation(operation_id, order[0], self.jobs))
         individual.genes[index][1] = random.choice(get_available_worker_for_machine_for_operation(individual.genes[index][0], operation_id, order[0], self.jobs))
         individual.genes[index][2] = random.randint(self.earliest_slot, self.last_slot)
+        #return individual
 
     def randomize_individual(self, individual, orders, jobs):
             j = 0
@@ -89,7 +89,7 @@ class SimpleGA:
                 for k in range(operations):
                     self.randomize_gene(individual, j, k, order)
                     j+=1
-            return individual
+            #return individual
 
     def evaluate(self, individuals):
         for individual in individuals:
@@ -147,7 +147,7 @@ class SimpleGA:
         parent1 = self.select(parents)
         parent2 = self.select(parents)
         while parent1 == parent2: # making sure 2 different parents are selected
-            # parent2 = random.choice(parents)
+            #parent2 = random.choice(parents)
             parent2 = self.select(parents)
         # simple one point crossover for testing
         crossover_point = random.randint(0, len(parent1.genes))
@@ -176,7 +176,6 @@ class SimpleGA:
                 self.current_best = parent
         p = 1 / len(input)
         gen = 0
-        
         while gen < max_generations and self.current_best.fitness > 0:
             print(f'Current generation: {gen}, Current Best: {self.current_best.fitness}')
             # create offsprings
@@ -247,7 +246,7 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 50, 50, 70, earliest_slot, last_slot)
+result = ga.run(input, orders, system_info, jobs, 20, 10, 15, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 #for operation in result.genes:
@@ -265,6 +264,9 @@ for operation in result.genes:
 sum = 0
 keys = list(workstations.keys())
 keys.sort()
+"""for j in range(len(jobs)):
+    for i in range(len(jobs[j])):
+        print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
 for workstation in keys:
     print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled:\n')
     print(workstations[workstation])
