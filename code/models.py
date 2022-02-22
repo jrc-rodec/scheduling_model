@@ -48,7 +48,7 @@ class Recipe:
 class Resource:
     
     next_id = 0
-    def __init__(self, name, stock, price, renewable, recipes):
+    def __init__(self, name, stock, price, renewable, recipes, delivery_delay):
         self.id = Resource.next_id
         Resource.next_id += 1
         self.external_id = self.id
@@ -57,8 +57,9 @@ class Resource:
         self.price = price
         self.renewable = renewable
         self.recipes = recipes # possible recipes to create this resource
+        self.delivery_delay = delivery_delay
 
-    def __init__(self, id, name, stock, price, renewable, recipes):
+    def __init__(self, id, name, stock, price, renewable, recipes, delivery_delay):
         self.id = Resource.next_id
         Resource.next_id += 1
         self.external_id = id
@@ -67,6 +68,7 @@ class Resource:
         self.price = price
         self.renewable = renewable
         self.recipes = recipes # possible recipes to create this resource
+        self.delivery_delay = delivery_delay
 
 class Workstation:
     

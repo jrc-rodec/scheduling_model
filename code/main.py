@@ -35,7 +35,7 @@ for task in task_data:
         result_resources.append((result_resource['resource_id'], result_resource['amount']))
     tasks.append(Task(task['id'], task['name'], task_resources, result_resources, task['preceding_tasks'], task['follow_up_tasks'], task['independent'], task['prepare_time'], task['unprepare_time']))
 for resource in resource_data:
-    resources.append(Resource(resource['id'], resource['name'], resource['stock'], resource['price'], resource['renewable'], resource['recipes']))
+    resources.append(Resource(resource['id'], resource['name'], resource['stock'], resource['price'], resource['renewable'], resource['recipes'], resource['delivery_delay']))
 for recipe in recipe_data:
     recipes.append(Recipe(recipe['id'], recipe['name'], recipe['tasks']))
 for workstation in workstation_data:

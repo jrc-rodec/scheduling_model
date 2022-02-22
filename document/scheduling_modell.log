@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 2.9.7300 64-bit) (preloaded format=pdflatex 2020.3.15)  14 FEB 2022 17:16
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 2.9.7300 64-bit) (preloaded format=pdflatex 2020.3.15)  22 FEB 2022 08:55
 entering extended mode
 **./scheduling_modell.tex
 (scheduling_modell.tex
@@ -1039,87 +1039,347 @@ Overfull \hbox (7.7532pt too wide) in paragraph at lines 116--117
 m bes-chriebenen
  []
 
-
+[2]
 Overfull \hbox (10.58589pt too wide) in paragraph at lines 132--133
 []\T1/cmr/m/n/12 unpreprare_time  Zeit, die nach der Ver-wendung der Maschine/
 Arbeitssta-
  []
 
-[2]
+
 Overfull \hbox (1.88248pt too wide) in paragraph at lines 142--144
 [] []\T1/cmss/bx/n/12 Resources[] \T1/cmr/m/n/12 Alle Res-sourcen, die in der P
 roduktions-Umgebung ver-wen-det oder
  []
 
 [3]
-Overfull \hbox (48.27667pt too wide) in paragraph at lines 157--158
+Overfull \hbox (48.27667pt too wide) in paragraph at lines 159--160
 \T1/cmr/m/n/12 durchge-führt wer-den können + die Dauer des Tasks auf dieser Ma
 schine/Arbeitssta-
  []
 
 
-Overfull \hbox (29.66597pt too wide) in paragraph at lines 161--163
+Overfull \hbox (29.66597pt too wide) in paragraph at lines 163--165
 \T1/cmr/m/n/12 Repräsentiert Kun-denaufträge/Be-stel-lungen, die mith-ilfe der 
 Produktions-Umgebung
  []
 
-<images/dependencies.png, id=29, 342.27875pt x 864.22874pt>
+[4]
+<images/dependencies.png, id=35, 342.27875pt x 864.22874pt>
 File: images/dependencies.png Graphic file (type png)
 <use images/dependencies.png>
-Package pdftex.def Info: images/dependencies.png  used on input line 177.
+Package pdftex.def Info: images/dependencies.png  used on input line 188.
 (pdftex.def)             Requested size: 227.62204pt x 574.74446pt.
-[4]
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [5]
 Overfull \vbox (7.71425pt too high) has occurred while \output is active []
 
 
-[5 <./images/dependencies.png>]
-Overfull \hbox (54.77657pt too wide) in paragraph at lines 183--184
+[6 <./images/dependencies.png>]
+Overfull \hbox (54.77657pt too wide) in paragraph at lines 194--195
 \T1/cmr/m/n/12 Genaue Struk-tur der Datenüber-tra-gung mit Beis-pield-aten unte
 r "JSON-Beispiel"([]section [][]) 
  []
 
-<images/ablauf.png, id=43, 148.555pt x 564.1075pt>
+<images/ablauf.png, id=49, 148.555pt x 564.1075pt>
 File: images/ablauf.png Graphic file (type png)
 <use images/ablauf.png>
-Package pdftex.def Info: images/ablauf.png  used on input line 221.
+Package pdftex.def Info: images/ablauf.png  used on input line 232.
 (pdftex.def)             Requested size: 113.81102pt x 432.19499pt.
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [6]
-[7 <./images/ablauf.png>]
+ [7]
+[8 <./images/ablauf.png>]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [8]
-[9] [10]
+ [9]
+[10] [11]
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 3
-77.
+88.
 
 ("C:\Users\dhutt\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\t1cmtt.fd"
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
 )
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 401--402
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 407--408
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 408--409
+[][] 
+ []
+
+
 Underfull \vbox (badness 4001) has occurred while \output is active []
 
- [11]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
  [12]
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 428--429
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 434--435
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 435--436
+[][] 
+ []
+
+
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [13]
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 453--454
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 457--458
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 463--464
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 464--465
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 467--468
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 468--469
+[][] 
+ []
+
+
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [14]
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 488--489
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 494--495
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 495--496
+[][] 
+ []
+
+
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [15]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 578.
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 513--514
+[][] 
+ []
 
-[16]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 578.
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 519--520
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 520--521
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [16]
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 538--539
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 542--543
+[][] 
+ []
+
+
+Overfull \hbox (54.76736pt too wide) in paragraph at lines 548--549
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 549--550
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [17]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [18]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [19]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [20]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [21]
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 738--739
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 744--745
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [22]
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 745--746
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 748--749
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 749--750
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 760--761
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 764--765
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [23]
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 770--771
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 771--772
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 774--775
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 775--776
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 787--788
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 788--789
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [24]
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 791--792
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 792--793
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 795--796
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 796--797
+[][] 
+ []
+
+
+Overfull \hbox (17.72604pt too wide) in paragraph at lines 807--808
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [25]
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 813--814
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 814--815
+[][] 
+ []
+
+
+Overfull \hbox (25.13431pt too wide) in paragraph at lines 817--818
+[][] 
+ []
+
+
+Overfull \hbox (32.54257pt too wide) in paragraph at lines 818--819
+[][] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [26]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [27]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [28]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 944.
+
+[29]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 944.
  (scheduling_modell.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 578.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 578.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 944.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 944.
 Package rerunfilecheck Info: File `scheduling_modell.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
 
@@ -1136,10 +1396,10 @@ Package logreq Info: Writing requests to 'scheduling_modell.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 22117 strings out of 481556
- 386990 string characters out of 2913869
- 1259201 words of memory out of 3000000
- 36826 multiletter control sequences out of 15000+200000
+ 22487 strings out of 481556
+ 392785 string characters out of 2913869
+ 1267242 words of memory out of 3000000
+ 36827 multiletter control sequences out of 15000+200000
  541768 words of font info for 45 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  45i,16n,72p,10114b,2187s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -1163,9 +1423,9 @@ tt/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr8.pfb><C
 cmsy10.pfb><C:/Users/dhutt/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public
 /amsfonts/cm/cmsy6.pfb><C:/Users/dhutt/AppData/Local/Programs/MiKTeX 2.9/fonts/
 type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on scheduling_modell.pdf (16 pages, 249636 bytes).
+Output written on scheduling_modell.pdf (29 pages, 321069 bytes).
 PDF statistics:
- 657 PDF objects out of 1000 (max. 8388607)
- 248 named destinations out of 1000 (max. 500000)
+ 1146 PDF objects out of 1200 (max. 8388607)
+ 617 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

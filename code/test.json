@@ -213,6 +213,7 @@
                 "name": "Resource 1",
                 "stock": 50,
                 "price": 20,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
@@ -222,6 +223,7 @@
                 "name": "Resource 2",
                 "stock": 0,
                 "price": 300,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
@@ -231,6 +233,7 @@
                 "name": "Resource 3",
                 "stock": 10,
                 "price": 1000,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 [
@@ -242,6 +245,7 @@
                 "name": "Resource 4",
                 "stock": 100,
                 "price": 10,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
@@ -251,6 +255,7 @@
                 "name": "Resource 5",
                 "stock": 10,
                 "price": 100,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 [
@@ -262,6 +267,7 @@
                 "name": "Resource 6",
                 "stock": 4,
                 "price": 50,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 [
@@ -273,6 +279,7 @@
                 "name": "Resource 7",
                 "stock": 3,
                 "price": 70,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 [
@@ -284,6 +291,7 @@
                 "name": "Resource 8",
                 "stock": 15,
                 "price": 15,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
@@ -293,6 +301,7 @@
                 "name": "Resource 9",
                 "stock": 6,
                 "price": 700,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 [
@@ -304,6 +313,7 @@
                 "name": "Resource 10",
                 "stock": 40,
                 "price": 200,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
@@ -313,6 +323,7 @@
                 "name": "Resource 11 (Employee)",
                 "stock": 10,
                 "price": 0,
+                "delivery_delay": 0,
                 "renewable": true,
                 "recipes":
                 []
@@ -322,6 +333,7 @@
                 "name": "Resource 12",
                 "stock": 1000,
                 "price": 5,
+                "delivery_delay": 0,
                 "renewable": false,
                 "recipes":
                 []
