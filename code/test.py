@@ -109,12 +109,46 @@ class SimpleGA:
             else:
                 individual.fitness = float('inf')
 
+    def tournament_selection(self, population):
+        parents = random.choices(population, k=5)
+        best = parents[0]
+        for parent in parents:
+            if parent.fitness < best.fitness:
+                best = parent
+        return best
+
+    def roulette_wheel_selection(self, population):
+        sum = 0
+        max = 0
+        min = float('inf')
+        for individual in population:
+            sum += individual.fitness
+            if individual.fitness > max:
+                max = individual.fitness
+            if individual.fitness < min:
+                min = individual.fitness
+        p = random.random() * sum
+        t = max + min
+        parent = population[0]
+        for individual in population:
+            p -= (t - individual.fitness)
+            if p < 0:
+                return individual
+        return parent
+
+    def select(self, population):
+        return self.roulette_wheel_selection(population)
+
     def crossover(self, parents):
         # select parents (just random for now)
-        parent1 = random.choice(parents)
-        parent2 = random.choice(parents)
-        while parent1 == parent2:
-            parent2 = random.choice(parents)
+        #parent1 = random.choice(parents)
+        #parent2 = random.choice(parents)
+        #parent1, parent2 = self.select(parents)
+        parent1 = self.select(parents)
+        parent2 = self.select(parents)
+        while parent1 == parent2: # making sure 2 different parents are selected
+            # parent2 = random.choice(parents)
+            parent2 = self.select(parents)
         # simple one point crossover for testing
         crossover_point = random.randint(0, len(parent1.genes))
         child1 = Individual(parent1.genes.copy(), float('inf'))
