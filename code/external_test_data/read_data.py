@@ -76,7 +76,7 @@ def generate_orders(instance, amount, earliest_date, last_date):
     jobs = instance[1]
     orders = []
     for i in range(amount):
-        orders.append([random.randint(0, len(jobs)-1), random.randint(earliest_date, last_date)])
+        orders.append([random.randint(0, len(jobs)-1), random.randint(earliest_date, last_date), i])
     return orders
 
 def read_dataset_1(use_instance : int = 13, order_amount : int = 100, earliest_time : int = 500, planning_horizon : int = 10000):

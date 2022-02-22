@@ -205,6 +205,7 @@ class SimpleGA:
             population = all[0:population_size]
             if population[0].fitness < self.current_best.fitness:
                 self.current_best = population[0]
+            # random.shuffle(population)
             gen += 1
         return self.current_best
 
@@ -259,7 +260,7 @@ for operation in result.genes:
         workstations[operation[0]] = []
     operation_id, order = map_index_to_operation(i, orders, jobs)
     #print(f'Looking for duration for machine {operation[0]} and worker {operation[1]} in operation {operation_id} in job {order[0]}')
-    workstations[operation[0]].append([order[0], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)]) # job id, start_time, duration
+    workstations[operation[0]].append([order[2], order[0], operation_id, operation[1], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)]) # job id, start_time, duration
     i+=1
 sum = 0
 keys = list(workstations.keys())
@@ -268,7 +269,7 @@ keys.sort()
     for i in range(len(jobs[j])):
         print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
 for workstation in keys:
-    print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled:\n')
+    print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled: <order_id, job_index, operation_index, worker_index, start_time, duration>')
     print(workstations[workstation])
     print('\n')
     sum += len(workstations[workstation])
