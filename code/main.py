@@ -31,7 +31,7 @@ for task in task_data:
     for task_resource in task['resources']:
         task_resources.append((task_resource['id'], task_resource['amount']))
     result_resources = []
-    for result_resource in task['result_resources']:
+    for result_resource in task['products']:
         result_resources.append((result_resource['resource_id'], result_resource['amount']))
     tasks.append(Task(task['id'], task['name'], task_resources, result_resources, task['preceding_tasks'], task['follow_up_tasks'], task['independent'], task['prepare_time'], task['unprepare_time']))
 for resource in resource_data:
