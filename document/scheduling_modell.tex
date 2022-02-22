@@ -124,7 +124,7 @@ Alle Arbeitsschritte / Aktionen, die in der Produktions-Umgebung durchgeführt w
 	\item id – eindeutige ID des Tasks (kann fortlaufende Nummer sein, nur für interne Identifizierung)
 	\item name – Name des Tasks (für einfacher lesbare Ergebnisse)
 	\item resources – (liste) benötigt Ressourcen, um den Task durchzuführen (id + anzahl)
-	\item result\_resources – (liste) alle Ressourcen (ID + Anzahl (Losgröße)) die durch den Task entstehen
+	\item products – (liste) alle Ressourcen (ID + Anzahl (Losgröße)) die durch den Task entstehen
 	\item preceding\_tasks – (liste) Tasks, die gemeinsam mit diesem Task durchgeführt werden müssen (vorangestellte Tasks, müssen daher nicht extra als Arbeitsschritt übermittelt werden)
 	\item follow\_up\_tasks – (liste) Tasks, die nach dem Task durchgeführt werden müssen (wie preciding tasks)
 	\item independent – boolean, um festzustellen, ob der Task im Schedule verwendet werden soll (e.g. false für Tasks die immer nur als vorangestellter Task vorkommen und allein keinen Sinn ergeben)
@@ -170,6 +170,15 @@ Repräsentiert Kundenaufträge/Bestellungen, die mithilfe der Produktions-Umgebu
 	\item tardiness\_fee – falls die Bestellung nach dem gewünschten Termin, aber vor dem letzten möglichen Termin durchgeführt wird
 	\item divisible – boolean, gibt an ob auch nur Teile der Bestellung bearbeitet werden können, oder ob alle bestellten Ressourcen geliefert werden müssen (oder gar keine)
 	\item customer\_id – ID des Kunden, von dem der Auftrag stammt
+\end{itemize}
+
+\subsection*{Jobs}
+Repräsentiert die spezifische Ausführung eines Tasks für eine Bestellung
+\begin{itemize}
+	\item id - eindeutige ID des Jobs (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
+	\item order\_id - ID der Bestellung, für die der Job ausgeführt werden muss
+	\item task\_id - ID des Tasks, der ausgeführt werden soll
+	\item to\_id - Spezifische Zuteilungs-ID zwischen Tasks und Bestellungen, um den Job im Schedule genau zuordnen zu können
 \end{itemize}
 
 \begin{figure}[H]
@@ -376,203 +385,546 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 \label{json_example}
 \begin{lstlisting}[language=json,firstnumber=1]
 {
-"system-info":
-{
-	"tasks":
-	[
+	"system-info":
 		{
-		"id": 0,
-		"name": "example_task",
-		"resources":
+		"tasks":
 		[
 			{
-			"id": 4,
-			"amount": 20
+				"id": 0,
+				"name": "Task 1",
+				"resources":
+				[
+					{
+						"id": 0,
+						"amount": 10
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 1,
+						"amount": 1
+					}
+				],
+				"preceding_tasks":
+				[],
+				"follow_up_tasks":
+				[
+					1
+				],
+				"independent": true,
+				"prepare_time": 5,
+				"unprepare_time": 5
 			},
-			{
-			"id": 6,
-			"amount": 2
-			}
-		],
-		"result_resources": 
-		[
-			{
-			"resource_id": 1,
-			"amount": 100
-			},
-			{
-			"resource_id": 2,
-			"amount": 10
-			}
-		],
-		"preceding_tasks":
-		[
-			1, 2, 3
-		],
-		"follow_up_tasks":
-		[ ],
-		"independent": true,
-		"prepare_time": 10,
-		"unprepare_time": 5
-		},
-		{
-		"id": 1,
-		"name": "example_task 2",
-		"resources":
-		[
-			{
-			"id": 7,
-			"amount": 4
-			}
-		],
-		"result_resources": 
-		[
-			{
-			"resource_id": 3,
-			"amount": 4
-			}
-		],
-		"preceding-tasks":
-		[ ],
-		"follow_up_tasks":
-		[
-			4, 5
-		],
-		"independent": false,
-		"prepare_time": 10,
-		"unprepare_time": 5
-		}
-	],
-	"recipes":
-	[
-		{
-			"id": 0,
-			"name": "example_recipe",
-			"tasks":
-			[
-				0, 4
-			]
-		},
-		{
-			"id": 1,
-			"name": "example_recipe 2",
-			"tasks":
-			[
-				5, 6
-			]
-		}
-	],
-	"resources":
-	[
-		{
-			"id": 0,
-			"name": "example_resource",
-			"stock": 500,
-			"price": 10,
-			"renewable": false,
-			"recipes":
-			[
-				0, 1
-			]
-		},
-		{
-			"id": 1,
-			"name": "example_resource 2",
-			"stock": 300,
-			"price": 15,
-			"renewable": true,
-			"recipes":
-			[ ]
-		}
-	],
-	"workstations":
-	[
-		{
-			"id": 0,
-			"name": "example_machine",
-			"basic_resources": 
-			[
-			{
-				"id": 10,
-				"amount": 5
-			},
-			{
-				"id": 12,
-				"amount": 3
-			}
-			],
-			"tasks": 
-			[
-				{
-					"task_id": 0,
-					"duration": 10
-				}, 
-				{
-					"task_id": 3,
-					"duration": 5
-				},
-				{
-					"task_id": 4,
-					"duration": 20
-				}
-			]
-		}
-	]
-},
-"orders":
-[
-	{
-		"id": 0,
-		"arrival_time": "07.02.2022 00:00:00",
-		"delivery_time": "20.02.2022 14:30:00",
-		"latest_acceptable_time": "26.02.2022 00:00:00",
-		"resources":
-		[
 			{
 				"id": 1,
-				"amount": 20,
-				"price": 700
+				"name": "Task 2",
+				"resources":
+				[
+					{
+						"id": 1,
+						"amount": 1
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 2,
+						"amount": 1
+					}
+				],
+				"preceding_tasks":
+				[],
+				"follow_up_tasks":
+				[],
+				"independent": false,
+				"prepare_time": 0,
+				"unprepare_time": 5
+			},
+			{
+				"id": 2,
+				"name": "Task 3",
+				"resources":
+				[
+					{
+						"id": 3,
+						"amount": 20
+					},
+					{
+						"id": 4,
+						"amount": 10
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 5,
+						"amount": 2
+					},
+					{
+						"resource_id": 6,
+						"amount": 1
+					}
+				],
+				"preceding_tasks":
+				[
+					3, 4
+				],
+				"follow_up_tasks":
+				[],
+				"independent": true,
+				"prepare_time": 10,
+				"unprepare_time": 5
 			},
 			{
 				"id": 3,
-				"amount": 10,
-				"price": 300
+				"name": "Task 4",
+				"resources": 
+				[
+					{
+						"id": 7,
+						"amount": 5
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 3,
+						"amount": 20
+					}
+				],
+				"preceding_tasks":
+				[],
+				"follow_up_tasks":
+				[],
+				"independent": false,
+				"prepare_time": 5,
+				"unprepare_time": 5
+			},
+			{
+				"id": 4,
+				"name": "Task 5",
+				"resources":
+				[
+					{
+						"id": 8,
+						"amount": 1
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 4,
+						"amount": 5
+					}                
+				],
+				"preceding_tasks":
+				[],
+				"follow_up_tasks":
+				[],
+				"independent": true,
+				"prepare_time": 1,
+				"unprepare_time": 5
+			},
+			{
+				"id": 5,
+				"name": "Task 6",
+				"resources":
+				[
+					{
+						"id": 9,
+						"amount": 20
+					},
+					{
+						"id": 10,
+						"amount": 1
+					}
+				],
+				"products":
+				[
+					{
+						"resource_id": 8,
+						"amount": 2
+					}
+				],
+				"independent": true,
+				"preceding_tasks":
+				[],
+				"follow_up_tasks":
+				[],
+				"prepare_time": 5,
+				"unprepare_time": 5
 			}
 		],
-		"penalty": 100,
-		"tardiness_fee": 10,
-		"divisible": true,
-		"customer_id": 1
-	},
-	{
-		"id": 0,
-		"arrival_time": "09.02.2022 13:00:00",
-		"delivery_time": "25.02.2022 15:00:00",
-		"latest_acceptable_time": "26.02.2022 00:00:00",
+		"recipes":
+		[
+			{
+				"id": 0,
+				"name": "Recipe 1",
+				"tasks":
+				[
+					5
+				]
+			},
+			{
+				"id": 1,
+				"name": "Recipe 2",
+				"tasks":
+				[
+					2
+				]
+			},
+			{
+				"id": 2,
+				"name": "Recipe 3",
+				"tasks":
+				[
+					0
+				]
+			},
+			{
+				"id": 3,
+				"name": "Recipe 4",
+				"tasks":
+				[
+					4
+				]
+			}
+			],
 		"resources":
 		[
 			{
 				"id": 0,
-				"amount": 15,
-				"price": 500
+				"name": "Resource 1",
+				"stock": 50,
+				"price": 20,
+				"renewable": false,
+				"recipes":
+				[]
 			},
 			{
 				"id": 1,
-				"amount": 30,
-				"price": 1000
+				"name": "Resource 2",
+				"stock": 0,
+				"price": 300,
+				"renewable": false,
+				"recipes":
+				[]
 			},
 			{
 				"id": 2,
-				"amount": 10,
-				"price": 200
+				"name": "Resource 3",
+				"stock": 10,
+				"price": 1000,
+				"renewable": false,
+				"recipes":
+				[
+					2
+				]
+			},
+			{
+				"id": 3,
+				"name": "Resource 4",
+				"stock": 100,
+				"price": 10,
+				"renewable": false,
+				"recipes":
+				[]
+			},
+			{
+				"id": 4,
+				"name": "Resource 5",
+				"stock": 10,
+				"price": 100,
+				"renewable": false,
+				"recipes":
+				[
+					3
+				]
+			},
+			{
+				"id": 5,
+				"name": "Resource 6",
+				"stock": 4,
+				"price": 50,
+				"renewable": false,
+				"recipes":
+				[
+					1
+				]
+			},
+			{
+				"id": 6,
+				"name": "Resource 7",
+				"stock": 3,
+				"price": 70,
+				"renewable": false,
+				"recipes":
+				[
+					1
+				]
+				},
+			{
+				"id": 7,
+				"name": "Resource 8",
+				"stock": 15,
+				"price": 15,
+				"renewable": false,
+				"recipes":
+				[]
+			},
+			{
+				"id": 8,
+				"name": "Resource 9",
+				"stock": 6,
+				"price": 700,
+				"renewable": false,
+				"recipes":
+				[
+					0
+				]
+			},
+			{
+				"id": 9,
+				"name": "Resource 10",
+				"stock": 40,
+				"price": 200,
+				"renewable": false,
+				"recipes":
+				[]
+			},
+			{
+				"id": 10,
+				"name": "Resource 11 (Employee)",
+				"stock": 10,
+				"price": 0,
+				"renewable": true,
+				"recipes":
+				[]
+			},
+			{
+				"id": 11,
+				"name": "Resource 12",
+				"stock": 1000,
+				"price": 5,
+				"renewable": false,
+				"recipes":
+				[]
 			}
 		],
-		"penalty": 100,
-		"tardiness_fee": 10,
-		"divisible": false,
-		"customer_id": 0
-	}
-]
+		"workstations":
+		[
+			{
+				"id": 0,
+				"name": "Workstation 1",
+				"basic_resources":
+				[
+					{
+						"id": 10,
+						"amount": 1
+					}
+				],
+				"tasks":
+				[
+					{
+						"task_id": 0,
+						"duration": 10
+					},
+					{
+						"task_id": 2,
+						"duration": 5
+					}
+				]
+			},
+			{
+				"id": 1,
+				"name": "Workstation 2",
+				"basic_resources":
+				[
+					{
+						"id": 10,
+						"amount": 1
+					},
+					{
+						"id": 11,
+						"amount": 2
+					}
+				],
+				"tasks":
+				[
+					{
+						"task_id": 1,
+						"duration": 20
+					},
+					{
+						"task_id": 2,
+						"duration": 7
+					}
+				]
+			},
+			{
+				"id": 2,
+				"name": "Workstation 3",
+				"basic_resources":
+				[],
+				"tasks":
+				[
+					{
+						"task_id": 3,
+						"duration": 1
+					},
+					{
+						"task_id": 4,
+						"duration": 2
+					},
+					{
+						"task_id": 5,
+						"duration": 15
+					}
+				]
+			},
+			{
+				"id": 3,
+				"name": "Workstation 4",
+				"basic_resources":
+				[
+					{
+						"id": 10,
+						"amount": 1
+					}
+				],
+				"tasks":
+				[
+					{
+						"task_id": 4,
+						"duration": 1
+					},
+					{
+						"task_id": 5,
+						"duration": 10
+					}
+				]
+			}
+		]
+	},
+	"orders":
+	[
+		{
+			"id": 0,
+			"arrival_time": "2022-02-07 00:00:00",
+			"delivery_time": "2022-02-20 14:30:00",
+			"latest_acceptable_time": "2022-02-22 00:00:00",
+			"resources":
+			[
+				{
+					"id": 2,
+					"amount": 5,
+					"price": 700
+				},
+				{
+					"id": 4,
+					"amount": 10,
+					"price": 300
+				}
+			],
+			"penalty": 300,
+			"tardiness_fee": 100,
+			"divisible": false,
+			"customer_id": 1
+		},
+		{
+			"id": 1,
+			"arrival_time": "2022-02-17 00:00:00",
+			"delivery_time": "2022-02-21 15:30:00",
+			"latest_acceptable_time": "2022-02-24 00:00:00",
+			"resources":
+			[
+				{
+					"id": 4,
+					"amount": 20,
+					"price": 600
+				},
+				{
+					"id": 5,
+					"amount": 10,
+					"price": 2000
+				}
+			],
+			"penalty": 500,
+			"tardiness_fee": 100,
+			"divisible": false,
+			"customer_id": 1
+		},
+		{
+			"id": 2,
+			"arrival_time": "2022-02-10 00:00:00",
+			"delivery_time": "2022-02-19 14:00:00",
+			"latest_acceptable_time": "2022-02-26 00:00:00",
+			"resources":
+			[
+				{
+					"id": 2,
+					"amount": 20,
+					"price": 2700
+				},
+				{
+					"id": 5,
+					"amount": 10,
+					"price": 2000
+				}
+			],
+			"penalty": 1000,
+			"tardiness_fee": 100,
+			"divisible": false,
+			"customer_id": 1
+		},
+		{
+			"id": 3,
+			"arrival_time": "2022-02-08 00:00:00",
+			"delivery_time": "2022-02-23 17:00:00",
+			"latest_acceptable_time": "2022-02-26 00:00:00",
+			"resources":
+			[
+				{
+					"id": 5,
+					"amount": 17,
+					"price": 3500
+				},
+				{
+					"id": 6,
+					"amount": 10,
+					"price": 1200
+				}
+			],
+			"penalty": 700,
+			"tardiness_fee": 200,
+			"divisible": false,
+			"customer_id": 1
+		},
+		{
+			"id": 4,
+			"arrival_time": "2022-02-15 00:00:00",
+			"delivery_time": "2022-02-23 12:00:00",
+			"latest_acceptable_time": "2022-02-26 00:00:00",
+			"resources":
+			[
+				{
+					"id": 4,
+					"amount": 34,
+					"price": 800
+				},
+				{
+					"id": 8,
+					"amount": 10,
+					"price": 3000
+				}
+			],
+			"penalty": 200,
+			"tardiness_fee": 100,
+			"divisible": false,
+			"customer_id": 1
+		}
+	]
 }
 \end{lstlisting}
 \end{document}
