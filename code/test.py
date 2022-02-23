@@ -5,38 +5,14 @@ import random
 def get_amount_operations_for_job(index : int, jobs) -> int:
     return len(jobs[index])
 
-def get_available_combinations_for_operation(operation_index : int, job_index : int, jobs):
-    return jobs[job_index][operation_index]
-
-def get_available_machines_for_operation(operation_index : int, job_index : int, jobs):
-    machines = []
-    for combinations in jobs[job_index][operation_index]:
-        for combination in combinations:
-            #if combination[0] not in machines:
-            machines.append(combination[0])
-    return machines
-
-def get_available_workers_for_operation(operation_index : int, job_index : int, jobs):
-    workers = []
-    for operation in jobs[job_index][operation_index]:
-        #if operation[1] not in workers:
-        workers.append(operation[1])
-    return workers
-
-def get_available_worker_for_machine_for_operation(machine_id : int, operation_index : int, job_index : int, jobs):
-    workers = []
-    for combinations in jobs[job_index][operation_index]:
-        for combination in combinations:
-            if combination[0] == machine_id:
-                #if combination[1] not in workers:
-                workers.append(combination[1])
-    return workers
-
-def get_duration(machine_id : int, worker_id : int, operation_index : int, job_index : int, jobs):
-    for combinations in jobs[job_index][operation_index]:
-        for combination in combinations:
-            if combination[0] == machine_id and combination[1] == worker_id:
-                return combination[2]
+def get_duration(machine_id : int, worker_id : int, operation_index : int, job_index : int, jobs, show_combination : bool = False):
+    #for combinations in jobs[job_index][operation_index]:
+    combinations = get_combinations_for_operation(operation_index, job_index, jobs)
+    if show_combination:
+        print(f'Checking for duration in {combinations}, looking for {machine_id}, {worker_id}')
+    for combination in combinations:
+        if combination[0] == machine_id and combination[1] == worker_id:
+            return combination[2]
     # print(f'Did not find duration for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for operation {operation_index} in job {job_index} :(')
     return 0
 
@@ -56,6 +32,13 @@ def map_index_to_operation(index, orders, jobs):
             current += operation_amount
     return -1, -1
 
+def get_combinations_for_operation(operation, job, jobs):
+    combinations = []
+    for machine_combinations in jobs[job][operation]:
+        for combination in machine_combinations:
+            combinations.append(combination)
+    return combinations
+
 class Individual:
 
     def __init__(self, genes, fitness):
@@ -68,7 +51,13 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self):
+    def is_feasible(self, orders, jobs):
+        i = 0
+        """for gene in self.genes:
+            operation, order = map_index_to_operation(i, orders, jobs)
+            if get_duration(gene[0], gene[1], operation, order[0], jobs) == 0:
+                return False
+            i += 1"""
         return True
 
 class SimpleGA:
@@ -77,8 +66,13 @@ class SimpleGA:
         self.current_best = Individual([], float('inf'))
 
     def randomize_gene(self, individual, index, operation_id, order):
-        individual.genes[index][0] = random.choice(get_available_machines_for_operation(operation_id, order[0], self.jobs))
-        individual.genes[index][1] = random.choice(get_available_worker_for_machine_for_operation(individual.genes[index][0], operation_id, order[0], self.jobs))
+        combinations = get_combinations_for_operation(operation_id, order[0], self.jobs)
+        #print(f'Choosing from {combinations}')
+        combination = random.choice(combinations)
+        individual.genes[index][0] = combination[0]
+        individual.genes[index][1] = combination[1]
+        #individual.genes[index][0] = random.choice(get_available_machines_for_operation(operation_id, order[0], self.jobs))
+        #individual.genes[index][1] = random.choice(get_available_worker_for_machine_for_operation(individual.genes[index][0], operation_id, order[0], self.jobs))
         individual.genes[index][2] = random.randint(self.earliest_slot, self.last_slot)
         #return individual
 
@@ -93,7 +87,7 @@ class SimpleGA:
 
     def evaluate(self, individuals):
         for individual in individuals:
-            if individual.is_feasible():
+            if individual.is_feasible(self.orders, self.jobs):
                 # calc fitness
                 individual.fitness = 0
                 for i in range(len(individual.genes)):
@@ -247,7 +241,7 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 20, 10, 15, earliest_slot, last_slot)
+result = ga.run(input, orders, system_info, jobs, 10, 25, 50, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 #for operation in result.genes:
@@ -265,14 +259,15 @@ for operation in result.genes:
 sum = 0
 keys = list(workstations.keys())
 keys.sort()
-"""for j in range(len(jobs)):
-    for i in range(len(jobs[j])):
-        print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
+
 for workstation in keys:
     print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled: <order_id, job_index, operation_index, worker_index, start_time, duration>')
     print(workstations[workstation])
     print('\n')
     sum += len(workstations[workstation])
 print(f'For a total of {sum} scheduled operations!')
-#from visualize import visualize
-#visualize(workstations)
+from visualize import visualize
+visualize(workstations)
+"""for j in range(len(jobs)):
+    for i in range(len(jobs[j])):
+        print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
