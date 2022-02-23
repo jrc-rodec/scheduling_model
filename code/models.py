@@ -163,7 +163,7 @@ class SimulationEnvironment:
                 self.inventory[resource] = 0
             self.inventory[resource] += resource.stock
     
-    def create_input(self, orders) -> tuple[list, list]:
+    def create_input(self, orders) -> "Tuple[List, List]":
         jobs = list()
         assignments = list()
         for order in orders:

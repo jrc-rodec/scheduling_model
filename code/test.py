@@ -229,8 +229,8 @@ def print_instance(instance):
 #   startime + duration of machine m with worker w for operation n < order o delivery date
 #   no overlap of timeslots for each machine and each worker
 # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
-earliest_slot = 500
-last_slot = 10000
+earliest_slot = 100
+last_slot = 1000
 input, orders, instance = read_dataset_1(use_instance=13, earliest_time=earliest_slot, planning_horizon=last_slot)
 # print(orders)
 system_info = instance[0]

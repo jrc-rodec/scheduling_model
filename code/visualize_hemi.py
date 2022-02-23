@@ -40,7 +40,7 @@ def visualize(workstations):
         label = f'w{workstation}'
         for operation in workstations[workstation]:
             data.append(
-                dict(Task=label, Start=operation[4], Finish=operation[4] + operation[5], Resource='None')
+                dict(Task=label, Start=operation[4], Finish=operation[4] + operation[5], Resource='None', Order=str(operation[0]))
             )
             
     colors = {'None': 'rgb(220, 0, 0)',
@@ -59,4 +59,29 @@ def visualize(workstations):
         dict(Task="Job-3", Start='2017-05-18', Finish='2017-06-18', Resource='Not Started'),
         dict(Task="Job-4", Start='2017-01-14', Finish='2017-03-14', Resource='Complete')]"""
     
+  ########### alternative gantt approach ########################
+    
+  
+    from matplotlib.patches import Patch
  
+    ws=list()
+    st=list()
+    du=list()
+    co=list()
+    c_dict = {'1':'#E64646', '2':'#631646', '3':'#34D05C', '4':'#34D0C3', '5':'#3475D0',\
+                            '6':'#E64777', '7':'#E99646', '8':'#F1D11C', '9':'#E8D1C3', '0':'#6661D5'}
+    for t in data:
+        if t['Finish']-t['Start'] > 0:
+            ws.append(t['Task'])
+            du.append(t['Finish']-t['Start'])
+            st.append(t['Start'])
+            co.append(c_dict[t['Order']])
+            
+    
+    fig, ax = plt.subplots(1, figsize=(16,6))
+    ax.barh(ws,du,left=st,color=co)
+    legend_elements = [Patch(facecolor=c_dict[i], label=i)  for i in c_dict]
+    plt.legend(handles=legend_elements)
+    plt.show()
+    
+    print([ws,st,du])
