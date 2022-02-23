@@ -145,8 +145,9 @@ class SimpleGA:
             parent2 = self.select(parents)
         # simple one point crossover for testing
         crossover_point = random.randint(0, len(parent1.genes))
-        child1 = Individual(parent1.genes.copy(), float('inf'))
-        child2 = Individual(parent2.genes.copy(), float('inf'))
+        import copy
+        child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
+        child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point, len(parent1.genes)):
             child1.set_gene(i, parent2.get_gene(i))
             child2.set_gene(i, parent1.get_gene(i))
@@ -231,8 +232,8 @@ def print_instance(instance):
 #   startime + duration of machine m with worker w for operation n < order o delivery date
 #   no overlap of timeslots for each machine and each worker
 # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
-earliest_slot = 500
-last_slot = 10000
+earliest_slot = 200
+last_slot = 400
 input, orders, instance = read_dataset_1(use_instance=13, earliest_time=earliest_slot, planning_horizon=last_slot)
 # print(orders)
 system_info = instance[0]
@@ -266,7 +267,7 @@ keys = list(workstations.keys())
 keys.sort()
 
 for workstation in keys:
-    print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled: <order_id, job_index, operation_index, worker_index, start_time, duration>')
+    print(f'Workstation w{workstation} has {len(workstations[workstation])} operations scheduled: <order_id, recipe_index, task_index, worker_index, start_time, duration>')
     print(workstations[workstation])
     print('\n')
     sum += len(workstations[workstation])

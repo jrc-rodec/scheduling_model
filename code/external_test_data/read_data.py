@@ -85,7 +85,7 @@ def read_dataset_1(use_instance : int = 13, order_amount : int = 100, earliest_t
     data = read(selected_source)
     # use_instance = 13 # between 0 and 13 for example data 1
     instance = data[use_instance]
-    order_amount = 100 # how many orders should be generated
+    order_amount = 10 # how many orders should be generated
     # earliest_time = 500 # can not expect delivery before 50 time units into the schedule are done
     # planning_horizon = 10000 # what is the last possible date for orders' delivery date
     orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
