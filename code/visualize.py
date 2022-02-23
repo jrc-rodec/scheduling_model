@@ -1,5 +1,24 @@
 import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
+
+import random
+     
+def get_colors(n): 
+    ret = [] 
+    r = int(random.random() * 256) 
+    g = int(random.random() * 256) 
+    b = int(random.random() * 256) 
+    step = 256 / n 
+    for i in range(n): 
+        r += step 
+        g += step 
+        b += step 
+        r = int(r) % 256 
+        g = int(g) % 256 
+        b = int(b) % 256 
+        ret.append((r,g,b))  
+    return ret 
+
 def visualize(workstations, history):
 
     data = []
@@ -13,15 +32,9 @@ def visualize(workstations, history):
             if operation[0] not in orders:
                 orders.append(operation[0])
     colors = {}
-    shades = 255 / len(orders)
-    shade = 0
-    for order in orders:
-        colors[str(order)] = f'rgb({shade}, 0, 0)'
-        shade += shades
-    
-    """    colors = {'None': 'rgb(220, 0, 0)',
-            'Incomplete': (1, 0.9, 0.16),
-            'Complete': 'rgb(0, 255, 100)'}"""
+    rgb_values = get_colors(len(orders))
+    for i in range(len(orders)):
+        colors[str(orders[i])] = f'rgb({rgb_values[i][0]}, {rgb_values[i][1]}, {rgb_values[i][2]})'
 
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
