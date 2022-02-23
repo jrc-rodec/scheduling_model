@@ -24,11 +24,11 @@ def map_index_to_operation(index, orders, jobs):
     while current < index:
         for order in orders:
             operation_amount = get_amount_operations_for_job(order[0], jobs)
-            if current + operation_amount > index:
+            if current + operation_amount >= index:
                 # found correct order
                 operation_id = current + operation_amount - index
                 # found the id of the operation inside the job
-                return operation_id - 1, order
+                return operation_id, order
             current += operation_amount
     return -1, -1
 
@@ -159,6 +159,7 @@ class SimpleGA:
         self.last_slot = last_slot
         self.orders = orders
         self.jobs = jobs
+        history = []
         for i in range(population_size):
             individual = input.copy()
             x = Individual(individual, float('inf'))
@@ -201,8 +202,9 @@ class SimpleGA:
             if population[0].fitness < self.current_best.fitness:
                 self.current_best = population[0]
             # random.shuffle(population)
+            history.append(self.current_best.fitness)
             gen += 1
-        return self.current_best
+        return self.current_best, history
 
 def print_instance(instance):
     print(f'System Information:')
@@ -242,7 +244,7 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 100, 50, 100, earliest_slot, last_slot)
+result, history = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 #for operation in result.genes:
@@ -250,13 +252,15 @@ result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascen
 # sort operations to machines, ignore worker for now
 workstations = dict()
 i = 0
-for operation in result.genes:
+for i in range(len(result.genes)):
+#for operation in result.genes:
+    operation = result.genes[i]
     if operation[0] not in workstations:
         workstations[operation[0]] = []
     operation_id, order = map_index_to_operation(i, orders, jobs)
     #print(f'Looking for duration for machine {operation[0]} and worker {operation[1]} in operation {operation_id} in job {order[0]}')
     workstations[operation[0]].append([order[2], order[0], operation_id, operation[1], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)]) # job id, start_time, duration
-    i+=1
+    #i+=1
 sum = 0
 keys = list(workstations.keys())
 keys.sort()
@@ -268,7 +272,13 @@ for workstation in keys:
     sum += len(workstations[workstation])
 print(f'For a total of {sum} scheduled operations!')
 from visualize import visualize
-visualize(workstations)
+visualize(workstations, history)
 """for j in range(len(jobs)):
     for i in range(len(jobs[j])):
         print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
+# debug output
+"""i = 0
+for gene in result.genes:
+    operation_id, order = map_index_to_operation(i, orders, jobs)
+    print(f'Gene {i}: {gene}, looking for duration for machine {gene[0]}, worker {gene[1]} for operation {operation_id} of job {order[0]}: {get_duration(gene[0], gene[1], operation_id, order[0], jobs)}')
+    i+=1"""

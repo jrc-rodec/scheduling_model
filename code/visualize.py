@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
-def visualize(workstations):
+def visualize(workstations, history):
     """start_times = []
     durations = []
     operations = []
@@ -44,6 +44,11 @@ def visualize(workstations):
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
     fig.show()
+    x = list(range(0, len(history)))
+    plt.plot(x, history)
+    plt.xlabel = 'Generation'
+    plt.ylabel = 'Fitness'
+    plt.show()
     """df = [dict(Task="Job-1", Start='2017-01-01', Finish='2017-02-02', Resource='Complete'),
         dict(Task="Job-1", Start='2017-02-15', Finish='2017-03-15', Resource='Incomplete'),
         dict(Task="Job-2", Start='2017-01-17', Finish='2017-02-17', Resource='Not Started'),
