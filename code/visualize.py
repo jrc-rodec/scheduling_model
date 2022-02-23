@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
-
 import random
      
 def get_colors(n): 
@@ -20,7 +19,6 @@ def get_colors(n):
     return ret 
 
 def visualize(workstations, history):
-
     data = []
     orders = []
     for workstation in workstations.keys():
@@ -44,11 +42,3 @@ def visualize(workstations, history):
     plt.xlabel = 'Generation'
     plt.ylabel = 'Fitness'
     plt.show()
-    """df = [dict(Task="Job-1", Start='2017-01-01', Finish='2017-02-02', Resource='Complete'),
-        dict(Task="Job-1", Start='2017-02-15', Finish='2017-03-15', Resource='Incomplete'),
-        dict(Task="Job-2", Start='2017-01-17', Finish='2017-02-17', Resource='Not Started'),
-        dict(Task="Job-2", Start='2017-01-17', Finish='2017-02-17', Resource='Complete'),
-        dict(Task="Job-3", Start='2017-03-10', Finish='2017-03-20', Resource='Not Started'),
-        dict(Task="Job-3", Start='2017-04-01', Finish='2017-04-20', Resource='Not Started'),
-        dict(Task="Job-3", Start='2017-05-18', Finish='2017-06-18', Resource='Not Started'),
-        dict(Task="Job-4", Start='2017-01-14', Finish='2017-03-14', Resource='Complete')]"""

@@ -1,12 +1,10 @@
 from external_test_data.read_data import read_dataset_1
 import random
 
-#from visualize import visualize
 def get_amount_operations_for_job(index : int, jobs) -> int:
     return len(jobs[index])
 
 def get_duration(machine_id : int, worker_id : int, operation_index : int, job_index : int, jobs, show_combination : bool = False):
-    #for combinations in jobs[job_index][operation_index]:
     combinations = get_combinations_for_operation(operation_index, job_index, jobs)
     if show_combination:
         print(f'Checking for duration in {combinations}, looking for {machine_id}, {worker_id}')
@@ -18,7 +16,6 @@ def get_duration(machine_id : int, worker_id : int, operation_index : int, job_i
 
 def map_index_to_operation(index, orders, jobs):
     current = 0
-    # operation_amount = 0
     if index == 0:
         return 0, orders[0]
     while current < index:
@@ -69,14 +66,10 @@ class SimpleGA:
 
     def randomize_gene(self, individual, index, operation_id, order):
         combinations = get_combinations_for_operation(operation_id, order[0], self.jobs)
-        #print(f'Choosing from {combinations}')
         combination = random.choice(combinations)
         individual.genes[index][0] = combination[0]
         individual.genes[index][1] = combination[1]
-        #individual.genes[index][0] = random.choice(get_available_machines_for_operation(operation_id, order[0], self.jobs))
-        #individual.genes[index][1] = random.choice(get_available_worker_for_machine_for_operation(individual.genes[index][0], operation_id, order[0], self.jobs))
         individual.genes[index][2] = random.randint(self.earliest_slot, self.last_slot)
-        #return individual
 
     def randomize_individual(self, individual, orders, jobs):
             j = 0
@@ -85,7 +78,6 @@ class SimpleGA:
                 for k in range(operations):
                     self.randomize_gene(individual, j, k, order)
                     j+=1
-            #return individual
 
     def evaluate(self, individuals):
         for individual in individuals:
@@ -93,7 +85,6 @@ class SimpleGA:
             individual.fitness = 0
             for i in range(len(individual.genes)):
                 operation_id, order = map_index_to_operation(i, self.orders, self.jobs)
-                # order = self.orders[order_id]
                 if not order == -1:
                     delivery_date = order[1]
                     duration = get_duration(individual.genes[i][0], individual.genes[i][1], operation_id, order[0], self.jobs)
@@ -134,14 +125,9 @@ class SimpleGA:
         return self.roulette_wheel_selection(population)
 
     def crossover(self, parents):
-        # select parents (just random for now)
-        #parent1 = random.choice(parents)
-        #parent2 = random.choice(parents)
-        #parent1, parent2 = self.select(parents)
         parent1 = self.select(parents)
         parent2 = self.select(parents)
         while parent1 == parent2: # making sure 2 different parents are selected
-            #parent2 = random.choice(parents)
             parent2 = self.select(parents)
         # simple one point crossover for testing
         crossover_point = random.randint(0, len(parent1.genes))
@@ -235,33 +221,29 @@ def print_instance(instance):
 earliest_slot = 200
 last_slot = 400
 input, orders, instance = read_dataset_1(use_instance=13, earliest_time=earliest_slot, planning_horizon=last_slot)
-# print(orders)
+
 system_info = instance[0]
 jobs = instance[1]
 n_jobs = system_info[0]
 n_machines = system_info[1]
 n_workers = system_info[2]
-# print_instance(instance)
+
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
 result, history = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
-#for operation in result.genes:
-#    print(operation)
+
 # sort operations to machines, ignore worker for now
 workstations = dict()
-i = 0
 for i in range(len(result.genes)):
-#for operation in result.genes:
     operation = result.genes[i]
     if operation[0] not in workstations:
         workstations[operation[0]] = []
     operation_id, order = map_index_to_operation(i, orders, jobs)
-    #print(f'Looking for duration for machine {operation[0]} and worker {operation[1]} in operation {operation_id} in job {order[0]}')
     workstations[operation[0]].append([order[2], order[0], operation_id, operation[1], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)]) # job id, start_time, duration
-    #i+=1
+
 sum = 0
 keys = list(workstations.keys())
 keys.sort()
@@ -274,12 +256,3 @@ for workstation in keys:
 print(f'For a total of {sum} scheduled operations!')
 from visualize import visualize
 visualize(workstations, history)
-"""for j in range(len(jobs)):
-    for i in range(len(jobs[j])):
-        print(f'Operation {i} in Job {j}: {jobs[j][i]}')"""
-# debug output
-"""i = 0
-for gene in result.genes:
-    operation_id, order = map_index_to_operation(i, orders, jobs)
-    print(f'Gene {i}: {gene}, looking for duration for machine {gene[0]}, worker {gene[1]} for operation {operation_id} of job {order[0]}: {get_duration(gene[0], gene[1], operation_id, order[0], jobs)}')
-    i+=1"""
