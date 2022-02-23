@@ -53,11 +53,13 @@ class Individual:
     
     def is_feasible(self, orders, jobs):
         i = 0
-        """for gene in self.genes:
+        for gene in self.genes:
             operation, order = map_index_to_operation(i, orders, jobs)
+            if operation == -1 or order == -1:
+                return False
             if get_duration(gene[0], gene[1], operation, order[0], jobs) == 0:
                 return False
-            i += 1"""
+            i += 1
         return True
 
 class SimpleGA:
@@ -87,21 +89,18 @@ class SimpleGA:
 
     def evaluate(self, individuals):
         for individual in individuals:
-            if individual.is_feasible(self.orders, self.jobs):
-                # calc fitness
-                individual.fitness = 0
-                for i in range(len(individual.genes)):
-                    operation_id, order = map_index_to_operation(i, self.orders, self.jobs)
-                    # order = self.orders[order_id]
-                    if not order == -1:
-                        delivery_date = order[1]
-                        duration = get_duration(individual.genes[i][0], individual.genes[i][1], operation_id, order[0], self.jobs)
-                        if individual.genes[i][2] + duration > delivery_date: # counts all late operations, not just late order once
-                            individual.fitness += 1
-                    else:
-                        individual.fitness = float('inf')
-            else:
-                individual.fitness = float('inf')
+            # calc fitness
+            individual.fitness = 0
+            for i in range(len(individual.genes)):
+                operation_id, order = map_index_to_operation(i, self.orders, self.jobs)
+                # order = self.orders[order_id]
+                if not order == -1:
+                    delivery_date = order[1]
+                    duration = get_duration(individual.genes[i][0], individual.genes[i][1], operation_id, order[0], self.jobs)
+                    if individual.genes[i][2] + duration > delivery_date: # counts all late operations, not just late order once
+                        individual.fitness += 1
+            if not individual.is_feasible(self.orders, self.jobs):
+                individual.fitness += 300
 
     def tournament_selection(self, population):
         parents = random.choices(population, k=5)
@@ -123,6 +122,7 @@ class SimpleGA:
                 min = individual.fitness
         p = random.random() * sum
         t = max + min
+        # parent = random.choice(population)
         parent = population[0]
         for individual in population:
             p -= (t - individual.fitness)
@@ -165,6 +165,7 @@ class SimpleGA:
             self.randomize_individual(x, orders, jobs)
             population.append(x)
         self.evaluate(population)
+        self.current_best = random.choice(population)
         for parent in population:
             if parent.fitness < self.current_best.fitness:
                 self.current_best = parent
@@ -241,7 +242,7 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result = ga.run(input, orders, system_info, jobs, 10, 25, 50, earliest_slot, last_slot)
+result = ga.run(input, orders, system_info, jobs, 100, 50, 100, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 #for operation in result.genes:
