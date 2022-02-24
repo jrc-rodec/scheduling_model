@@ -265,10 +265,13 @@ def print_instance(instance):
 #   startime + duration of machine m with worker w for operation n < order o delivery date
 #   no overlap of timeslots for each machine and each worker
 # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
-earliest_slot = 500
-last_slot = 2000
-use_instance = 13
-order_amount = 10
+earliest_slot = 500 # first possible delivery_date
+last_slot = 2000 # last possible delivery_date
+use_instance = 13 # choose which instance of the dataset should be used
+order_amount = 10 # amount of orders to be generated for testing
+max_generations = 100 # max amount of generations for the GA to run
+population_size = 25 # size of the population of individuals in one generation
+offspring_amount = 50 # amount of offsprings created in each generation
 input, orders, instance = read_dataset_1(use_instance=use_instance, order_amount=order_amount, earliest_time=earliest_slot, planning_horizon=last_slot)
 
 system_info = instance[0]
@@ -280,7 +283,7 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result, history, avg_history, best_gen_history, feasible_gen = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
+result, history, avg_history, best_gen_history, feasible_gen = ga.run(input, orders, system_info, jobs, max_generations, population_size, offspring_amount, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 #result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 
