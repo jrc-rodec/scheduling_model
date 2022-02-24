@@ -1,5 +1,6 @@
 from external_test_data.read_data import read_dataset_1
 import random
+import copy
 
 def get_amount_operations_for_job(index : int, jobs) -> int:
     return len(jobs[index])
@@ -11,22 +12,18 @@ def get_duration(machine_id : int, worker_id : int, operation_index : int, job_i
     for combination in combinations:
         if combination[0] == machine_id and combination[1] == worker_id:
             return combination[2]
-    # print(f'Did not find duration for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for operation {operation_index} in job {job_index} :(')
+    print(f'Did not find duration for {machine_id}, {worker_id}, in combinations {jobs[job_index][operation_index]} for operation {operation_index} in job {job_index} :(')
     return 0
 
 def map_index_to_operation(index, orders, jobs):
     current = 0
     if index == 0:
         return 0, orders[0]
-    while current < index:
-        for order in orders:
-            operation_amount = get_amount_operations_for_job(order[0], jobs)
-            if current + operation_amount >= index:
-                # found correct order
-                operation_id = current + operation_amount - index
-                # found the id of the operation inside the job
-                return operation_id, order
-            current += operation_amount
+    for i in range(len(orders)):
+        for j in range(get_amount_operations_for_job(orders[i][0], jobs)):
+            if current == index:
+                return j, orders[i]
+            current += 1
     return -1, -1
 
 def get_combinations_for_operation(operation, job, jobs):
@@ -35,6 +32,15 @@ def get_combinations_for_operation(operation, job, jobs):
         for combination in machine_combinations:
             combinations.append(combination)
     return combinations
+
+def group_by_order_sort_by_operation(genes):
+    gene_copy = []
+    for i in range(len(result.genes)):
+        operation = result.genes[i]
+        operation_id, order = map_index_to_operation(i, orders, jobs)
+        gene_copy.append([order[2], order[0], operation_id, operation[1], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)])
+    gene_copy = sorted(copy.deepcopy(gene_copy), key=lambda x: (x[0], x[1], x[2]))
+    return gene_copy
 
 class Individual:
 
@@ -72,12 +78,9 @@ class SimpleGA:
         individual.genes[index][2] = random.randint(self.earliest_slot, self.last_slot)
 
     def randomize_individual(self, individual, orders, jobs):
-            j = 0
-            for order in orders:
-                operations = get_amount_operations_for_job(order[0], jobs)
-                for k in range(operations):
-                    self.randomize_gene(individual, j, k, order)
-                    j+=1
+            for i in range(len(individual.genes)):
+                operation_id, order = map_index_to_operation(i, orders, jobs)
+                self.randomize_gene(individual, i, operation_id, order)
 
     def evaluate(self, individuals):
         for individual in individuals:
@@ -131,7 +134,6 @@ class SimpleGA:
             parent2 = self.select(parents)
         # simple one point crossover for testing
         crossover_point = random.randint(0, len(parent1.genes))
-        import copy
         child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
         child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point, len(parent1.genes)):
@@ -154,6 +156,7 @@ class SimpleGA:
             population.append(x)
         self.evaluate(population)
         self.current_best = random.choice(population)
+        # return self.current_best, history
         for parent in population:
             if parent.fitness < self.current_best.fitness:
                 self.current_best = parent
@@ -233,9 +236,14 @@ print(f'{len(input)} operations need to be scheduled to {n_machines} machines wi
 ga = SimpleGA()
 result, history = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
-result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
+#result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 
 # sort operations to machines, ignore worker for now
+for i in range(len(result.genes)):
+    gene = result.genes[i]
+    operation_id, order = map_index_to_operation(i, orders, jobs)
+    print(get_duration(gene[0], gene[1], operation_id, order[0], jobs))
+
 workstations = dict()
 for i in range(len(result.genes)):
     operation = result.genes[i]
@@ -256,3 +264,8 @@ for workstation in keys:
 print(f'For a total of {sum} scheduled operations!')
 from visualize import visualize
 visualize(workstations, history)
+
+print(f'All Operations grouped by Order Id (Recipe Id), sorted by Operation Id (Task Id)')
+
+print(group_by_order_sort_by_operation(result.genes))
+# weird ordering problem solved (2x 0, not enough of last)
