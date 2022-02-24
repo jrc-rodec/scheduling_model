@@ -33,20 +33,18 @@ def get_combinations_for_operation(operation, job, jobs):
             combinations.append(combination)
     return combinations
 
-def group_by_order_sort_by_operation(genes):
-    gene_copy = []
-    for i in range(len(result.genes)):
-        operation = result.genes[i]
-        operation_id, order = map_index_to_operation(i, orders, jobs)
-        gene_copy.append([order[2], order[0], operation_id, operation[1], operation[2], get_duration(operation[0], operation[1], operation_id, order[0], jobs)])
-    gene_copy = sorted(copy.deepcopy(gene_copy), key=lambda x: (x[0], x[1], x[2]))
-    return gene_copy
+def get_order_by_id(id, orders):
+    for order in orders:
+        if order[2] == id:
+            return order
+    return -1
 
 class Individual:
 
     def __init__(self, genes, fitness):
         self.genes = genes
         self.fitness = fitness
+        self.feasible = False
 
     def set_gene(self, index, gene):
         self.genes[index] = gene
@@ -54,15 +52,40 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self, orders, jobs):
+    def is_feasible(self, orders, jobs, last_slot):
+        self.feasbile = False
         i = 0
+        order_operations = dict()
         for gene in self.genes:
             operation, order = map_index_to_operation(i, orders, jobs)
+            # check if gene should exist
             if operation == -1 or order == -1:
                 return False
-            if get_duration(gene[0], gene[1], operation, order[0], jobs) == 0:
+            duration = get_duration(gene[0], gene[1], operation, order[0], jobs)
+            # check if combination is correct
+            if duration == 0:
+                return False
+            # finish everything before the end of the planning horizon
+            if gene[2] + duration > last_slot:
                 return False
             i += 1
+            data = copy.deepcopy(gene)
+            if order[2] not in order_operations.keys():
+                order_operations[order[2]] = []
+            order_operations[order[2]].append(data)
+        for order_id in order_operations.keys():
+            order = get_order_by_id(order_id, orders)
+            amount = get_amount_operations_for_job(order[0], jobs)
+            # somehow an operation vanished
+            if len(order_operations[order_id]) != amount:
+                return False
+            for j in range(len(order_operations[order_id])):
+                if j > 0:
+                    operation = order_operations[order_id][j]
+                    prev = order_operations[order_id][j-1]
+                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], j-1, order[0], jobs):
+                        return False
+        self.feasible = True
         return True
 
 class SimpleGA:
@@ -93,8 +116,8 @@ class SimpleGA:
                     duration = get_duration(individual.genes[i][0], individual.genes[i][1], operation_id, order[0], self.jobs)
                     if individual.genes[i][2] + duration > delivery_date: # counts all late operations, not just late order once
                         individual.fitness += 1
-            if not individual.is_feasible(self.orders, self.jobs):
-                individual.fitness += 300
+            if not individual.is_feasible(self.orders, self.jobs, self.last_slot):
+                individual.fitness += len(individual.genes)
 
     def tournament_selection(self, population):
         parents = random.choices(population, k=5)
@@ -148,7 +171,10 @@ class SimpleGA:
         self.last_slot = last_slot
         self.orders = orders
         self.jobs = jobs
+        self.last_slot = last_slot
         history = []
+        avg_history = []
+        best_generation_history = []
         for i in range(population_size):
             individual = input.copy()
             x = Individual(individual, float('inf'))
@@ -157,13 +183,23 @@ class SimpleGA:
         self.evaluate(population)
         self.current_best = random.choice(population)
         # return self.current_best, history
+        fitness = 0
         for parent in population:
+            fitness += parent.fitness
             if parent.fitness < self.current_best.fitness:
                 self.current_best = parent
+        history.append(self.current_best.fitness)
+        avg_history.append(fitness / len(population))
+        best_generation_history.append(self.current_best.fitness)
         p = 1 / len(input)
         gen = 0
+        feasible = self.current_best.feasible
+        feasible_gen = max_generations
         while gen < max_generations and self.current_best.fitness > 0:
-            print(f'Current generation: {gen}, Current Best: {self.current_best.fitness}')
+            if feasible:
+                print(f'Current generation: {gen}, Current Best: {self.current_best.fitness}')
+            else:
+                print(f'Current generation: {gen}, Current Best: {self.current_best.fitness}, not feasible')
             # create offsprings
             offsprings = []
             # crossover
@@ -193,8 +229,16 @@ class SimpleGA:
                 self.current_best = population[0]
             # random.shuffle(population)
             history.append(self.current_best.fitness)
+            best_generation_history.append(population[0].fitness)
+            fitness = 0
+            for individual in population:
+                fitness += individual.fitness
+            avg_history.append(fitness / len(population))
+            if not feasible and self.current_best.feasible:
+                feasible_gen = gen
+                feasible = True
             gen += 1
-        return self.current_best, history
+        return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 def print_instance(instance):
     print(f'System Information:')
@@ -221,9 +265,11 @@ def print_instance(instance):
 #   startime + duration of machine m with worker w for operation n < order o delivery date
 #   no overlap of timeslots for each machine and each worker
 # in the given dataset, all jobs seem to always have exactly the same amount of operations necessary
-earliest_slot = 200
-last_slot = 400
-input, orders, instance = read_dataset_1(use_instance=13, earliest_time=earliest_slot, planning_horizon=last_slot)
+earliest_slot = 500
+last_slot = 2000
+use_instance = 13
+order_amount = 10
+input, orders, instance = read_dataset_1(use_instance=use_instance, order_amount=order_amount, earliest_time=earliest_slot, planning_horizon=last_slot)
 
 system_info = instance[0]
 jobs = instance[1]
@@ -234,16 +280,11 @@ n_workers = system_info[2]
 # ready to start optimization
 print(f'{len(input)} operations need to be scheduled to {n_machines} machines with {n_workers} workers!')
 ga = SimpleGA()
-result, history = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
+result, history, avg_history, best_gen_history, feasible_gen = ga.run(input, orders, system_info, jobs, 100, 25, 50, earliest_slot, last_slot)
 print(f'Finished with fitness: {result.fitness}!')
 #result.genes.sort(key=lambda x: x[2]) # sort all operations by start time (ascending)
 
 # sort operations to machines, ignore worker for now
-for i in range(len(result.genes)):
-    gene = result.genes[i]
-    operation_id, order = map_index_to_operation(i, orders, jobs)
-    print(get_duration(gene[0], gene[1], operation_id, order[0], jobs))
-
 workstations = dict()
 for i in range(len(result.genes)):
     operation = result.genes[i]
@@ -262,10 +303,9 @@ for workstation in keys:
     print('\n')
     sum += len(workstations[workstation])
 print(f'For a total of {sum} scheduled operations!')
+if result.feasible:
+    print(f'The solution is feasible!')
+else:
+    print(f'The solution is not feasible!')
 from visualize import visualize
-visualize(workstations, history)
-
-print(f'All Operations grouped by Order Id (Recipe Id), sorted by Operation Id (Task Id)')
-
-print(group_by_order_sort_by_operation(result.genes))
-# weird ordering problem solved (2x 0, not enough of last)
+visualize(workstations, history, avg_history, best_gen_history, feasible_gen)
