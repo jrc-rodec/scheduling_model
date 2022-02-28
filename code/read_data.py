@@ -1,5 +1,7 @@
 import random
-import pymzn
+
+from models import Workstation, Resource, Task, Recipe
+# import pymzn
 
 def read_operation_on_machine(data, index):
     n_machines = int(data[index])
@@ -30,12 +32,17 @@ def read_files_1():
     jobs = []
     filenames = []
     instances = []
+    import os
+    import inspect
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    targetdir = currentdir + '\\external_test_data\\1\\SFJW\\'
+    mfjwdir = currentdir + '\\external_test_data\\1\\MFJW\\'
     for i in range(1, 10):
-        filenames.append(f'external_test_data\\1\\SFJW\\SFJW-0{i}.txt')
-    filenames.append('external_test_data\\1\\SFJW\\SFJW-10.txt')
+        filenames.append(f'{targetdir}SFJW-0{i}.txt')
+    filenames.append(f'{targetdir}SFJW-10.txt')
     for i in range(1, 8):
         if not i == 5 and not i == 6 and not i == 7:
-            filenames.append(f'external_test_data\\1\\MFJW\\MFJW-0{i}.txt')
+            filenames.append(f'{mfjwdir}MFJW-0{i}.txt')
     for filename in filenames:
             lines = read_file(filename)
             jobs = []
@@ -128,3 +135,51 @@ def read_dataset_3(order_amount : int = 10, earliest_time : int = 500, last_time
         for j in range(instance[4][orders[i][0]]):
             input.append([0,0,0])
     return input, orders, instance
+
+def contains(entities, id):
+    for entity in entities:
+        if entity.external_id == id:
+            return True
+    return False
+
+def translate_1(instance):
+    # gather resources (in case of dataset 1 = workers)
+    # gather workstations (in case of dataset 1 = machines)
+    # gather recipes (in case of dataset 1 = lines 1:end)
+    # gather tasks (in case of dataset 1 = combinations of machines and workers for each job)
+    meta = instance[0]
+    recipes_data = instance[1]
+    resources = []
+    workstations = []
+    recipes = []
+    tasks = []
+    recipe_id = 0
+    operation_id = 0
+    for recipe in recipes_data:
+        task_id = 0
+        tasks_of_recipe = []
+        for recipe_task in recipe:
+            for possible_machine_combination in recipe_task:
+                for possible_workers_for_machine in possible_machine_combination:
+                    machine = possible_workers_for_machine[0]
+                    worker = possible_workers_for_machine[1]
+                    duration = possible_workers_for_machine[2]
+                    if not contains(workstations, machine):
+                        workstations.append(Workstation(machine, f'machine#{machine}', [], []))
+                    if not contains(resources, worker):
+                        resources.append(Resource(worker, f'Worker#{worker}', 1, 0, True, [], 0))
+                    task = Task(operation_id, f'R{recipe_id}o{task_id}w{machine}r{worker}', [(worker, 1)], [], [], [], True, 0, 0) # Recipe/operation/workstation/resource for the name
+                    if task_id > 0:
+                        tasks[operation_id - 1].follow_up_tasks.append(operation_id)
+                    tasks.append(task)
+                    tasks_of_recipe.append(task)
+                    workstations[len(workstations) - 1].tasks.append((operation_id, duration))
+                    operation_id += 1
+            task_id += 1
+            
+        recipes.append(Recipe(recipe_id, f'Recipe#{recipe_id}', tasks_of_recipe))
+        recipe_id += 1
+    return recipes, workstations, resources, tasks
+
+#input, orders, instance = read_dataset_1(13, 10, 500, 2000)
+#recipes, workstations, resources, tasks = translate_1(instance)
