@@ -182,6 +182,48 @@ def translate_1(instance):
         recipe_id += 1
     return recipes, workstations, resources, tasks
 
+def translate_3(instance, n_workstations):
+    # instances.append([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
+    recipes = []
+    workstations = []
+    resources = []
+    tasks = []
+    tasks_for_workstation = []
+    for i in range(instance[0]):
+        resources.append(Resource(i, f'Resource#{i}', instance[1][i], 0, False, [], 0))
+    for i in range(instance[2]):
+        resources_for_task = []
+        for j in range(instance[0]):
+            if instance[4][j][i] != 0:
+                resources_for_task.append(instance[4][j][i])
+        tasks.append(Task(i, f'Task#{i}', resources_for_task, [], [], instance[5][i], True, 0, 0))
+        tasks_for_workstation.append((tasks[len(tasks)-1], instance[3][i]))
+        recipes.append(Recipe(i, f'Recipe#{i}', tasks[len(tasks)-1]))
+    for i in range(n_workstations):
+        workstations.append(Workstation(i, f'Workstation#{i}', [], tasks_for_workstation))
+    return recipes, workstations, resources, tasks
+
+def task_to_input(task : Task):
+    input = []
+    for pre in task.preceding_tasks:
+        input += task_to_input(pre)
+    input.append([0,0,0])
+    for follow_up in task.follow_up_tasks:
+        input += task_to_input(follow_up)
+    return input
+
+def generate_optimizer_input(recipes, order_amount, earliest, latest):
+    input = []
+    orders = []
+    for i in range(order_amount):
+        orders.append([random.randint(0, len(recipes)), random.randint(earliest, latest)])
+    for order in orders:
+        for task in recipes[order[0]].tasks:
+            input += task_to_input(task)
+    return input, orders
+
+
 #input, orders, instance = read_dataset_1(13, 10, 500, 2000)
 #recipes, workstations, resources, tasks = translate_1(instance)
 #input, orders, instance = read_dataset_3()
+#recipes, workstations, resources, tasks = translate_3(instance)
