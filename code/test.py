@@ -1,4 +1,4 @@
-from external_test_data.read_data import read_dataset_1, read_dataset_3
+from read_data import read_dataset_1, read_dataset_3
 import random
 import copy
 
