@@ -1,4 +1,5 @@
 import random
+import pymzn
 
 def read_operation_on_machine(data, index):
     n_machines = int(data[index])
@@ -20,6 +21,11 @@ def read_operation_on_machine(data, index):
         jobs.append(operation_durations)
     return jobs, index
 
+def read_file(filename):
+    file = open(filename, 'r')
+    print(f'Reading: {filename}')
+    return file.readlines()
+    
 def read_files_1():
     jobs = []
     filenames = []
@@ -31,10 +37,7 @@ def read_files_1():
         if not i == 5 and not i == 6 and not i == 7:
             filenames.append(f'external_test_data\\1\\MFJW\\MFJW-0{i}.txt')
     for filename in filenames:
-            lines = list()
-            file = open(filename, 'r')
-            print(f'Reading: {filename}')
-            lines = file.readlines()
+            lines = read_file(filename)
             jobs = []
             if len(lines) > 0:
                 base_data = lines[0].split(' ')
@@ -59,6 +62,24 @@ def read_files_1():
 def read_files_2():
     return None
 
+def read_files_3():
+    jobs = []
+    filenames = []
+    instances = []
+    for i in range(10): # just read 00 - 09 for now
+        filenames.append(f'external_test_data\\3\\rcpsp\\0{i}.dzn')
+    for filename in filenames:
+        # lines = read_file(filename)
+        data = pymzn.dzn2dict(filename)
+        n_resources = data['n_res']
+        resources_state = data['rc'] # amount of available resources per resource (ID 0 - n)
+        n_tasks = data['n_tasks']
+        durations = data['d'] # duration per task (ID 0 - n)
+        rr = data['rr'] # resource consumption for each task, for each resource ( 2D array -> row = resource, col = task consumption)
+        succession_tasks = data['succ'] # determines if a task has follow up tasks or not
+        instances.append([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])
+    return instances
+
 def read(source):
     instances = []
     if source == 1:
@@ -67,6 +88,8 @@ def read(source):
                 instances.append(instance)
     elif source == 2:
         instances = read_files_2()
+    elif source == 3:
+        instances = read_files_3()
     else:
         pass
     return instances
