@@ -1,7 +1,7 @@
 import random
 
 from models import Workstation, Resource, Task, Recipe
-# import pymzn
+import pymzn
 
 def read_operation_on_machine(data, index):
     n_machines = int(data[index])
@@ -83,7 +83,7 @@ def read_files_3():
         n_tasks = data['n_tasks']
         durations = data['d'] # duration per task (ID 0 - n)
         rr = data['rr'] # resource consumption for each task, for each resource ( 2D array -> row = resource, col = task consumption)
-        succession_tasks = data['succ'] # determines if a task has follow up tasks or not
+        succession_tasks = data['suc'] # determines if a task has follow up tasks or not
         instances.append([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])
     return instances
 
@@ -127,6 +127,7 @@ def read_dataset_3(order_amount : int = 10, earliest_time : int = 500, last_time
     # only reading one of the files for now
     instance = data[0]
     orders = []
+    input = []
     for i in range(order_amount):
         orders.append([random.randint(0, instance[2] - 1), random.randint(earliest_time, last_time)])
     i = 0
@@ -183,3 +184,4 @@ def translate_1(instance):
 
 #input, orders, instance = read_dataset_1(13, 10, 500, 2000)
 #recipes, workstations, resources, tasks = translate_1(instance)
+#input, orders, instance = read_dataset_3()
