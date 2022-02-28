@@ -114,3 +114,17 @@ def read_dataset_1(use_instance : int = 13, order_amount : int = 100, earliest_t
         for i in range(len(jobs[order[0]])): # amount of necessary operations for job n
             input.append([0,0,0])
     return input, orders, instance
+
+def read_dataset_3(order_amount : int = 10, earliest_time : int = 500, last_time : int = 2000):
+    data = read(3)
+    # only reading one of the files for now
+    instance = data[0]
+    orders = []
+    for i in range(order_amount):
+        orders.append([random.randint(0, instance[2] - 1), random.randint(earliest_time, last_time)])
+    i = 0
+    for i in range(len(orders)):
+        input.append([0,0,0])
+        for j in range(instance[4][orders[i][0]]):
+            input.append([0,0,0])
+    return input, orders, instance

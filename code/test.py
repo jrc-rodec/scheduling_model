@@ -1,4 +1,4 @@
-from external_test_data.read_data import read_dataset_1
+from external_test_data.read_data import read_dataset_1, read_dataset_3
 import random
 import copy
 
@@ -312,3 +312,6 @@ else:
     print(f'The solution is not feasible!')
 from visualize import visualize
 visualize(workstations, history, avg_history, best_gen_history, feasible_gen)
+
+
+# input, orders, instance = read_dataset_3(order_amount, earliest_slot, last_slot)
