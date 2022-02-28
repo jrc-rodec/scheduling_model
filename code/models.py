@@ -170,8 +170,6 @@ class SimulationEnvironment:
             for resource in order.resources:
                 r = self.get_resource_by_external_id(resource[0])
                 # <resource, (amount, price)
-                #amount = order.resources[resource][0]
-                #price = order.resources[resource][1]
                 if len(r.recipes) > 0: # if resource can be produced
                     # choose first available recipe for now
                     recipe = self.get_recipe_by_external_id(r.recipes[0])

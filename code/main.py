@@ -61,7 +61,6 @@ for order in order_data:
         order_resources.append([resource['id'], resource['amount'], resource['price']])
     orders.append(Order(order['id'], arrival_time, delivery_time, latest_acceptable_time, order_resources, order['penalty'], order['tardiness_fee'], order['divisible'], order['customer_id']))
 print(f'Created {len(orders)} Orders')
-# TODO: generate orders for testing
 """
 Creating input from the loaded data for the optimizer and running the optimization
 """
