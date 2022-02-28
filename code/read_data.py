@@ -194,8 +194,8 @@ def translate_3(instance, n_workstations):
     for i in range(instance[2]):
         resources_for_task = []
         for j in range(instance[0]):
-            if instance[4][j][i] != 0:
-                resources_for_task.append(instance[4][j][i])
+            if instance[4][j*instance[2]+i] != 0:
+                resources_for_task.append(instance[4][j*instance[2]+i])
         tasks.append(Task(i, f'Task#{i}', resources_for_task, [], [], instance[5][i], True, 0, 0))
         tasks_for_workstation.append((tasks[len(tasks)-1], instance[3][i]))
         recipes.append(Recipe(i, f'Recipe#{i}', tasks[len(tasks)-1]))
@@ -226,4 +226,4 @@ def generate_optimizer_input(recipes, order_amount, earliest, latest):
 #input, orders, instance = read_dataset_1(13, 10, 500, 2000)
 #recipes, workstations, resources, tasks = translate_1(instance)
 #input, orders, instance = read_dataset_3()
-#recipes, workstations, resources, tasks = translate_3(instance)
+#recipes, workstations, resources, tasks = translate_3(instance, 5)
