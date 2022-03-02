@@ -30,7 +30,7 @@ class Randomizer(Optimizer):
             assignment[1] = random.randint(0, last_timeslot)
         return assignments
 
-class BaseGA(Optimizer):
+class GA(Optimizer):
 
     def __init__(self, simulation_environment : SimulationEnvironment):
         self.recipes = simulation_environment.recipes
@@ -44,20 +44,27 @@ class BaseGA(Optimizer):
         self.selection_method = None
         self.mutation_method = None
 
+    def evaluate(self, individuals, orders):
+        self.evaluation_method(individuals, orders)
+
+    def select(self, individuals):
+        return self.selection_method.select(individuals, self.minimize)
+
+    def recombine(self, individuals):
+        parent1 = self.select(individuals)
+        parent2 = self.select(individuals)
+        while parent1 == parent2: # making sure 2 different parents are selected
+            parent2 = self.select(individuals)
+        return self.recombination_method(parent1, parent2)
+
+    def mutate(self, individuals):
+        self.mutation_method.mutate(individuals, self.orders, self.recipes)
+
     def set_minimize(self):
         self.minimize = True
 
     def set_maximize(self):
         self.minimize = False
-
-    def create_individual(self, input_format):
-        genes = copy.deepcopy(input_format)
-        for i in len(genes):
-            self.mutation_method.mutate_gene(genes[i], i)
-        if self.minimize:
-            return Individual(genes, sys.float_info.max)
-        else:
-            return Individual(genes, sys.float_info.min)
 
     def configure(self, evaluation : str, recombination : str, selection : str, mutation : str):
         # evaluation method
@@ -72,6 +79,20 @@ class BaseGA(Optimizer):
         # mutation method
         if mutation.lower() == 'randomize':
             self.mutation_method = RandomizeMutation()
+
+class BaseGA(GA):
+
+    def __init__(self, simulation_environment : SimulationEnvironment):
+        super().__init__(simulation_environment)
+
+    def create_individual(self, input_format):
+        genes = copy.deepcopy(input_format)
+        for i in len(genes):
+            self.mutation_method.mutate_gene(genes[i], i)
+        if self.minimize:
+            return Individual(genes, sys.float_info.max)
+        else:
+            return Individual(genes, sys.float_info.min)
 
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
@@ -152,19 +173,3 @@ class BaseGA(Optimizer):
                 feasible = True
             generation += 1
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
-    
-    def evaluate(self, individuals, orders):
-        self.evaluation_method(individuals, orders)
-
-    def select(self, individuals):
-        return self.selection_method.select(individuals, self.minimize)
-
-    def recombine(self, individuals):
-        parent1 = self.select(individuals)
-        parent2 = self.select(individuals)
-        while parent1 == parent2: # making sure 2 different parents are selected
-            parent2 = self.select(individuals)
-        return self.recombination_method(parent1, parent2)
-
-    def mutate(self, individuals):
-        self.mutation_method.mutate(individuals, self.orders, self.recipes)
