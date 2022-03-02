@@ -21,8 +21,10 @@ recipes, workstations, resources, tasks = translate_1(instance)
 env = SimulationEnvironment(workstations, tasks, resources, recipes)
 optimizer = BaseGA(env)
 optimizer.set_minimize()
-# all parameters after offspring_amount are optional
-optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, 'Tardiness', 'OnePointCrossover', 'RouletteWheel', 'Randomize', True)
+# optional (in this case, all options given are the default option, if the configuration step is skipped)
+optimizer.configure('Tardiness', 'OnePointCrossover', 'RouletteWheel', 'Randomize')
+# all parameters after offspring_amount are optional (in this case -> verbose=True)
+optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, True)
 
 """
 #Loading the test data from json file

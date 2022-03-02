@@ -39,6 +39,10 @@ class BaseGA(Optimizer):
         self.tasks = simulation_environment.tasks
         self.current_best = None
         self.minimize = True
+        self.evaluation_method = None
+        self.recombination_method = None
+        self.selection_method = None
+        self.mutation_method = None
 
     def set_minimize(self):
         self.minimize = True
@@ -69,8 +73,9 @@ class BaseGA(Optimizer):
         if mutation.lower() == 'randomize':
             self.mutation_method = RandomizeMutation()
 
-    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, evaluation_method = 'Tardiness', recombination_method = 'OnePointCrossover', selection_method = 'RouletteWheel', mutation_method='Randomize', verbose=False):
-        self.configure(evaluation_method, recombination_method, selection_method, mutation_method)
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+        if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
+            self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
         generator = BaseInputGenerator()
         input = generator.generate_input(orders, earliest_time_slot, last_time_slot)
         population = []
