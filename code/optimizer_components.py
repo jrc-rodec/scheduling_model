@@ -14,12 +14,12 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self, orders, recipes, last_slot):
+    def is_feasible(self, orders, recipes, tasks, last_slot):
         self.feasbile = False
         i = 0
         order_operations = dict()
         for gene in self.genes:
-            operation, order = map_index_to_operation(i, orders, recipes)
+            operation, order = map_index_to_operation(i, orders, recipes, tasks)
             # check if gene should exist
             if operation == -1 or order == -1:
                 return False
@@ -37,7 +37,7 @@ class Individual:
             order_operations[order[2]].append(data)
         for order_id in order_operations.keys():
             order = get_by_id(orders, order_id)
-            amount = len(get_all_tasks_for_recipe(recipes[order[0]]))
+            amount = len(get_all_tasks_for_recipe(recipes[order[0]], tasks))
             # somehow an operation vanished
             if len(order_operations[order_id]) != amount:
                 return False
@@ -57,20 +57,20 @@ class Individual:
 # Evaluation Methods
 class EvaluationMethod:
 
-    def evaluate(self, individuals, orders):
+    def evaluate(self, individuals, orders, recipes, tasks, last_slot):
         pass
 ###############################################
 # Example for Evaluation Method Implementation#
 ###############################################
 class TardinessEvaluator(EvaluationMethod):
 
-    def evalute(self, individuals, orders):
+    def evalute(self, individuals, orders, recipes, tasks, last_slot):
         for individual in individuals:
             fitness = 0
-            if not individual.is_feasible:
+            if not individual.is_feasible(orders, recipes, tasks, last_slot):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
-                _, order = map_index_to_operation(i, orders, self.recipes)
+                _, order = map_index_to_operation(i, orders, recipes, tasks)
                 duration = get_duration(individual.genes[i][0], individual.genes[i][1], self.workstations)
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
@@ -130,66 +130,69 @@ class RouletteWheelSelection(SelectionMethod):
 # Mutation Methods
 class MutationMethod:
 
-    def mutate_gene(self, individual, index):
+    def mutate_gene(self, individual, orders, recipes, index, earliest_slot, last_slot):
         pass
 
-    def mutate(self, individuals, orders, recipes):
+    def mutate(self, individuals, orders, recipes, earliest_slot, last_slot):
         pass
 #############################################
 # Example for Mutation Method Implementation#
 #############################################
 class RandomizeMutation(MutationMethod):
 
-    def mutate_gene(self, individual, index):
+    def mutate_gene(self, individual, orders, recipes, tasks, workstations, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
-        operation_index, order = map_index_to_operation(index, self.orders, self.recipes)
-        tasks = get_all_tasks_for_recipe(self.recipes[order[0]])
+        operation_index, order = map_index_to_operation(index, orders, recipes, tasks)
+        tasks = get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
-        for task in self.tasks:
+        for task in tasks:
             if task.result_resources[0][0] == result_resource:
                 possible_tasks.append(task)
         task = random.choice(tasks)
-        workstations = []
-        for workstation in self.workstations:
-            if task in workstation.tasks:
-                workstations.append(workstation)
+        workstation_list = []
+        for workstation in workstations:
+            for w_task in workstation.tasks:
+                if w_task[0] == task.external_id:
+                    workstation_list.append(workstation)
         individual.genes[index][0] = task.external_id
-        individual.genes[index][1] = random.choice(workstations).external_id
-        individual.genes[index][2] = random.randint(self.earliest_slot, self.last_slot)
+        individual.genes[index][1] = random.choice(workstation_list).external_id
+        individual.genes[index][2] = random.randint(earliest_slot, last_slot)
 
-    def mutate(self, individuals, orders, recipes):
+    def mutate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
         for individual in individuals:
             p = 1 / len(individual.genes())
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
-                    self.mutate_gene(individual, i)
+                    self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
 
 
 # Helper methods
-def get_all_tasks(task):
+def get_all_tasks(task, task_list):
     all = []
+    if isinstance(task, int):
+        task = get_by_id(task_list, task)
     for pre in task.preceding_tasks:
-        all += get_all_tasks(pre)
+        all += get_all_tasks(pre, task_list)
     all.append(task)
     for follow_up in task.follow_up_tasks:
-        all += get_all_tasks(follow_up)
+        all += get_all_tasks(follow_up, task_list)
     return all
 
-def get_all_tasks_for_recipe(recipe):
+def get_all_tasks_for_recipe(recipe, task_list):
     tasks = recipe.tasks
     all = []
     for task in tasks:
-        all += get_all_tasks(task)
+        all += get_all_tasks(task, task_list)
     return all
     
-def map_index_to_operation(index, orders, recipes):
+def map_index_to_operation(index, orders, recipes, tasks):
     current = 0
     if index == 0:
         return 0, orders[0]
     for i in range(len(orders)):
         recipe = get_by_id(recipes, orders[i][0])
-        tasks = get_all_tasks_for_recipe(recipe)
+        tasks = get_all_tasks_for_recipe(recipe, tasks)
         for j in range(len(tasks)):
             if current == index:
                 return j, orders[i]
@@ -207,13 +210,14 @@ def get_by_id(entities, id):
     for entity in entities:
         if entity.external_id == id:
             return entity
+    print(f'couldn\'t find {id} in {len(entities)} entities')
     return None
 
-def get_all_workstations_for_task(workstations, task_id):
+def get_all_workstations_for_task(workstations, task_id, task_list):
     result = []
     for workstation in workstations:
         for task in workstation.tasks:
-            if task.external_id == task_id:
+            if get_by_id(task_list, task[0]).external_id == task_id:
                 result.append(workstation)
                 break
     return result
@@ -221,18 +225,18 @@ def get_all_workstations_for_task(workstations, task_id):
 # Input Generators
 class InputGenerator:
 
-    def generate_input(self, orders, earliest_time_slot, last_time_slot):
+    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
         pass
 
 class BaseInputGenerator(InputGenerator):
 
-    def generate_input(self, orders, earliest_time_slot, last_time_slot):
+    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
         input = []
         for order in orders:
             recipe_id = order[0]
-            recipe = get_by_id(self.recipes, recipe_id)
-            all_tasks = get_all_tasks_for_recipe(recipe)
+            recipe = get_by_id(recipes, recipe_id)
+            all_tasks = get_all_tasks_for_recipe(recipe, tasks)
             for task in all_tasks:
-                workstations = get_all_workstations_for_task(task.external_id)
-                input.append([task.external_id, random.choice(workstations).external_id, random.randint(earliest_time_slot, last_time_slot)])
-        return None
+                workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
+                input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
+        return input

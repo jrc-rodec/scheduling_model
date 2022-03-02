@@ -193,7 +193,20 @@ class SimulationEnvironment:
                     # resource has to be bought
                     pass
         return jobs, assignments # making sure all assignments are at the same index as their respective job
-
+    def print(self):
+        print(f'Printing Simulation Environment:')
+        print(f'Workstations:')
+        for workstation in self.workstations:
+            print(f'Id:{workstation.external_id}:{workstation.name} can do {len(workstation.tasks)} different tasks')
+        print(f'Resources:')
+        for resource in self.resources:
+            print(f'Id:{resource.external_id}:{resource.name}')
+        print(f'Recipes:')
+        for recipe in self.recipes:
+            print(f'Id:{recipe.external_id}:{recipe.name}')
+        print(f'Tasks:')
+        for task in self.tasks:
+            print(f'Id:{task.external_id}:{task.name} has {len(task.preceding_tasks)} preceding and {len(task.follow_up_tasks)} follow up tasks')
     def read_output(self, jobs, output) -> Schedule:
         schedule = Schedule()
         for i in range(len(output)):
