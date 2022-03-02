@@ -69,7 +69,7 @@ class BaseGA(Optimizer):
         if mutation.lower() == 'randomize':
             self.mutation_method = RandomizeMutation()
 
-    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, evaluation_method = 'Tardiness', recombination_method = 'OnePointCrossover', selection_method = 'RouletteWheel', mutation_method='Randomize', verbose=True):
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, evaluation_method = 'Tardiness', recombination_method = 'OnePointCrossover', selection_method = 'RouletteWheel', mutation_method='Randomize', verbose=False):
         self.configure(evaluation_method, recombination_method, selection_method, mutation_method)
         generator = BaseInputGenerator()
         input = generator.generate_input(orders, earliest_time_slot, last_time_slot)
@@ -127,9 +127,13 @@ class BaseGA(Optimizer):
             # select current best
             if self.minimize:
                 if population[0].fitness < self.current_best.fitness:
+                    if verbose:
+                        print(f'New best individual found!')
                     self.current_best = population[0]
             else:
                 if population[0].fitness > self.current_best.fitness:
+                    if verbose:
+                        print(f'New best individual found!')
                     self.current_best = population[0]
             history.append(self.current_best.fitness)
             best_generation_history.append(population[0].fitness)
@@ -138,6 +142,7 @@ class BaseGA(Optimizer):
                 fitness += individual.fitness
             avg_history.append(fitness / len(population))
             if not feasible and self.current_best.feasible:
+                print(f'Found first feasible solution!')
                 feasible_gen = generation
                 feasible = True
             generation += 1
