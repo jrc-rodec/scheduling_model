@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation
+from optimizer_components import BaseInputGenerator, Individual, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover
 class Optimizer:
 
     def __init__(self):
@@ -73,6 +73,8 @@ class GA(Optimizer):
         # recombination method
         if recombination.lower() == 'onepointcrossover':
             self.recombination_method = OnePointCrossover()
+        elif recombination.lower() == 'twopointcrossover':
+            self.recombination_method = TwoPointCroosover()
         # selection method
         if selection.lower() == 'roulettewheel':
             self.selection_method = RouletteWheelSelection()
