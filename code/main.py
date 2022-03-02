@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order, Schedule
 from optimizer import Randomizer, BaseGA
-from read_data import read_dataset_3, translate_3
+from read_data import read_dataset_1, translate_1, read_dataset_3, translate_3
 
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
@@ -12,8 +12,12 @@ earliest_time_slot = 200
 last_time_slot = 2000
 population_size = 25
 offspring_amount = 50
-input, orders, instance = read_dataset_3()
-recipes, workstations, resources, tasks = translate_3(instance, 10)
+
+order_amount = 10
+input, orders, instance = read_dataset_1(use_instance=13, order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
+recipes, workstations, resources, tasks = translate_1(instance)
+#input, orders, instance = read_dataset_3(order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
+#recipes, workstations, resources, tasks = translate_3(instance, n_workstations=10) # for dataset 3, the amount of available machines has to be declared (not included with the data)
 env = SimulationEnvironment(workstations, tasks, resources, recipes)
 optimizer = BaseGA(env)
 optimizer.set_minimize()

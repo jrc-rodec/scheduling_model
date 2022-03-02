@@ -109,11 +109,11 @@ def generate_orders(instance, amount, earliest_date, last_date):
         orders.append([random.randint(0, len(jobs)-1), random.randint(earliest_date, last_date), i])
     return orders
 
-def read_dataset_1(use_instance : int = 13, order_amount : int = 100, earliest_time : int = 500, planning_horizon : int = 10000):
+def read_dataset_1(use_instance : int = 13, order_amount : int = 100, earliest_time : int = 500, last_time : int = 10000):
     selected_source = 1
     data = read(selected_source)
     instance = data[use_instance]
-    orders = generate_orders(instance, order_amount, earliest_time, planning_horizon)
+    orders = generate_orders(instance, order_amount, earliest_time, last_time)
     input = []
     meta = instance[0] # amount of jobs (not needed), amount of machines, amount of workers
     jobs = instance[1]
