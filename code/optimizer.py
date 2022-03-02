@@ -101,7 +101,7 @@ class BaseGA(Optimizer):
         feasible = self.current_best.feasible
         # start optimizing
         generation = 0
-        while generation < max_generation and self.current_best.fitness > 0:
+        while generation < max_generation:
             if verbose:
                 if feasible:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
