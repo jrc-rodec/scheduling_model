@@ -44,8 +44,8 @@ class GA(Optimizer):
         self.selection_method = None
         self.mutation_method = None
 
-    def evaluate(self, individuals, orders):
-        self.evaluation_method(individuals, orders)
+    def evaluate(self, individuals, orders, last_slot):
+        self.evaluation_method(individuals, orders, self.recipes, self.tasks, last_slot)
 
     def select(self, individuals):
         return self.selection_method.select(individuals, self.minimize)
@@ -57,8 +57,8 @@ class GA(Optimizer):
             parent2 = self.select(individuals)
         return self.recombination_method(parent1, parent2)
 
-    def mutate(self, individuals):
-        self.mutation_method.mutate(individuals, self.orders, self.recipes)
+    def mutate(self, individuals, earliest_slot, last_slot):
+        self.mutation_method.mutate(individuals, self.orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
 
     def set_minimize(self):
         self.minimize = True
@@ -87,27 +87,28 @@ class BaseGA(GA):
     def __init__(self, simulation_environment : SimulationEnvironment):
         super().__init__(simulation_environment)
 
-    def create_individual(self, input_format):
+    def create_individual(self, input_format, orders, earliest_slot, last_slot):
         genes = copy.deepcopy(input_format)
-        for i in len(genes):
-            self.mutation_method.mutate_gene(genes[i], i)
         if self.minimize:
-            return Individual(genes, sys.float_info.max)
+            individual = Individual(genes, sys.float_info.max)
         else:
-            return Individual(genes, sys.float_info.min)
+            individual = Individual(genes, sys.float_info.min)
+        for i in range(len(genes)):
+            self.mutation_method.mutate_gene(individual, orders, self.recipes, self.tasks, self.workstations, i, earliest_slot, last_slot)
+        return individual
 
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
             self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
         generator = BaseInputGenerator()
-        input = generator.generate_input(orders, earliest_time_slot, last_time_slot)
+        input = generator.generate_input(orders, self.recipes, self.tasks, self.workstations, earliest_time_slot, last_time_slot)
         population = []
         offsprings = []
         # create starting population
         for _ in range(population_size):
-            population.append(self.create_individual(input))
+            population.append(self.create_individual(input, orders, earliest_time_slot, last_time_slot))
         # evaluate starting population
-        self.evaluate(population, orders)
+        self.evaluate(population, orders, last_time_slot)
         # select current best
         self.current_best = population[0]
         for individual in population[1:]:
@@ -142,9 +143,9 @@ class BaseGA(GA):
                         offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
                         i += 1
                 # mutation
-                self.mutate(offsprings)
+                self.mutate(offsprings, earliest_time_slot, last_time_slot)
             # evaluate offsprings
-            self.evaluate(offsprings)
+            self.evaluate(offsprings, orders, last_time_slot)
             # select next generation
             all = population + offsprings # use elitism for now
             if self.minimize:
