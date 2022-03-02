@@ -1,5 +1,6 @@
 import random
-
+import os
+import inspect
 from models import Workstation, Resource, Task, Recipe, SimulationEnvironment
 import pymzn
 
@@ -32,8 +33,6 @@ def read_files_1():
     jobs = []
     filenames = []
     instances = []
-    import os
-    import inspect
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     targetdir = currentdir + '\\external_test_data\\1\\SFJW\\'
     mfjwdir = currentdir + '\\external_test_data\\1\\MFJW\\'
@@ -73,8 +72,9 @@ def read_files_3():
     jobs = []
     filenames = []
     instances = []
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     for i in range(10): # just read 00 - 09 for now
-        filenames.append(f'external_test_data\\3\\rcpsp\\0{i}.dzn')
+        filenames.append(f'{currentdir}\\external_test_data\\3\\rcpsp\\0{i}.dzn')
     for filename in filenames:
         # lines = read_file(filename)
         data = pymzn.dzn2dict(filename)
@@ -227,5 +227,5 @@ def generate_optimizer_input(recipes, order_amount, earliest, latest):
 # input, orders, instance = read_dataset_1(13, 10, 500, 2000)
 # recipes, workstations, resources, tasks = translate_1(instance)
 # input, orders, instance = read_dataset_3()
-# recipes, workstations, resources, tasks = translate_3(instance)
+# recipes, workstations, resources, tasks = translate_3(instance, 10)
 # env = SimulationEnvironment(workstations, tasks, resources, recipes)
