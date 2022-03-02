@@ -1,6 +1,6 @@
 import random
 
-from models import Workstation, Resource, Task, Recipe
+from models import Workstation, Resource, Task, Recipe, SimulationEnvironment
 import pymzn
 
 def read_operation_on_machine(data, index):
@@ -156,10 +156,12 @@ def translate_1(instance):
     tasks = []
     recipe_id = 0
     operation_id = 0
+    resource_id = instance[0][2] + 1 # n workers + 1
     for recipe in recipes_data:
         task_id = 0
         tasks_of_recipe = []
         for recipe_task in recipe:
+            resource_id += 1 # add pseudo resource to identify exchangable tasks
             for possible_machine_combination in recipe_task:
                 for possible_workers_for_machine in possible_machine_combination:
                     machine = possible_workers_for_machine[0]
@@ -169,7 +171,7 @@ def translate_1(instance):
                         workstations.append(Workstation(machine, f'machine#{machine}', [], []))
                     if not contains(resources, worker):
                         resources.append(Resource(worker, f'Worker#{worker}', 1, 0, True, [], 0))
-                    task = Task(operation_id, f'R{recipe_id}o{task_id}w{machine}r{worker}', [(worker, 1)], [], [], [], True, 0, 0) # Recipe/operation/workstation/resource for the name
+                    task = Task(operation_id, f'R{recipe_id}o{task_id}w{machine}r{worker}', [(worker, 1)], [(resource_id, 1)], [], [], True, 0, 0) # Recipe/operation/workstation/resource for the name
                     if task_id > 0:
                         tasks[operation_id - 1].follow_up_tasks.append(operation_id)
                     tasks.append(task)
@@ -207,7 +209,7 @@ def task_to_input(task : Task):
     input = []
     for pre in task.preceding_tasks:
         input += task_to_input(pre)
-    input.append([0,0,0])
+    input.append([0,0,0]) # switch to workstation_id, task_id, start_time for future input
     for follow_up in task.follow_up_tasks:
         input += task_to_input(follow_up)
     return input
@@ -222,8 +224,8 @@ def generate_optimizer_input(recipes, order_amount, earliest, latest):
             input += task_to_input(task)
     return input, orders
 
-
-#input, orders, instance = read_dataset_1(13, 10, 500, 2000)
-#recipes, workstations, resources, tasks = translate_1(instance)
-#input, orders, instance = read_dataset_3()
-#recipes, workstations, resources, tasks = translate_3(instance, 5)
+# input, orders, instance = read_dataset_1(13, 10, 500, 2000)
+# recipes, workstations, resources, tasks = translate_1(instance)
+# input, orders, instance = read_dataset_3()
+# recipes, workstations, resources, tasks = translate_3(instance)
+# env = SimulationEnvironment(workstations, tasks, resources, recipes)

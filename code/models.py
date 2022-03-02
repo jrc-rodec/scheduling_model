@@ -1,4 +1,5 @@
 from datetime import datetime
+import random 
 
 class Task:
     next_id = 0
@@ -128,7 +129,7 @@ class Job:
         Job.next_id += 1
         self.order_id = order.id # could just add order instead
         self.task_id = task # could just add task instead
-        self.to_id = index # tasks index in orders tasks list (in case the same task happens more than once for an order)
+        self.to_id = index # tasks index in orders tasks list (in case the same task happens more than once for an order) (basically operation id)
 
 class Schedule:
     
@@ -169,10 +170,10 @@ class SimulationEnvironment:
         for order in orders:
             for resource in order.resources:
                 r = self.get_resource_by_external_id(resource[0])
-                # <resource, (amount, price)
+                # <resource, (amount, price)>
                 if len(r.recipes) > 0: # if resource can be produced
-                    # choose first available recipe for now
-                    recipe = self.get_recipe_by_external_id(r.recipes[0])
+                    # choose random available recipe for now
+                    recipe = self.get_recipe_by_external_id(random.choice(r.recipes))
                     index = 0
                     for task in recipe.tasks:
                         t = self.get_task_by_external_id(task)
