@@ -185,7 +185,7 @@ def translate_1(instance):
     return recipes, workstations, resources, tasks
 
 def translate_3(instance, n_workstations):
-    # instances.append([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
+    # instance structure ([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
     recipes = []
     workstations = []
     resources = []
