@@ -129,7 +129,7 @@ def read_dataset_3(order_amount : int = 10, earliest_time : int = 500, last_time
     orders = []
     input = []
     for i in range(order_amount):
-        orders.append([random.randint(0, instance[2] - 1), random.randint(earliest_time, last_time)])
+        orders.append([random.randint(0, instance[2] - 1), random.randint(earliest_time, last_time), True])
     i = 0
     for i in range(len(orders)):
         input.append([0,0,0])

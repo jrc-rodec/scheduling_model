@@ -94,7 +94,7 @@ class Workstation:
 class Order:
 
     next_id = 0
-    def __init__(self, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id):
+    def __init__(self, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional):
         self.id = Order.next_id
         Order.next_id += 1
         self.external_id = self.id
@@ -106,8 +106,9 @@ class Order:
         self.tardiness_fee = tardiness_fee
         self.divisible = divisible
         self.customer_id = customer_id
+        self.optional = optional
 
-    def __init__(self, id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id):
+    def __init__(self, id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional):
         self.id = Order.next_id
         Order.next_id += 1
         self.external_id = id
@@ -119,6 +120,7 @@ class Order:
         self.tardiness_fee = tardiness_fee
         self.divisible = divisible
         self.customer_id = customer_id
+        self.optional = optional
 
 class Job:
     
