@@ -1,24 +1,10 @@
 from datetime import datetime
 import random 
-
+# id and external id is the same for all models for now
 class Task:
-    next_id = 0
-    def __init__(self, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time):
-        self.id = Task.next_id
-        self.external_id = self.id
-        Task.next_id += 1
-        self.name = name
-        self.resources = resources
-        self.result_resources = result_resources
-        self.preceding_tasks = preceding_tasks
-        self.follow_up_tasks = follow_up_tasks
-        self.independent = independent
-        self.prepare_time = prepare_time
-        self.unprepare_time = unprepare_time
 
     def __init__(self, id, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time):
-        self.id = Task.next_id
-        Task.next_id += 1
+        self.id = id
         self.external_id = id
         self.name = name
         self.resources = resources
@@ -31,38 +17,16 @@ class Task:
 
 class Recipe:
 
-    next_id = 0
-    def __init__(self, name, tasks):
-        self.id = Recipe.next_id
-        Recipe.next_id += 1
-        self.external_id = self.id
-        self.name = name
-        self.tasks = tasks
-    
     def __init__(self, id, name, tasks):
-        self.id = Recipe.next_id
-        Recipe.next_id += 1
+        self.id = id
         self.external_id = id
         self.name = name
         self.tasks = tasks
 
 class Resource:
     
-    next_id = 0
-    def __init__(self, name, stock, price, renewable, recipes, delivery_delay):
-        self.id = Resource.next_id
-        Resource.next_id += 1
-        self.external_id = self.id
-        self.name = name
-        self.stock = stock
-        self.price = price
-        self.renewable = renewable
-        self.recipes = recipes # possible recipes to create this resource
-        self.delivery_delay = delivery_delay
-
     def __init__(self, id, name, stock, price, renewable, recipes, delivery_delay):
-        self.id = Resource.next_id
-        Resource.next_id += 1
+        self.id = id
         self.external_id = id
         self.name = name
         self.stock = stock
@@ -72,19 +36,9 @@ class Resource:
         self.delivery_delay = delivery_delay
 
 class Workstation:
-    
-    next_id = 0
-    def __init__(self, name, basic_resources, tasks):
-        self.id = Workstation.next_id
-        Workstation.next_id += 1
-        self.external_id = self.id
-        self.name = name
-        self.basic_resources = basic_resources # list of resources necessary to operate the workstation independent of performed task
-        self.tasks = tasks # tasks which can be done with this workstation
 
     def __init__(self, id, name, basic_resources, tasks):
-        self.id = Workstation.next_id
-        Workstation.next_id += 1
+        self.id = id
         self.external_id = id
         self.external_id = self.id
         self.name = name
@@ -93,24 +47,8 @@ class Workstation:
 
 class Order:
 
-    next_id = 0
-    def __init__(self, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional):
-        self.id = Order.next_id
-        Order.next_id += 1
-        self.external_id = self.id
-        self.arrival_time = arrival_time
-        self.delivery_time = delivery_time
-        self.latest_acceptable_time = latest_acceptable_time
-        self.resources = resources # <Resource, (Amount + Price)>, currently [resource_id, amount, price]
-        self.penalty = penalty
-        self.tardiness_fee = tardiness_fee
-        self.divisible = divisible
-        self.customer_id = customer_id
-        self.optional = optional
-
     def __init__(self, id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional):
-        self.id = Order.next_id
-        Order.next_id += 1
+        self.id = id
         self.external_id = id
         self.arrival_time = arrival_time
         self.delivery_time = delivery_time
@@ -209,6 +147,7 @@ class SimulationEnvironment:
         print(f'Tasks:')
         for task in self.tasks:
             print(f'Id:{task.external_id}:{task.name} has {len(task.preceding_tasks)} preceding and {len(task.follow_up_tasks)} follow up tasks')
+
     def read_output(self, jobs, output) -> Schedule:
         schedule = Schedule()
         for i in range(len(output)):
@@ -270,9 +209,3 @@ class SimulationEnvironment:
             if recipe.external_id == recipe_id:
                 return recipe
         return None
-
-    def simulate(self):
-        pass
-
-    def generate_orders(self) -> list:
-        pass

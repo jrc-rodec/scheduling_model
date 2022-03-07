@@ -180,7 +180,6 @@ def translate_1(instance, generated_orders):
                     workstations[len(workstations) - 1].tasks.append((operation_id, duration))
                     operation_id += 1
             task_id += 1
-            
         recipes.append(Recipe(recipe_id, f'Recipe#{recipe_id}', tasks_of_recipe))
         recipe_id += 1
     orders = []
