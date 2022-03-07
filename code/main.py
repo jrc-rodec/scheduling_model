@@ -3,6 +3,7 @@ from datetime import datetime
 from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order, Schedule
 from optimizer import Randomizer, BaseGA
 from read_data import read_dataset_1, translate_1, read_dataset_3, translate_3
+from visualize import visualize
 
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
@@ -25,7 +26,9 @@ optimizer.set_minimize()
 # optional (in this case, all options given are the default option, if the configuration step is skipped)
 optimizer.configure('Tardiness', 'OnePointCrossover', 'RouletteWheel', 'Randomize')
 # all parameters after offspring_amount are optional (in this case -> verbose=True)
-optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, True)
+result, best_fitness_history, average_fitness_history, best_generation_history, feasible_gen = optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, True)
+
+# TODO: visualize result
 
 """
 #Loading the test data from json file
