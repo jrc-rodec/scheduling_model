@@ -15,9 +15,9 @@ offspring_amount = 50
 
 order_amount = 10
 input, orders, instance = read_dataset_1(use_instance=13, order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
-recipes, workstations, resources, tasks = translate_1(instance)
+recipes, workstations, resources, tasks, orders_model = translate_1(instance, orders)
 #input, orders, instance = read_dataset_3(order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
-#recipes, workstations, resources, tasks = translate_3(instance, n_workstations=10) # for dataset 3, the amount of available machines has to be declared (not included with the data)
+#recipes, workstations, resources, tasks, orders_model = translate_3(instance, n_workstations=10, orders) # for dataset 3, the amount of available machines has to be declared (not included with the data)
 env = SimulationEnvironment(workstations, tasks, resources, recipes)
 env.print()
 optimizer = BaseGA(env)

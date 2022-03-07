@@ -1,7 +1,8 @@
 import random
 import os
 import inspect
-from models import Workstation, Resource, Task, Recipe, SimulationEnvironment
+from datetime import datetime
+from models import Workstation, Resource, Task, Recipe, SimulationEnvironment, Order
 import pymzn
 
 def read_operation_on_machine(data, index):
@@ -143,7 +144,7 @@ def contains(entities, id):
             return True
     return False
 
-def translate_1(instance):
+def translate_1(instance, generated_orders):
     # gather resources (in case of dataset 1 = workers)
     # gather workstations (in case of dataset 1 = machines)
     # gather recipes (in case of dataset 1 = lines 1:end)
@@ -182,9 +183,16 @@ def translate_1(instance):
             
         recipes.append(Recipe(recipe_id, f'Recipe#{recipe_id}', tasks_of_recipe))
         recipe_id += 1
-    return recipes, workstations, resources, tasks
+    orders = []
+    i = 0
+    for order in generated_orders:
+        delivery_time = datetime.now()
+        delivery_time.minute += order[1]
+        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
+        i += 1
+    return recipes, workstations, resources, tasks, orders
 
-def translate_3(instance, n_workstations):
+def translate_3(instance, n_workstations, generated_orders):
     # instance structure ([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
     recipes = []
     workstations = []
@@ -203,7 +211,13 @@ def translate_3(instance, n_workstations):
         recipes.append(Recipe(i, f'Recipe#{i}', tasks[len(tasks)-1]))
     for i in range(n_workstations):
         workstations.append(Workstation(i, f'Workstation#{i}', [], tasks_for_workstation))
-    return recipes, workstations, resources, tasks
+    orders = []
+    for order in generated_orders:
+        delivery_time = datetime.now()
+        delivery_time.minute += order[1]
+        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
+        i += 1
+    return recipes, workstations, resources, tasks, orders
 
 def task_to_input(task : Task):
     input = []
