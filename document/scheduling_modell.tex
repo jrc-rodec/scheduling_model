@@ -203,6 +203,7 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 	$tardiness\_fee$\linebreak
 	$delivery\_date$\linebreak
 	$latest\_date$\linebreak
+	$optional$\linebreak
 	
 	Mapping von Tasks zu Jobs Bsp.:\linebreak
 	(Zuteilung zu exakten Job, Bsp. Task: Material schneiden -> Job: Material schneiden für Bestellung A)\linebreak
@@ -210,13 +211,14 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 	$Task ID$\linebreak
 	$Job ID$ \linebreak\linebreak
 	Intermediate:\linebreak
-	$j_1 - (w, s)$\linebreak
-	$j_2 - (w, s)$\linebreak
-	$j_2 - (w, s)$\linebreak
+	<Workstation ID, Task (Operation) ID, Start Time Slot>
+	$j_1 - (w, t, s)$\linebreak
+	$j_2 - (w, t, s)$\linebreak
+	$j_2 - (w, t, s)$\linebreak
 	.\linebreak
 	.\linebreak
 	.\linebreak
-	$j_n - (w, s)$\linebreak\linebreak
+	$j_n - (w, t, s)$\linebreak\linebreak
 	Output:\linebreak
 	$
 	\begin{bmatrix}
