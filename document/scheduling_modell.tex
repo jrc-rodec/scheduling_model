@@ -172,6 +172,7 @@ Repräsentiert Kundenaufträge/Bestellungen, die mithilfe der Produktions-Umgebu
 	\item tardiness\_fee – falls die Bestellung nach dem gewünschten Termin, aber vor dem letzten möglichen Termin durchgeführt wird
 	\item divisible – boolean, gibt an ob auch nur Teile der Bestellung bearbeitet werden können, oder ob alle bestellten Ressourcen geliefert werden müssen (oder gar keine)
 	\item customer\_id – ID des Kunden, von dem der Auftrag stammt
+	\item optional - boolean, gibt an ob eine Bestellung zwingend im Schedule vorhanden sein muss oder nicht (default: true)
 \end{itemize}
 
 \subsection*{Jobs}
@@ -844,7 +845,8 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		"penalty": 300,
 		"tardiness_fee": 100,
 		"divisible": false,
-		"customer_id": 1
+		"customer_id": 1,
+		"optional": true
 	},
 	{
 		"id": 1,
@@ -867,7 +869,8 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		"penalty": 500,
 		"tardiness_fee": 100,
 		"divisible": false,
-		"customer_id": 1
+		"customer_id": 1,
+		"optional": true
 	},
 	{
 		"id": 2,
@@ -890,7 +893,8 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		"penalty": 1000,
 		"tardiness_fee": 100,
 		"divisible": false,
-		"customer_id": 1
+		"customer_id": 1,
+		"optional": true
 	},
 	{
 		"id": 3,
@@ -913,7 +917,8 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		"penalty": 700,
 		"tardiness_fee": 200,
 		"divisible": false,
-		"customer_id": 1
+		"customer_id": 1,
+		"optional": true
 	},
 	{
 		"id": 4,
@@ -936,7 +941,8 @@ $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O
 		"penalty": 200,
 		"tardiness_fee": 100,
 		"divisible": false,
-		"customer_id": 1
+		"customer_id": 1,
+		"optional": true
 	}
 ]
 }

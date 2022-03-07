@@ -457,7 +457,8 @@
             "penalty": 300,
             "tardiness_fee": 100,
             "divisible": false,
-            "customer_id": 1
+            "customer_id": 1,
+            "optional": true
         },
         {
             "id": 1,
@@ -480,7 +481,8 @@
             "penalty": 500,
             "tardiness_fee": 100,
             "divisible": false,
-            "customer_id": 1
+            "customer_id": 1,
+            "optional": true
         },
         {
             "id": 2,
@@ -503,7 +505,8 @@
             "penalty": 1000,
             "tardiness_fee": 100,
             "divisible": false,
-            "customer_id": 1
+            "customer_id": 1,
+            "optional": true
         },
         {
             "id": 3,
@@ -526,7 +529,8 @@
             "penalty": 700,
             "tardiness_fee": 200,
             "divisible": false,
-            "customer_id": 1
+            "customer_id": 1,
+            "optional": true
         },
         {
             "id": 4,
@@ -549,7 +553,8 @@
             "penalty": 200,
             "tardiness_fee": 100,
             "divisible": false,
-            "customer_id": 1
+            "customer_id": 1,
+            "optional": true
         }
     ]
 }
