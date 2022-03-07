@@ -1,7 +1,7 @@
 import random
 import os
 import inspect
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import Workstation, Resource, Task, Recipe, SimulationEnvironment, Order
 import pymzn
 
@@ -187,7 +187,8 @@ def translate_1(instance, generated_orders):
     i = 0
     for order in generated_orders:
         delivery_time = datetime.now()
-        delivery_time.minute += order[1]
+        td = timedelta(minutes=order[1])
+        delivery_time += td
         orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
         i += 1
     return recipes, workstations, resources, tasks, orders
@@ -214,7 +215,8 @@ def translate_3(instance, n_workstations, generated_orders):
     orders = []
     for order in generated_orders:
         delivery_time = datetime.now()
-        delivery_time.minute += order[1]
+        td = timedelta(minutes=order[1])
+        delivery_time += td
         orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
         i += 1
     return recipes, workstations, resources, tasks, orders
