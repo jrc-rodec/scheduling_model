@@ -272,7 +272,7 @@ order_amount = 10 # amount of orders to be generated for testing
 max_generations = 100 # max amount of generations for the GA to run
 population_size = 25 # size of the population of individuals in one generation
 offspring_amount = 50 # amount of offsprings created in each generation
-input, orders, instance = read_dataset_1(use_instance=use_instance, order_amount=order_amount, earliest_time=earliest_slot, planning_horizon=last_slot)
+input, orders, instance = read_dataset_1(use_instance=use_instance, order_amount=order_amount, earliest_time=earliest_slot, last_time=last_slot)
 
 system_info = instance[0]
 jobs = instance[1]

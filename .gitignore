@@ -2,3 +2,6 @@
 /code/exernal_test_data/__pycache__/
 code/external_test_data/__pycache__/
 code/.vs/
+.vs/ProjectSettings.json
+.vs/scheduling_model/v17/.suo
+.vs/slnx.sqlite
