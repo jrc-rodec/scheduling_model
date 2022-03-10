@@ -5,6 +5,8 @@ import sys
 
 from models import SimulationEnvironment
 from optimizer_components import BaseInputGenerator, Individual, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover
+
+
 class Optimizer:
 
     def __init__(self):
@@ -12,6 +14,7 @@ class Optimizer:
 
     def optimize(self, assignments, jobs, simulation_environment, last_timeslot):
         pass
+
 
 class Randomizer(Optimizer):
 
@@ -24,11 +27,10 @@ class Randomizer(Optimizer):
             job = jobs[i]
             assignment = assignments[i]
             workstations = simulation_environment.get_valid_workstations(job.task_id)
-            if len(workstations) == 0:
-                print(job.task_id)
             assignment[0] = workstations[random.randint(0, len(workstations) - 1)].external_id
             assignment[1] = random.randint(0, last_timeslot)
         return assignments
+
 
 class GA(Optimizer):
 
@@ -45,7 +47,7 @@ class GA(Optimizer):
         self.mutation_method = None
 
     def evaluate(self, individuals, orders, last_slot):
-        self.evaluation_method(individuals, orders, self.recipes, self.tasks, last_slot)
+        self.evaluation_method.evaluate(individuals, orders, self.recipes, self.tasks, self.workstations, last_slot)
 
     def select(self, individuals):
         return self.selection_method.select(individuals, self.minimize)
@@ -55,10 +57,10 @@ class GA(Optimizer):
         parent2 = self.select(individuals)
         while parent1 == parent2: # making sure 2 different parents are selected
             parent2 = self.select(individuals)
-        return self.recombination_method(parent1, parent2)
+        return self.recombination_method.recombine(parent1, parent2)
 
-    def mutate(self, individuals, earliest_slot, last_slot):
-        self.mutation_method.mutate(individuals, self.orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
+    def mutate(self, individuals, orders, earliest_slot, last_slot):
+        self.mutation_method.mutate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
 
     def set_minimize(self):
         self.minimize = True
@@ -81,6 +83,7 @@ class GA(Optimizer):
         # mutation method
         if mutation.lower() == 'randomize':
             self.mutation_method = RandomizeMutation()
+
 
 class BaseGA(GA):
 
@@ -132,18 +135,17 @@ class BaseGA(GA):
                 else:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
             # create offsprings
-            for i in range(offspring_amount):
+            i = 0
+            while i < offspring_amount:
                 # recombine
-                i = 0
-                while i < offspring_amount:
-                    offspring1, offspring2 = self.recombine(population)
-                    offsprings.append(offspring1)
-                    i+=1
-                    if len(offsprings) + 1 < offspring_amount:
-                        offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
-                        i += 1
-                # mutation
-                self.mutate(offsprings, earliest_time_slot, last_time_slot)
+                offspring1, offspring2 = self.recombine(population)
+                offsprings.append(offspring1)
+                i += 1
+                if len(offsprings) + 1 < offspring_amount:
+                    offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
+                    i += 1
+            # mutation
+            self.mutate(offsprings, orders, earliest_time_slot, last_time_slot)
             # evaluate offsprings
             self.evaluate(offsprings, orders, last_time_slot)
             # select next generation
@@ -171,7 +173,8 @@ class BaseGA(GA):
                 fitness += individual.fitness
             avg_history.append(fitness / len(population))
             if not feasible and self.current_best.feasible:
-                print(f'Found first feasible solution!')
+                if verbose:
+                    print(f'Found first feasible solution!')
                 feasible_gen = generation
                 feasible = True
             generation += 1

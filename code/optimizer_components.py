@@ -14,7 +14,7 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self, orders, recipes, tasks, last_slot):
+    def is_feasible(self, orders, recipes, tasks, workstations, last_slot):
         self.feasbile = False
         i = 0
         order_operations = dict()
@@ -23,7 +23,7 @@ class Individual:
             # check if gene should exist
             if operation == -1 or order == -1:
                 return False
-            duration = get_duration(gene[0], gene[1], operation, order[0], recipes)
+            duration = get_duration(gene[0], gene[1], workstations)
             # check if combination is correct
             if duration == 0:
                 return False
@@ -36,8 +36,12 @@ class Individual:
                 order_operations[order[2]] = []
             order_operations[order[2]].append(data)
         for order_id in order_operations.keys():
-            order = get_by_id(orders, order_id)
-            amount = len(get_all_tasks_for_recipe(recipes[order[0]], tasks))
+            order = None
+            for order in orders:
+                if order[2] == order_id:
+                    order = order
+                    break
+            amount = len(recipes[order[0]].tasks)#len(get_all_tasks_for_recipe(recipes[order[0]], tasks))
             # somehow an operation vanished
             if len(order_operations[order_id]) != amount:
                 return False
@@ -45,7 +49,7 @@ class Individual:
                 if j > 0:
                     operation = order_operations[order_id][j]
                     prev = order_operations[order_id][j-1]
-                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], j-1, order[0], recipes):
+                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], workstations):
                         return False
         self.feasible = True
         return True
@@ -57,21 +61,21 @@ class Individual:
 # Evaluation Methods
 class EvaluationMethod:
 
-    def evaluate(self, individuals, orders, recipes, tasks, last_slot):
+    def evaluate(self, individuals, orders, recipes, tasks, workstations, last_slot):
         pass
 ###############################################
 # Example for Evaluation Method Implementation#
 ###############################################
 class TardinessEvaluator(EvaluationMethod):
 
-    def evalute(self, individuals, orders, recipes, tasks, last_slot):
+    def evaluate(self, individuals, orders, recipes, tasks, workstations, last_slot):
         for individual in individuals:
             fitness = 0
-            if not individual.is_feasible(orders, recipes, tasks, last_slot):
+            if not individual.is_feasible(orders, recipes, tasks, workstations, last_slot):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
                 _, order = map_index_to_operation(i, orders, recipes, tasks)
-                duration = get_duration(individual.genes[i][0], individual.genes[i][1], self.workstations)
+                duration = get_duration(individual.genes[i][0], individual.genes[i][1], workstations)
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
             individual.fitness = fitness
@@ -91,8 +95,8 @@ class OnePointCrossover(RecombinationMethod):
         child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
         child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point, len(parent1.genes)):
-            child1.set_gene(i, parent2.get_gene(i))
-            child2.set_gene(i, parent1.get_gene(i))
+            child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
+            child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
         return child1, child2
 
 class TwoPointCroosover(RecombinationMethod):
@@ -103,8 +107,8 @@ class TwoPointCroosover(RecombinationMethod):
         child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
         child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point1, crossover_point2):
-            child1.set_gene(i, parent2.get_gene(i))
-            child2.set_gene(i, parent1.get_gene(i))
+            child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
+            child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
         return child1, child2
 
 # Selection Methods
@@ -155,7 +159,7 @@ class RandomizeMutation(MutationMethod):
     def mutate_gene(self, individual, orders, recipes, tasks, workstations, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
         operation_index, order = map_index_to_operation(index, orders, recipes, tasks)
-        tasks = get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        tasks = recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
         for task in tasks:
@@ -173,7 +177,7 @@ class RandomizeMutation(MutationMethod):
 
     def mutate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
         for individual in individuals:
-            p = 1 / len(individual.genes())
+            p = 1 / len(individual.genes)
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
                     self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
@@ -193,6 +197,7 @@ def get_all_tasks(task, task_list):
 
 def get_all_tasks_for_recipe(recipe, task_list):
     tasks = recipe.tasks
+    # print(f'checking recipe: {recipe.name}')
     all = []
     for task in tasks:
         all += get_all_tasks(task, task_list)
@@ -204,7 +209,7 @@ def map_index_to_operation(index, orders, recipes, tasks):
         return 0, orders[0]
     for i in range(len(orders)):
         recipe = get_by_id(recipes, orders[i][0])
-        tasks = get_all_tasks_for_recipe(recipe, tasks)
+        tasks = recipe.tasks#get_all_tasks_for_recipe(recipe, tasks)
         for j in range(len(tasks)):
             if current == index:
                 return j, orders[i]
@@ -214,7 +219,7 @@ def map_index_to_operation(index, orders, recipes, tasks):
 def get_duration(task_id, workstation_id, workstations):
     workstation = get_by_id(workstations, workstation_id)
     for task in workstation.tasks:
-        if task[0].external_id == task_id:
+        if task[0] == task_id:
             return task[1]
     return 0
 
@@ -229,7 +234,7 @@ def get_all_workstations_for_task(workstations, task_id, task_list):
     result = []
     for workstation in workstations:
         for task in workstation.tasks:
-            if get_by_id(task_list, task[0]).external_id == task_id:
+            if task[0] == task_id:
                 result.append(workstation)
                 break
     return result
@@ -247,7 +252,7 @@ class BaseInputGenerator(InputGenerator):
         for order in orders:
             recipe_id = order[0]
             recipe = get_by_id(recipes, recipe_id)
-            all_tasks = get_all_tasks_for_recipe(recipe, tasks)
+            all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
             for task in all_tasks:
                 workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
                 input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])

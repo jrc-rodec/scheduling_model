@@ -27,7 +27,7 @@ def read_operation_on_machine(data, index):
 
 def read_file(filename):
     file = open(filename, 'r')
-    print(f'Reading: {filename}')
+    # print(f'Reading: {filename}')
     return file.readlines()
     
 def read_files_1():
@@ -199,16 +199,24 @@ def translate_3(instance, n_workstations, generated_orders):
     resources = []
     tasks = []
     tasks_for_workstation = []
+    r_counter = 1
     for i in range(instance[0]):
         resources.append(Resource(i, f'Resource#{i}', instance[1][i], 0, False, [], 0))
     for i in range(instance[2]):
         resources_for_task = []
+        result_resource = len(resources) + r_counter
+        r_counter += 1
         for j in range(instance[0]):
             if instance[4][j*instance[2]+i] != 0:
                 resources_for_task.append(instance[4][j*instance[2]+i])
-        tasks.append(Task(i, f'Task#{i}', resources_for_task, [], [], instance[5][i], True, 0, 0))
-        tasks_for_workstation.append((tasks[len(tasks)-1], instance[3][i]))
-        recipes.append(Recipe(i, f'Recipe#{i}', tasks[len(tasks)-1]))
+        tasks.append(Task(i, f'Task#{i}', resources_for_task, [(result_resource, 0)], [], instance[5][i], True, 0, 0))
+        tasks_for_workstation.append((tasks[len(tasks)-1].external_id, instance[3][i]))
+    for i in range(len(tasks)):
+        recipe_tasks = []
+        recipe_tasks.append(tasks[i])
+        for suc_task in instance[5][i]:
+            recipe_tasks.append(tasks[suc_task-1])
+        recipes.append(Recipe(i, f'Recipe#{i}', recipe_tasks))
     for i in range(n_workstations):
         workstations.append(Workstation(i, f'Workstation#{i}', [], tasks_for_workstation))
     orders = []
