@@ -186,7 +186,7 @@ Repräsentiert die spezifische Ausführung eines Tasks für eine Bestellung
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=8cm]{images/dependencies}
+	\includegraphics[width=8cm]{images/dependencies_v2}
 	\caption{Dependencies}
 	\label{fig:dependencies}
 \end{figure}
@@ -228,7 +228,6 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 		(j_{m1}, s_{m1}) & (j_{m2}, s_{m2}) & (j_{m3}, s_{m3}) & \dots & (j_{mn}, s_{mn})\\
 	\end{bmatrix}
 	$
-	Dauer?
 	
 	\begin{figure}[H]
 		\centering
@@ -240,6 +239,7 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 \section*{Modell}
 \subsection*{Variablen Definition}
 \begin{flushleft}
+OLD: \linebreak
 $O$ - Set of all Orders\linebreak
 $o$ - Specific Order, $o \in O$\linebreak
 $W$	- Set of all Workstations\linebreak
@@ -269,6 +269,41 @@ $u_{o}$ - Binary Variable, 1 if Order $o$ can only be fulfilled partially\linebr
 $p_{o}$ - Price the customer pays for Order $o$ \linebreak
 $f_{o}$ - Price reduction for tardy orders \linebreak
 $O_{c}$ - Set of all Orders which could be completed in the derived schedule, $O_{c} \subset O$\linebreak
+
+NEW SUGGESTION: \linebreak
+$O$ - Set of all Orders \linebreak
+$P$ - Set of all Tasks \linebreak
+$W$ - Set of all Workstations \linebreak
+$R$ - Set of all Resources \linebreak
+$X$ - Set of all Jobs \linebreak
+$o$ - Specific Order, $o \in O$\linebreak
+$p$ - Specific Task, $p \in P$\linebreak
+$w$ - Specific Workstation $w \in W$ \linebreak
+$r$ - Specific Resource, $r \in R$ \linebreak
+$x$ - Specific Job, $x \in X$ \linebreak
+$P_{o}$ - Set of all Tasks needed to complete Order $o$, $P_{o} \subset P$ \linebreak
+$P_{p_{pre}}$ - Set of all Tasks preceding Task $p$, $P_{p_{pre}} \subset P$ \linebreak
+$P_{p_f}$ - Set of all Tasks following Task $p$, $P_{p_{f}} \subset p$ \linebreak
+$X_{w}$ - Set of all Jobs assigned to Workstation $w$, $w \in W$, $X_{w} \subset X$ \linebreak
+$W_{x}$ - Set of all Workstations eligible for Job $x$, $x \in X$, $W_{x} \subset W$ \linebreak
+$R_{x}$ - Set of all Resources required for Job $x$, $x \in X$, $R_{x} \subset R$ \linebreak
+$d_{pw}$ - Duration of Task $p$ on Workstation $w$, $p \in P$, $w \in W$, $d_{pw} \geq 0$ \linebreak
+$x_{w}$ - Selected Workstation $w$ for Job $x$, $x \in X$, $w \in W$, $x_{w} \in W$ \linebreak
+$x_{s}$ - Start time slot for Job $x$, $x \in X$, $x_{s} \geq 0$ \linebreak
+$x_{dt}$ - Delivery time slot for Job $x$, $x \in X$, $x_{dt} \geq 0$ \linebreak
+$x_{lt}$ - Latest acceptable time slot for Job $x$, $x \in X$, $x_{lt} \geq 0$, $x_{lt} \geq x_{dt}$ \linebreak
+$a_{r,t}$ - Amount of Resource $r$ in stock at time slot $t$, $r \in R$, $t \geq 0$, $a_{r,t} \geq 0$ \linebreak
+$l_{x}$ - Binary Variable, 1 if Job $x$ is late (Tardiness Fee applies), $x \in X$ \linebreak
+$l_{o}$ - Binary Variable, 1 if Order $o$ is late (Tardiness Fee applies), $o \in O$ \linebreak
+$u_{o}$ - Binary Variable, 1 if Order $o$ can only be fulfilled partially, $o \in O$, \linebreak
+$z_{o}$ - Price the customer pay for Order $o$, $o \in O$, $z_{o} \geq 0$ \linebreak
+$f_{o}$ - Price reduction for tardy orders , $o \in O$, $f_{o} \geq 0$ \linebreak
+$o_{opt}$ - Binary Variable, 1 if Order $o$ is optional, $o \in O$ \linebreak
+$o_{lt}$ - Latest acceptable time for Order $o$, $o \in O$, $lt \geq 0$ \linebreak
+$b_{o}$ - Penalty, if Order $o$ is not scheduled to meet $o_{lt}$, $o \in O$, $b \geq 0$ \linebreak
+$O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \subset O$ \linebreak
+
+
 \end{flushleft}
 
 \subsection*{Objective Function + Nebenbedingungen}
