@@ -14,7 +14,7 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self, orders, recipes, tasks, workstations, last_slot):
+    def is_feasible(self, orders, recipes, tasks, workstations, earliest_slot, last_slot):
         self.feasbile = False
         i = 0
         order_operations = dict()
@@ -29,6 +29,8 @@ class Individual:
                 return False
             # finish everything before the end of the planning horizon
             if gene[2] + duration > last_slot:
+                return False
+            if gene[2] < earliest_slot:
                 return False
             i += 1
             data = copy.deepcopy(gene)
@@ -73,17 +75,17 @@ class Particle:
 # Evaluation Methods
 class EvaluationMethod:
 
-    def evaluate(self, individuals, orders, recipes, tasks, workstations, last_slot):
+    def evaluate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
         pass
 ###############################################
 # Example for Evaluation Method Implementation#
 ###############################################
 class TardinessEvaluator(EvaluationMethod):
 
-    def evaluate(self, individuals, orders, recipes, tasks, workstations, last_slot):
+    def evaluate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
         for individual in individuals:
             fitness = 0
-            if not individual.is_feasible(orders, recipes, tasks, workstations, last_slot):
+            if not individual.is_feasible(orders, recipes, tasks, workstations, earliest_slot, last_slot):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
                 _, order = map_index_to_operation(i, orders, recipes, tasks)
@@ -194,6 +196,39 @@ class RandomizeMutation(MutationMethod):
                 if random.uniform(0, 1) < p:
                     self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
 
+class OnlyFeasibleTimeSlotMutation(MutationMethod):
+
+    def mutate_gene(self, individual, orders, recipes, tasks, workstations, index, earliest_slot, last_slot):
+        # new gene format <task_id, machine_id, start_time>
+        operation_index, order = map_index_to_operation(index, orders, recipes, tasks)
+        tasks = recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
+        possible_tasks = []
+        for task in tasks:
+            if task.result_resources[0][0] == result_resource:
+                possible_tasks.append(task)
+        task = random.choice(tasks)
+        workstation_list = []
+        for workstation in workstations:
+            for w_task in workstation.tasks:
+                if w_task[0] == task.external_id:
+                    workstation_list.append(workstation)
+        individual.genes[index][0] = task.external_id
+        individual.genes[index][1] = random.choice(workstation_list).external_id
+        duration = get_duration(individual.genes[index][0], individual.genes[index][1], workstations)
+        ub = order[1] - duration
+        lb = earliest_slot
+        if ub < lb:
+            ub = earliest_slot
+            lb = order[1] - duration
+        individual.genes[index][2] = random.randint(lb, ub)
+
+    def mutate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+        for individual in individuals:
+            p = 1 / len(individual.genes)
+            for i in range(len(individual.genes)):
+                if random.uniform(0, 1) < p:
+                    self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
 
 # Helper methods
 def get_all_tasks(task, task_list):

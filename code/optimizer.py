@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, Particle, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover
+from optimizer_components import BaseInputGenerator, Individual, Particle, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation
 
 
 class Optimizer:
@@ -51,8 +51,8 @@ class GA(Optimizer):
         self.selection_method = None
         self.mutation_method = None
 
-    def evaluate(self, individuals, orders, last_slot):
-        self.evaluation_method.evaluate(individuals, orders, self.recipes, self.tasks, self.workstations, last_slot)
+    def evaluate(self, individuals, orders, earliest_slot, last_slot):
+        self.evaluation_method.evaluate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
 
     def select(self, individuals):
         return self.selection_method.select(individuals, self.minimize)
@@ -82,6 +82,8 @@ class GA(Optimizer):
         # mutation method
         if mutation.lower() == 'randomize':
             self.mutation_method = RandomizeMutation()
+        elif mutation.lower() == 'onlyfeasibletimeslot':
+            self.mutation_method = OnlyFeasibleTimeSlotMutation()
 
 
 class BaseGA(GA):
@@ -95,6 +97,7 @@ class BaseGA(GA):
             individual = Individual(genes, sys.float_info.max)
         else:
             individual = Individual(genes, sys.float_info.min)
+        #self.mutate([individual], orders, earliest_slot, last_slot)
         for i in range(len(genes)):
             self.mutation_method.mutate_gene(individual, orders, self.recipes, self.tasks, self.workstations, i, earliest_slot, last_slot)
         return individual
@@ -110,7 +113,7 @@ class BaseGA(GA):
         for _ in range(population_size):
             population.append(self.create_individual(input, orders, earliest_time_slot, last_time_slot))
         # evaluate starting population
-        self.evaluate(population, orders, last_time_slot)
+        self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         # select current best
         self.current_best = population[0]
         for individual in population[1:]:
@@ -146,7 +149,7 @@ class BaseGA(GA):
             # mutation
             self.mutate(offsprings, orders, earliest_time_slot, last_time_slot)
             # evaluate offsprings
-            self.evaluate(offsprings, orders, last_time_slot)
+            self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
             # select next generation
             all = population + offsprings # use elitism for now
             if self.minimize:

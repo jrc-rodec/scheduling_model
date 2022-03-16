@@ -12,7 +12,7 @@ def string_to_date(date_string : str) -> datetime:
 # Parameters
 max_generations = 20
 earliest_time_slot = 200
-last_time_slot = 2000
+last_time_slot = 5000
 population_size = 10
 offspring_amount = 20
 
@@ -30,7 +30,17 @@ env = SimulationEnvironment(workstations, tasks, resources, recipes)
 optimizer = BaseGA(env)
 optimizer.set_minimize()
 # optional (in this case, all options given are the default option, if the configuration step is skipped)
-optimizer.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
+#optimizer.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
+optimizer.configure('tardiness', 'twopointcrossover', 'roulettewheel', 'randomize')
+
+"""
+    Testing for ignoring planning horizon and use each individual latest acceptable order time as limit
+"""
+#optimizer.configure('tardiness', 'twopointcrossover', 'roulettewheel', 'onlyfeasibletimeslot')
+#last_time_slot = 0
+#for order in orders:
+#    if order[1] > last_time_slot:
+#        last_time_slot = order[1]
 # all parameters after offspring_amount are optional (in this case -> verbose=True)
 result, best_fitness_history, average_fitness_history, best_generation_history, feasible_gen = optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, verbose=True)
 
