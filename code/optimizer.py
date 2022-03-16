@@ -179,6 +179,7 @@ class BaseGA(GA):
             generation += 1
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
+
 class PSO(Optimizer):
     
     def __init__(self, simulation_environment : SimulationEnvironment):
@@ -230,7 +231,7 @@ class PSO(Optimizer):
         population = []
         # evaluate current state
         self.evaluate(population, orders, last_time_slot)
-
+        # note, particles start with 0 velocity in each dim right now
         current_best = population[0]        
         for gen in range(max_generation):
             if verbose:
