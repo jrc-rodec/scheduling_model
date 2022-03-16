@@ -53,6 +53,18 @@ class Individual:
                         return False
         self.feasible = True
         return True
+
+class Particle:
+
+    def __init__(self, individual : Individual):
+        self.individual = individual
+        self.best_genes = []
+        self.best_fitness = float('inf')
+        self.veclocities = []
+        self.feasible = False
+        for i in range(len(self.individual.genes)):
+            self.veclocities = 0
+            self.best_genes.append(copy.deepcoy(self.individual.genes[i]))
 """
     Note: following are the implementations of different optimizer components.
     Important: function interfaces have to be the same for each type (e.g. every

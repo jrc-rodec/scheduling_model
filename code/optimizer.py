@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover
+from optimizer_components import BaseInputGenerator, Individual, Particle, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover
 
 
 class Optimizer:
@@ -15,6 +15,11 @@ class Optimizer:
     def optimize(self, assignments, jobs, simulation_environment, last_timeslot):
         pass
 
+    def set_minimize(self):
+        self.minimize = True
+
+    def set_maximize(self):
+        self.minimize = False
 
 class Randomizer(Optimizer):
 
@@ -61,12 +66,6 @@ class GA(Optimizer):
 
     def mutate(self, individuals, orders, earliest_slot, last_slot):
         self.mutation_method.mutate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
-
-    def set_minimize(self):
-        self.minimize = True
-
-    def set_maximize(self):
-        self.minimize = False
 
     def configure(self, evaluation : str, recombination : str, selection : str, mutation : str):
         # evaluation method
@@ -179,3 +178,87 @@ class BaseGA(GA):
                 feasible = True
             generation += 1
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
+
+class PSO(Optimizer):
+    
+    def __init__(self, simulation_environment : SimulationEnvironment):
+        self.simulation_environment = simulation_environment
+        self.minimize = True
+
+    def create_individual(self, input_format, orders, earliest_slot, last_slot):
+        genes = copy.deepcopy(input_format)
+        if self.minimize:
+            individual = Individual(genes, sys.float_info.max)
+        else:
+            individual = Individual(genes, sys.float_info.min)
+        for i in range(len(genes)):
+            self.mutation_method.mutate_gene(individual, orders, self.recipes, self.tasks, self.workstations, i, earliest_slot, last_slot)
+        return individual
+
+    def create_particle(self, input_format, orders, erliest, latest):
+        individual : Individual = self.create_individual(input_format, orders, erliest, latest)
+        return Particle(individual)
+
+    def to_individuals(self, particles):
+        individuals = []
+        for particle in particles:
+            individuals.append(particle.individual)
+        return individuals
+
+    def evaluate(self, population, orders, latest):
+        self.evaluation_method.evaluate(self.to_individuals(population), orders, self.simulation_environment.recipes, self.simulation_environment.tasks, self.simulation_environment.workstations, latest)
+        for particle in population:
+            if self.minimize:
+                if particle.individual.fitness < particle.best_fitness:
+                    particle.best_fitness = particle.individual.fitness
+                    particle.best_genes = copy.deepcopy(particle.individual.genes)
+                    particle.feasible = particle.individual.feasible
+                elif particle.individual.fitness > particle.best_fitness:
+                    particle.best_fitness = particle.individual.fitness
+                    particle.best_genes = copy.deepcopy(particle.individual.genes)
+                    particle.feasible = particle.individual.feasible
+
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, particle_amount : int, inertia : float, personal_weight : float, global_weight : float, v_max : float, v_min : float, upper_bounds, lower_bounds, verbose = True):
+        self.evaluation_method = TardinessEvaluator() # for now
+        # initialize population
+        generator = BaseInputGenerator()
+        input = generator.generate_input(orders, self.simulation_environment.recipes, self.simulation_environment.tasks, self.simulation_environment.workstations, earliest_time_slot, last_time_slot)
+        population = []
+        # create starting population
+        for _ in range(particle_amount):
+            population.append(self.create_particle(input, orders, earliest_time_slot, last_time_slot))
+        population = []
+        # evaluate current state
+        self.evaluate(population, orders, last_time_slot)
+
+        current_best = population[0]        
+        for gen in range(max_generation):
+            if verbose:
+                print(f'Current generation: {gen}, with best fitness: {current_best.best_fitness}')
+                if not current_best.feasible:
+                    print('Current best particle is not feasible')
+            for particle in population:
+                if self.minimize:
+                    if particle.best_fitness < current_best.best_fitness:
+                        current_best = particle
+                else:
+                    if particle.best_fitness > current_best.best_fitness:
+                        current_best = particle
+            for particle in population:
+                for dim in len(particle.individual.genes):
+                    r_personal = random.uniform(0, 1)
+                    r_global = random.uniform(0, 1)
+                    v = inertia * particle.velocities[dim] + personal_weight * r_personal * (particle.best_genes[dim] - particle.individual.genes[dim]) + global_weight * r_global * (current_best.best_genes[dim] - particle.individual.genes[dim])
+                    if v > v_max:
+                        v = v_max
+                    elif v < v_min:
+                        v = v_min
+                    particle.individual.genes[dim] += v
+                    if particle.individual.genes[dim] > upper_bounds[dim]:
+                        particle.individual.genes[dim] = upper_bounds[dim]
+                    elif particle.individual.genes[dim] < lower_bounds[dim]:
+                        particle.individual.genes[dim] = lower_bounds[dim]
+            self.evaluate(orders, orders, last_time_slot)
+        current_best.individual.genes = copy.deepcopy(current_best.best_genes)
+        current_best.individual.fitness = copy.deepcopy(current_best.best_fitness)
+        return current_best.individual
