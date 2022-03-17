@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
 import random
 from optimizer_components import get_duration, map_index_to_operation
+from models import Schedule
      
 def get_colors(n): 
     ret = [] 
@@ -57,3 +58,24 @@ def visualize(workstations, history, avg_history, best_generation_history, feasi
     plt.xlabel = 'Generation'
     plt.ylabel = 'Fitness'
     plt.show()
+
+def visualize_schedule(schedule : Schedule):
+    data = []
+    tasks = []
+    workstations = schedule.assignments.keys()
+    for workstation in workstations:
+        label = f'{workstation.name}'
+        for assignment in schedule.assignments_for(workstation):
+            duration = get_duration(assignment[0], workstation.external_id, workstations)
+            data.append(
+                dict(Task=label, Start=assignment[1], Finish=assignment[1] + duration, Resource=f'{assignment[0]}') # not last part should be replaced with order id
+            )
+            if assignment[0] not in tasks:
+                tasks.append(assignment[0])
+    colors = {}
+    rgb_values = get_colors(len(tasks))
+    for i in range(len(tasks)):
+        colors[str(tasks[i])] = f'rgb({rgb_values[i][0]}, {rgb_values[i][1]}, {rgb_values[i][2]})'
+    fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
+                        group_tasks=True)
+    fig.show()
