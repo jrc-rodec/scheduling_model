@@ -28,8 +28,8 @@ class Individual:
             if duration == 0:
                 return False
             # finish everything before the end of the planning horizon
-            if gene[2] + duration > last_slot:
-                return False
+            #if gene[2] + duration > last_slot:
+            #    return False
             if gene[2] < earliest_slot:
                 return False
             i += 1
@@ -43,7 +43,7 @@ class Individual:
                 if order[2] == order_id:
                     order = order
                     break
-            amount = len(recipes[order[0]].tasks)#len(get_all_tasks_for_recipe(recipes[order[0]], tasks))
+            amount = len(recipes[order[0]].tasks)
             # somehow an operation vanished
             if len(order_operations[order_id]) != amount:
                 return False
@@ -70,7 +70,7 @@ class Particle:
 """
     Note: following are the implementations of different optimizer components.
     Important: function interfaces have to be the same for each type (e.g. every
-    Evaluation Method needs to have the function interface <def evaluate(self, individuals, orders)>)
+    Recombination Method needs to have the function interface <def recombine(self, parent1, parent2)>)
 """
 # Evaluation Methods
 class EvaluationMethod:
