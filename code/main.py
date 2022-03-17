@@ -4,7 +4,7 @@ from optimizer_components import get_duration, map_index_to_operation
 from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order, Schedule
 from optimizer import Randomizer, BaseGA
 from read_data import read_dataset_1, translate_1, read_dataset_3, translate_3
-from visualize import visualize
+from visualize import reformat_result, visualize
 
 def string_to_date(date_string : str) -> datetime:
     return datetime.fromisoformat(date_string)
@@ -45,12 +45,6 @@ optimizer.configure('tardiness', 'twopointcrossover', 'roulettewheel', 'randomiz
 result, best_fitness_history, average_fitness_history, best_generation_history, feasible_gen = optimizer.optimize(orders, max_generations, earliest_time_slot, last_time_slot, population_size, offspring_amount, verbose=True)
 
 # Re-Format result for visualization
-workstation_assignments = dict()
-for i in range(len(result.genes)):
-    operation = result.genes[i]
-    if operation[1] not in workstation_assignments:
-        workstation_assignments[operation[1]] = []
-    _, order = map_index_to_operation(i, orders, recipes, tasks)
-    workstation_assignments[operation[1]].append([order[2], order[0], i, operation[0], operation[2], get_duration(operation[0], operation[1], workstations)])
 
+workstation_assignments = reformat_result(result, orders, workstations, recipes, tasks)
 visualize(workstation_assignments, best_fitness_history, average_fitness_history, best_generation_history, feasible_gen)

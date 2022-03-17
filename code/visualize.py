@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
 import random
+from optimizer_components import get_duration, map_index_to_operation
      
 def get_colors(n): 
     ret = [] 
@@ -17,6 +18,16 @@ def get_colors(n):
         b = int(b) % 256 
         ret.append((r,g,b))  
     return ret 
+
+def reformat_result(result, orders, workstations, recipes, tasks):
+    workstation_assignments = dict()
+    for i in range(len(result.genes)):
+        operation = result.genes[i]
+        if operation[1] not in workstation_assignments:
+            workstation_assignments[operation[1]] = []
+        _, order = map_index_to_operation(i, orders, recipes, tasks)
+        workstation_assignments[operation[1]].append([order[2], order[0], i, operation[0], operation[2], get_duration(operation[0], operation[1], workstations)])
+    return workstation_assignments
 
 def visualize(workstations, history, avg_history, best_generation_history, feasible_gen):
     data = []
