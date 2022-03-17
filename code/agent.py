@@ -29,13 +29,12 @@ class AgentSimulator:
 class GreedyAgent(Agent):
 
     def pick_random(self, task, tasks):
-        task = get_by_id(tasks, task)
+        task = self.environment.get_task(task)
         if len(task.follow_up_tasks) > 0:
-            follow_up = random.choice(task.follow_up_tasks)
-            follow_up = get_by_id(tasks, follow_up)
-            if follow_up: # TODO: find weird indexing error -> somehow non-existing IDs are in some follow_up lists
-                tasks.append(follow_up)
-                self.pick_random(follow_up.id, tasks)
+            follow_up_id = random.choice(task.follow_up_tasks)
+            follow_up = self.environment.get_task(follow_up_id)
+            tasks.append(follow_up)
+            self.pick_random(follow_up.id, tasks)
         
     def pick_random_path(self, recipe):
         tasks = []
