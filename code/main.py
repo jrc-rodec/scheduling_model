@@ -32,7 +32,6 @@ optimizer.set_minimize()
 # optional (in this case, all options given are the default option, if the configuration step is skipped)
 #optimizer.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
 optimizer.configure('tardiness', 'twopointcrossover', 'roulettewheel', 'randomize')
-
 """
     Testing for ignoring planning horizon and use each individual latest acceptable order time as limit
 """

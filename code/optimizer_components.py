@@ -304,3 +304,23 @@ class BaseInputGenerator(InputGenerator):
                 workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
                 input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
         return input
+
+class SameLengthAlternativesInputGenerator(InputGenerator):
+
+    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
+        input = []
+        for order in orders:
+            recipe_id = order[0]
+            recipe = get_by_id(recipes, recipe_id)
+            all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
+            task = random.choice(all_tasks)
+            workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
+            input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
+            if len(task.follow_up_tasks) > 0:
+                follow_up = random.choice(task.follow_up_tasks)
+                workstation_list = get_all_workstations_for_task(workstations, follow_up, tasks)
+                input.append([follow_up, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
+            """for follow_up in task.follow_up_tasks:
+                workstation_list = get_all_workstations_for_task(workstations, follow_up.external_id, tasks)
+                input.append([follow_up.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])"""
+        return input

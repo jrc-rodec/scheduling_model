@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, Particle, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation
+from optimizer_components import BaseInputGenerator, Individual, Particle, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation
 
 
 class Optimizer:
@@ -50,6 +50,7 @@ class GA(Optimizer):
         self.recombination_method = None
         self.selection_method = None
         self.mutation_method = None
+        self.input_generator = None
 
     def evaluate(self, individuals, orders, earliest_slot, last_slot):
         self.evaluation_method.evaluate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
@@ -84,7 +85,12 @@ class GA(Optimizer):
             self.mutation_method = RandomizeMutation()
         elif mutation.lower() == 'onlyfeasibletimeslot':
             self.mutation_method = OnlyFeasibleTimeSlotMutation()
-
+    
+    def set_input_generator(self, generator : str):
+        if generator.lower() == 'baseinputgenerator':
+            self.input_generator = BaseInputGenerator()
+        elif generator.lower() == 'samelengthalternativesgenerator':
+            self.input_generator = SameLengthAlternativesInputGenerator()
 
 class BaseGA(GA):
 
@@ -105,8 +111,9 @@ class BaseGA(GA):
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
             self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
-        generator = BaseInputGenerator()
-        input = generator.generate_input(orders, self.recipes, self.tasks, self.workstations, earliest_time_slot, last_time_slot)
+        if not self.input_generator:
+            self.input_generator = BaseInputGenerator()
+        input = self.input_generator.generate_input(orders, self.recipes, self.tasks, self.workstations, earliest_time_slot, last_time_slot)
         population = []
         offsprings = []
         # create starting population
