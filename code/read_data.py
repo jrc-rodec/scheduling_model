@@ -144,7 +144,7 @@ def contains(entities, id):
             return True
     return False
 
-def translate_1(instance, generated_orders):
+def translate_1(instance, generated_orders, earliest = 200, latest = 5000):
     # gather resources (in case of dataset 1 = workers)
     # gather workstations (in case of dataset 1 = machines)
     # gather recipes (in case of dataset 1 = lines 1:end)
@@ -184,15 +184,18 @@ def translate_1(instance, generated_orders):
         recipe_id += 1
     orders = []
     i = 0
+    for resource in resources:
+        resource.recipes.append(random.choice(recipes))
     for order in generated_orders:
-        delivery_time = datetime.now()
-        td = timedelta(minutes=order[1])
-        delivery_time += td
-        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
+        #delivery_time = datetime.now()
+        #td = timedelta(minutes=order[1])
+        #delivery_time += td
+        delivery_time = random.randint(earliest, latest)
+        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [random.choice(resources)], 0, 0, False, 0, True))
         i += 1
     return recipes, workstations, resources, tasks, orders
 
-def translate_3(instance, n_workstations, generated_orders):
+def translate_3(instance, n_workstations, generated_orders, earliest = 200, latest = 5000):
     # instance structure ([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
     recipes = []
     workstations = []
@@ -219,12 +222,15 @@ def translate_3(instance, n_workstations, generated_orders):
         recipes.append(Recipe(i, f'Recipe#{i}', recipe_tasks))
     for i in range(n_workstations):
         workstations.append(Workstation(i, f'Workstation#{i}', [], tasks_for_workstation))
+    for resource in resources:
+        resource.recipes.append(random.choice(recipes))
     orders = []
     for order in generated_orders:
-        delivery_time = datetime.now()
-        td = timedelta(minutes=order[1])
-        delivery_time += td
-        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [], 0, 0, False, 0, True))
+        #delivery_time = datetime.now()
+        #td = timedelta(minutes=order[1])
+        #delivery_time += td
+        delivery_time = random.randint(earliest, latest)
+        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [random.choice(resources)], 0, 0, False, 0, True))
         i += 1
     return recipes, workstations, resources, tasks, orders
 

@@ -77,10 +77,9 @@ class Schedule:
         self.assignments = dict() # <workstation_id, list of jobs>
 
     def assignments_for(self, workstation_id : int) -> list:
-        return self.assignments[workstation_id]
-
-    def assignment_for(self, workstation_id : int) -> list:
-        return self.assignments[workstation_id]
+        if workstation_id in self.assignments:
+            return self.assignments[workstation_id]
+        return None
 
     def add(self, assignment : tuple, task_id : int):
         if assignment[0] not in self.assignments:
