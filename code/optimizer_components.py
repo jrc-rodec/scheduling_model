@@ -14,16 +14,16 @@ class Individual:
     def get_gene(self, index):
         return self.genes[index]
     
-    def is_feasible(self, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+    def is_feasible(self, orders, environment, earliest_slot, last_slot):
         self.feasbile = False
         i = 0
         order_operations = dict()
         for gene in self.genes:
-            operation, order = map_index_to_operation(i, orders, recipes, tasks)
+            operation, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
             # check if gene should exist
             if operation == -1 or order == -1:
                 return False
-            duration = get_duration(gene[0], gene[1], workstations)
+            duration = get_duration(gene[0], gene[1], environment.workstations)
             # check if combination is correct
             if duration == 0:
                 return False
@@ -43,7 +43,7 @@ class Individual:
                 if order[2] == order_id:
                     order = order
                     break
-            amount = len(recipes[order[0]].tasks)
+            amount = len(environment.recipes[order[0]].tasks)
             # somehow an operation vanished
             if len(order_operations[order_id]) != amount:
                 return False
@@ -51,7 +51,7 @@ class Individual:
                 if j > 0:
                     operation = order_operations[order_id][j]
                     prev = order_operations[order_id][j-1]
-                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], workstations):
+                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], environment.workstations):
                         return False
         self.feasible = True
         return True
@@ -75,21 +75,21 @@ class Particle:
 # Evaluation Methods
 class EvaluationMethod:
 
-    def evaluate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+    def evaluate(self, individuals, orders, environment, earliest_slot, last_slot):
         pass
 ###############################################
 # Example for Evaluation Method Implementation#
 ###############################################
 class TardinessEvaluator(EvaluationMethod):
 
-    def evaluate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+    def evaluate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
             fitness = 0
-            if not individual.is_feasible(orders, recipes, tasks, workstations, earliest_slot, last_slot):
+            if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
-                _, order = map_index_to_operation(i, orders, recipes, tasks)
-                duration = get_duration(individual.genes[i][0], individual.genes[i][1], workstations)
+                _, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
+                duration = get_duration(individual.genes[i][0], individual.genes[i][1], environment.workstations)
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
             individual.fitness = fitness
@@ -160,20 +160,20 @@ class RouletteWheelSelection(SelectionMethod):
 # Mutation Methods
 class MutationMethod:
 
-    def mutate_gene(self, individual, orders, recipes, index, earliest_slot, last_slot):
+    def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         pass
 
-    def mutate(self, individuals, orders, recipes, earliest_slot, last_slot):
+    def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
         pass
 #############################################
 # Example for Mutation Method Implementation#
 #############################################
 class RandomizeMutation(MutationMethod):
 
-    def mutate_gene(self, individual, orders, recipes, tasks, workstations, index, earliest_slot, last_slot):
+    def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
-        operation_index, order = map_index_to_operation(index, orders, recipes, tasks)
-        tasks = recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        operation_index, order = map_index_to_operation(index, orders, environment.recipes, environment.tasks)
+        tasks = environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
         for task in tasks:
@@ -181,7 +181,7 @@ class RandomizeMutation(MutationMethod):
                 possible_tasks.append(task)
         task = random.choice(tasks)
         workstation_list = []
-        for workstation in workstations:
+        for workstation in environment.workstations:
             for w_task in workstation.tasks:
                 if w_task[0] == task.external_id:
                     workstation_list.append(workstation)
@@ -189,19 +189,19 @@ class RandomizeMutation(MutationMethod):
         individual.genes[index][1] = random.choice(workstation_list).external_id
         individual.genes[index][2] = random.randint(earliest_slot, last_slot)
 
-    def mutate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+    def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
             p = 1 / len(individual.genes)
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
-                    self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
+                    self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
 
 class OnlyFeasibleTimeSlotMutation(MutationMethod):
 
-    def mutate_gene(self, individual, orders, recipes, tasks, workstations, index, earliest_slot, last_slot):
+    def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
-        operation_index, order = map_index_to_operation(index, orders, recipes, tasks)
-        tasks = recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        operation_index, order = map_index_to_operation(index, orders, environment.recipes, environment.tasks)
+        tasks = environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
         for task in tasks:
@@ -209,13 +209,13 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
                 possible_tasks.append(task)
         task = random.choice(tasks)
         workstation_list = []
-        for workstation in workstations:
+        for workstation in environment.workstations:
             for w_task in workstation.tasks:
                 if w_task[0] == task.external_id:
                     workstation_list.append(workstation)
         individual.genes[index][0] = task.external_id
         individual.genes[index][1] = random.choice(workstation_list).external_id
-        duration = get_duration(individual.genes[index][0], individual.genes[index][1], workstations)
+        duration = get_duration(individual.genes[index][0], individual.genes[index][1], environment.workstations)
         ub = order[1] - duration
         lb = earliest_slot
         if ub < lb:
@@ -223,12 +223,12 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
             lb = order[1] - duration
         individual.genes[index][2] = random.randint(lb, ub)
 
-    def mutate(self, individuals, orders, recipes, tasks, workstations, earliest_slot, last_slot):
+    def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
             p = 1 / len(individual.genes)
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
-                    self.mutate_gene(individual, orders, recipes, tasks, workstations, i, earliest_slot, last_slot)
+                    self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
 
 # Helper methods
 def get_all_tasks(task, task_list):
@@ -289,36 +289,36 @@ def get_all_workstations_for_task(workstations, task_id, task_list):
 # Input Generators
 class InputGenerator:
 
-    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
+    def generate_input(self, orders, environment, earliest_time_slot, last_time_slot):
         pass
 
 class BaseInputGenerator(InputGenerator):
 
-    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
+    def generate_input(self, orders, environment, earliest_time_slot, last_time_slot):
         input = []
         for order in orders:
             recipe_id = order[0]
-            recipe = get_by_id(recipes, recipe_id)
+            recipe = get_by_id(environment.recipes, recipe_id)
             all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
             for task in all_tasks:
-                workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
+                workstation_list = get_all_workstations_for_task(environment.workstations, task.external_id, environment.tasks)
                 input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
         return input
 
 class SameLengthAlternativesInputGenerator(InputGenerator):
 
-    def generate_input(self, orders, recipes, tasks, workstations, earliest_time_slot, last_time_slot):
+    def generate_input(self, orders, environment, earliest_time_slot, last_time_slot):
         input = []
         for order in orders:
             recipe_id = order[0]
-            recipe = get_by_id(recipes, recipe_id)
+            recipe = get_by_id(environment.recipes, recipe_id)
             all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
             task = random.choice(all_tasks)
-            workstation_list = get_all_workstations_for_task(workstations, task.external_id, tasks)
+            workstation_list = get_all_workstations_for_task(environment.workstations, task.external_id, environment.tasks)
             input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
             if len(task.follow_up_tasks) > 0:
                 follow_up = random.choice(task.follow_up_tasks)
-                workstation_list = get_all_workstations_for_task(workstations, follow_up, tasks)
+                workstation_list = get_all_workstations_for_task(environment.workstations, follow_up, environment.tasks)
                 input.append([follow_up, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
             """for follow_up in task.follow_up_tasks:
                 workstation_list = get_all_workstations_for_task(workstations, follow_up.external_id, tasks)

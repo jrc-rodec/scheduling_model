@@ -44,6 +44,7 @@ class GA(Optimizer):
         self.workstations = simulation_environment.workstations
         self.resources = simulation_environment.resources
         self.tasks = simulation_environment.tasks
+        self.environment = simulation_environment
         self.current_best = None
         self.minimize = True
         self.evaluation_method = None
@@ -53,7 +54,7 @@ class GA(Optimizer):
         self.input_generator = None
 
     def evaluate(self, individuals, orders, earliest_slot, last_slot):
-        self.evaluation_method.evaluate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
+        self.evaluation_method.evaluate(individuals, orders, self.environment, earliest_slot, last_slot)
 
     def select(self, individuals):
         return self.selection_method.select(individuals, self.minimize)
@@ -66,7 +67,7 @@ class GA(Optimizer):
         return self.recombination_method.recombine(parent1, parent2)
 
     def mutate(self, individuals, orders, earliest_slot, last_slot):
-        self.mutation_method.mutate(individuals, orders, self.recipes, self.tasks, self.workstations, earliest_slot, last_slot)
+        self.mutation_method.mutate(individuals, orders, self.environment, earliest_slot, last_slot)
 
     def configure(self, evaluation : str, recombination : str, selection : str, mutation : str):
         # evaluation method
@@ -105,7 +106,7 @@ class BaseGA(GA):
             individual = Individual(genes, sys.float_info.min)
         #self.mutate([individual], orders, earliest_slot, last_slot)
         for i in range(len(genes)):
-            self.mutation_method.mutate_gene(individual, orders, self.recipes, self.tasks, self.workstations, i, earliest_slot, last_slot)
+            self.mutation_method.mutate_gene(individual, orders, self.environment, i, earliest_slot, last_slot)
         return individual
 
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
@@ -113,7 +114,7 @@ class BaseGA(GA):
             self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
         if not self.input_generator:
             self.input_generator = BaseInputGenerator()
-        input = self.input_generator.generate_input(orders, self.recipes, self.tasks, self.workstations, earliest_time_slot, last_time_slot)
+        input = self.input_generator.generate_input(orders, self.environment, earliest_time_slot, last_time_slot)
         population = []
         offsprings = []
         # create starting population
@@ -193,7 +194,7 @@ class BaseGA(GA):
 class PSO(Optimizer):
     
     def __init__(self, simulation_environment : SimulationEnvironment):
-        self.simulation_environment = simulation_environment
+        self.environment = simulation_environment
         self.minimize = True
 
     def create_individual(self, input_format, orders, earliest_slot, last_slot):
@@ -203,7 +204,7 @@ class PSO(Optimizer):
         else:
             individual = Individual(genes, sys.float_info.min)
         for i in range(len(genes)):
-            self.mutation_method.mutate_gene(individual, orders, self.recipes, self.tasks, self.workstations, i, earliest_slot, last_slot)
+            self.mutation_method.mutate_gene(individual, orders, self.environment, i, earliest_slot, last_slot)
         return individual
 
     def create_particle(self, input_format, orders, erliest, latest):
@@ -217,7 +218,7 @@ class PSO(Optimizer):
         return individuals
 
     def evaluate(self, population, orders, latest):
-        self.evaluation_method.evaluate(self.to_individuals(population), orders, self.simulation_environment.recipes, self.simulation_environment.tasks, self.simulation_environment.workstations, latest)
+        self.evaluation_method.evaluate(self.to_individuals(population), orders, self.environment, latest)
         for particle in population:
             if self.minimize:
                 if particle.individual.fitness < particle.best_fitness:
@@ -233,7 +234,7 @@ class PSO(Optimizer):
         self.evaluation_method = TardinessEvaluator() # for now
         # initialize population
         generator = BaseInputGenerator()
-        input = generator.generate_input(orders, self.simulation_environment.recipes, self.simulation_environment.tasks, self.simulation_environment.workstations, earliest_time_slot, last_time_slot)
+        input = generator.generate_input(orders, self.environment, earliest_time_slot, last_time_slot)
         population = []
         # create starting population
         for _ in range(particle_amount):
