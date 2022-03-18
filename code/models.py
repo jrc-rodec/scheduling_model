@@ -216,3 +216,22 @@ class SimulationEnvironment:
             if recipe.external_id == recipe_id:
                 return recipe
         return None
+
+    def get_all_tasks(self, task):
+        all = []
+        if isinstance(task, int):
+            task = self.get_task(task)
+        for pre in task.preceding_tasks:
+            all += self.get_all_tasks(pre)
+        all.append(task)
+        for follow_up in task.follow_up_tasks:
+            all += self.get_all_tasks(follow_up)
+        return all
+
+    # TODO: fix if needed after all
+    def get_all_tasks_for_recipe(self, recipe_id : int):
+        recipe = self.get_recipe(recipe_id)
+        all = []
+        for task in recipe.tasks:
+            all += self.get_all_tasks(task)
+        return all

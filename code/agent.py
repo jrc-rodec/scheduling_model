@@ -65,7 +65,7 @@ class GreedyAgent(Agent):
             recipes.append((order.id, resource.recipes))
         tasks = []
         for recipe in recipes:
-            path = self.pick_random_path(recipe[1][0]) # ignore possibility of multiple recipes for now
+            path = recipe[1][0].tasks#self.pick_random_path(recipe[1][0]) # ignore possibility of multiple recipes for now
             path.reverse()
             tasks.append(path) # add in reverse order for each recipe
         success_count = 0

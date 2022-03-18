@@ -19,7 +19,7 @@ class Individual:
         i = 0
         order_operations = dict()
         for gene in self.genes:
-            operation, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
+            operation, order = map_index_to_operation(i, orders, environment)
             # check if gene should exist
             if operation == -1 or order == -1:
                 return False
@@ -88,7 +88,7 @@ class TardinessEvaluator(EvaluationMethod):
             if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
-                _, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
+                _, order = map_index_to_operation(i, orders, environment)
                 duration = environment.get_duration(individual.genes[i][0], individual.genes[i][1])
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
@@ -172,8 +172,8 @@ class RandomizeMutation(MutationMethod):
 
     def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
-        operation_index, order = map_index_to_operation(index, orders, environment.recipes, environment.tasks)
-        tasks = environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        operation_index, order = map_index_to_operation(index, orders, environment)
+        tasks = environment.recipes[order[0]].tasks#environment.get_all_tasks_for_recipe(environment.recipes[order[0]].external_id)#environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
         for task in tasks:
@@ -200,8 +200,8 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
 
     def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         # new gene format <task_id, machine_id, start_time>
-        operation_index, order = map_index_to_operation(index, orders, environment.recipes, environment.tasks)
-        tasks = environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        operation_index, order = map_index_to_operation(index, orders, environment)
+        tasks = environment.recipes[order[0]].tasks#environment.get_all_tasks_for_recipe(orders[0])#environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
         result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
         possible_tasks = []
         for task in tasks:
@@ -231,13 +231,13 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
                     self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
 
 # Helper methods
-def map_index_to_operation(index, orders, recipes, tasks):
+def map_index_to_operation(index, orders, environment):
     current = 0
     if index == 0:
         return 0, orders[0]
     for i in range(len(orders)):
-        recipe = get_by_id(recipes, orders[i][0])
-        tasks = recipe.tasks #get_all_tasks_for_recipe
+        recipe = get_by_id(environment.recipes, orders[i][0])
+        tasks = recipe.tasks#environment.get_all_tasks_for_recipe(recipe.external_id)#recipe.tasks #get_all_tasks_for_recipe
         for j in range(len(tasks)):
             if current == index:
                 return j, orders[i]
@@ -285,7 +285,7 @@ class BaseInputGenerator(InputGenerator):
         for order in orders:
             recipe_id = order[0]
             recipe = environment.get_recipe(recipe_id)
-            all_tasks = recipe.tasks # get_all_tasks_for_recipe -> depends on how it the task lists are supposed to be used
+            all_tasks = recipe.tasks#environment.get_all_tasks_for_recipe(recipe.external_id)#recipe.tasks # get_all_tasks_for_recipe -> depends on how it the task lists are supposed to be used
             for task in all_tasks:
                 workstation_list = environment.get_valid_workstations(task.external_id)
                 input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
@@ -298,7 +298,7 @@ class SameLengthAlternativesInputGenerator(InputGenerator):
         for order in orders:
             recipe_id = order[0]
             recipe = environment.get_recipe(recipe_id)
-            all_tasks = recipe.tasks # get_all_tasks_for_recipe
+            all_tasks = recipe.tasks#environment.get_all_tasks_for_recipe(recipe.external_id)#recipe.tasks # get_all_tasks_for_recipe
             task = random.choice(all_tasks)
             workstation_list = environment.get_valid_workstations(task.external_id)
             input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])

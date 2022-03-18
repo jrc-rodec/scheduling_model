@@ -26,7 +26,7 @@ def reformat_result(result, orders, environment):
         operation = result.genes[i]
         if operation[1] not in workstation_assignments:
             workstation_assignments[operation[1]] = []
-        _, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
+        _, order = map_index_to_operation(i, orders, environment)
         workstation_assignments[operation[1]].append([order[2], order[0], i, operation[0], operation[2], environment.get_duration(operation[0], operation[1])])
     return workstation_assignments
 
