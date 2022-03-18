@@ -212,7 +212,10 @@ def translate_3(instance, n_workstations, generated_orders, earliest = 200, late
         for j in range(instance[0]):
             if instance[4][j*instance[2]+i] != 0:
                 resources_for_task.append(instance[4][j*instance[2]+i])
-        tasks.append(Task(i, f'Task#{i}', resources_for_task, [(result_resource, 0)], [], instance[5][i], True, 0, 0))
+        follow_ups = []
+        for task in instance[5][i]:
+            follow_ups.append(task)
+        tasks.append(Task(i, f'Task#{i}', resources_for_task, [(result_resource, 0)], [], follow_ups, True, 0, 0))
         tasks_for_workstation.append((tasks[len(tasks)-1].external_id, instance[3][i]))
     for i in range(len(tasks)):
         recipe_tasks = []

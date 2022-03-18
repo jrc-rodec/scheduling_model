@@ -18,10 +18,10 @@ offspring_amount = 20
 order_amount = 10
 
 # Read Input, Translate Input into correct Datastructure
-input, orders, instance = read_dataset_1(use_instance=2, order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
-recipes, workstations, resources, tasks, orders_model = translate_1(instance, orders)
-#input, orders, instance = read_dataset_3(order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
-#recipes, workstations, resources, tasks, orders_model = translate_3(instance, n_workstations=10, generated_orders=orders) # for dataset 3, the amount of available machines has to be declared (not included with the data)
+#input, orders, instance = read_dataset_1(use_instance=2, order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
+#recipes, workstations, resources, tasks, orders_model = translate_1(instance, orders)
+input, orders, instance = read_dataset_3(order_amount=order_amount, earliest_time=earliest_time_slot, last_time=last_time_slot)
+recipes, workstations, resources, tasks, orders_model = translate_3(instance, n_workstations=10, generated_orders=orders) # for dataset 3, the amount of available machines has to be declared (not included with the data)
 
 env = SimulationEnvironment(workstations, tasks, resources, recipes)
 
