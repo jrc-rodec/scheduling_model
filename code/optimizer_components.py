@@ -23,7 +23,7 @@ class Individual:
             # check if gene should exist
             if operation == -1 or order == -1:
                 return False
-            duration = get_duration(gene[0], gene[1], environment.workstations)
+            duration = environment.get_duration(gene[0], gene[1])
             # check if combination is correct
             if duration == 0:
                 return False
@@ -51,7 +51,7 @@ class Individual:
                 if j > 0:
                     operation = order_operations[order_id][j]
                     prev = order_operations[order_id][j-1]
-                    if operation[2] <= prev[2] + get_duration(prev[0], prev[1], environment.workstations):
+                    if operation[2] <= prev[2] + environment.get_duration(prev[0], prev[1]):
                         return False
         self.feasible = True
         return True
@@ -89,7 +89,7 @@ class TardinessEvaluator(EvaluationMethod):
                 fitness += len(individual.genes)
             for i in range(len(individual.genes)):
                 _, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
-                duration = get_duration(individual.genes[i][0], individual.genes[i][1], environment.workstations)
+                duration = environment.get_duration(individual.genes[i][0], individual.genes[i][1])
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
             individual.fitness = fitness
@@ -215,7 +215,7 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
                     workstation_list.append(workstation)
         individual.genes[index][0] = task.external_id
         individual.genes[index][1] = random.choice(workstation_list).external_id
-        duration = get_duration(individual.genes[index][0], individual.genes[index][1], environment.workstations)
+        duration = environment.get_duration(individual.genes[index][0], individual.genes[index][1])
         ub = order[1] - duration
         lb = earliest_slot
         if ub < lb:
@@ -231,6 +231,27 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
                     self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
 
 # Helper methods
+def map_index_to_operation(index, orders, recipes, tasks):
+    current = 0
+    if index == 0:
+        return 0, orders[0]
+    for i in range(len(orders)):
+        recipe = get_by_id(recipes, orders[i][0])
+        tasks = recipe.tasks #get_all_tasks_for_recipe
+        for j in range(len(tasks)):
+            if current == index:
+                return j, orders[i]
+            current += 1
+    return None
+
+def get_by_id(entities, id):
+    for entity in entities:
+        if entity.external_id == id:
+            return entity
+    print(f'couldn\'t find {id} in {len(entities)} entities')
+    return None
+
+"""
 def get_all_tasks(task, task_list):
     all = []
     if isinstance(task, int):
@@ -249,42 +270,7 @@ def get_all_tasks_for_recipe(recipe, task_list):
     for task in tasks:
         all += get_all_tasks(task, task_list)
     return all
-    
-def map_index_to_operation(index, orders, recipes, tasks):
-    current = 0
-    if index == 0:
-        return 0, orders[0]
-    for i in range(len(orders)):
-        recipe = get_by_id(recipes, orders[i][0])
-        tasks = recipe.tasks#get_all_tasks_for_recipe(recipe, tasks)
-        for j in range(len(tasks)):
-            if current == index:
-                return j, orders[i]
-            current += 1
-    return None
-
-def get_duration(task_id, workstation_id, workstations):
-    workstation = get_by_id(workstations, workstation_id)
-    for task in workstation.tasks:
-        if task[0] == task_id:
-            return task[1]
-    return 0
-
-def get_by_id(entities, id):
-    for entity in entities:
-        if entity.external_id == id:
-            return entity
-    print(f'couldn\'t find {id} in {len(entities)} entities')
-    return None
-
-def get_all_workstations_for_task(workstations, task_id, task_list):
-    result = []
-    for workstation in workstations:
-        for task in workstation.tasks:
-            if task[0] == task_id:
-                result.append(workstation)
-                break
-    return result
+"""
 
 # Input Generators
 class InputGenerator:
@@ -298,10 +284,10 @@ class BaseInputGenerator(InputGenerator):
         input = []
         for order in orders:
             recipe_id = order[0]
-            recipe = get_by_id(environment.recipes, recipe_id)
-            all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
+            recipe = environment.get_recipe(recipe_id)
+            all_tasks = recipe.tasks # get_all_tasks_for_recipe -> depends on how it the task lists are supposed to be used
             for task in all_tasks:
-                workstation_list = get_all_workstations_for_task(environment.workstations, task.external_id, environment.tasks)
+                workstation_list = environment.get_valid_workstations(task.external_id)
                 input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
         return input
 
@@ -311,14 +297,14 @@ class SameLengthAlternativesInputGenerator(InputGenerator):
         input = []
         for order in orders:
             recipe_id = order[0]
-            recipe = get_by_id(environment.recipes, recipe_id)
-            all_tasks = recipe.tasks #get_all_tasks_for_recipe(recipe, tasks)
+            recipe = environment.get_recipe(recipe_id)
+            all_tasks = recipe.tasks # get_all_tasks_for_recipe
             task = random.choice(all_tasks)
-            workstation_list = get_all_workstations_for_task(environment.workstations, task.external_id, environment.tasks)
+            workstation_list = environment.get_valid_workstations(task.external_id)
             input.append([task.external_id, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
             if len(task.follow_up_tasks) > 0:
                 follow_up = random.choice(task.follow_up_tasks)
-                workstation_list = get_all_workstations_for_task(environment.workstations, follow_up, environment.tasks)
+                workstation_list = environment.get_valid_workstations(follow_up)
                 input.append([follow_up, random.choice(workstation_list).external_id, random.randint(earliest_time_slot, last_time_slot)])
             """for follow_up in task.follow_up_tasks:
                 workstation_list = get_all_workstations_for_task(workstations, follow_up.external_id, tasks)

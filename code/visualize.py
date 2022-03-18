@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
 import random
-from optimizer_components import get_duration, map_index_to_operation
-from models import Schedule
+from optimizer_components import map_index_to_operation
+from models import Schedule, SimulationEnvironment
      
 def get_colors(n): 
     ret = [] 
@@ -20,14 +20,14 @@ def get_colors(n):
         ret.append((r,g,b))  
     return ret 
 
-def reformat_result(result, orders, workstations, recipes, tasks):
+def reformat_result(result, orders, environment):
     workstation_assignments = dict()
     for i in range(len(result.genes)):
         operation = result.genes[i]
         if operation[1] not in workstation_assignments:
             workstation_assignments[operation[1]] = []
-        _, order = map_index_to_operation(i, orders, recipes, tasks)
-        workstation_assignments[operation[1]].append([order[2], order[0], i, operation[0], operation[2], get_duration(operation[0], operation[1], workstations)])
+        _, order = map_index_to_operation(i, orders, environment.recipes, environment.tasks)
+        workstation_assignments[operation[1]].append([order[2], order[0], i, operation[0], operation[2], environment.get_duration(operation[0], operation[1])])
     return workstation_assignments
 
 def visualize(workstations, history, avg_history, best_generation_history, feasible_gen):
@@ -59,14 +59,14 @@ def visualize(workstations, history, avg_history, best_generation_history, feasi
     plt.ylabel = 'Fitness'
     plt.show()
 
-def visualize_schedule(schedule : Schedule):
+def visualize_schedule(schedule : Schedule, environment : SimulationEnvironment):
     data = []
     tasks = []
     workstations = schedule.assignments.keys()
     for workstation in workstations:
         label = f'{workstation.name}'
         for assignment in schedule.assignments_for(workstation):
-            duration = get_duration(assignment[0], workstation.external_id, workstations)
+            duration = environment.get_duration(assignment[0], workstation.external_id)
             data.append(
                 dict(Task=label, Start=assignment[1], Finish=assignment[1] + duration, Resource=f'{assignment[0]}') # not last part should be replaced with order id
             )

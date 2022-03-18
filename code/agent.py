@@ -1,6 +1,5 @@
 from models import Schedule, SimulationEnvironment, Order
 import random 
-from optimizer_components import get_by_id, get_duration, get_all_workstations_for_task
 class Agent:
 
     def __init__(self, simulation_environment : SimulationEnvironment):
@@ -48,7 +47,7 @@ class GreedyAgent(Agent):
         if assignments:
             for assignment in assignments:
                 assignment_start_time = assignment[1]
-                assignment_duration = get_duration(assignment[0], workstation_id, self.environment.workstations)
+                assignment_duration = self.environment.get_duration(assignment[0], workstation_id)
                 if start_time > assignment_start_time and start_time < assignment_start_time + assignment_duration:
                     return True
                 if start_time + duration > assignment_start_time and start_time + duration < assignment_start_time + assignment_duration:
@@ -74,10 +73,10 @@ class GreedyAgent(Agent):
             prev_duration = 0
             for j in range(len(tasks[i])):
                 task = tasks[i][j]
-                workstations = get_all_workstations_for_task(self.environment.workstations, task.external_id, self.environment.tasks)
+                workstations = self.environment.get_valid_workstations(task.external_id)
                 chosen_workstation = None
                 for workstation in workstations:
-                    duration = get_duration(task.external_id, workstation.external_id, self.environment.workstations)
+                    duration = self.environment.get_duration(task.external_id, workstation.external_id)
                     start_slot = order.delivery_time - prev_duration - duration
                     if not self.is_blocked(workstation.external_id, start_slot, duration):
                         chosen_workstation = workstation

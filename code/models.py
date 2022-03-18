@@ -178,6 +178,7 @@ class SimulationEnvironment:
             for task in workstation.tasks:
                 if task[0] == task_id:
                     result.append(workstation)
+                    break
         return result
 
     def get_task(self, task_id : int) -> Task:
@@ -205,7 +206,7 @@ class SimulationEnvironment:
         return None
     
     def get_recipe(self, recipe_id : int) -> Recipe:
-        for recipe in self.recipe:
+        for recipe in self.recipes:
             if recipe.id == recipe_id:
                 return recipe
         return None

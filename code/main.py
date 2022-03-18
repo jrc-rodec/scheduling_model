@@ -1,7 +1,6 @@
 import json
 from datetime import datetime
-from optimizer_components import get_duration, map_index_to_operation
-from models import SimulationEnvironment, Task, Resource, Recipe, Workstation, Order, Schedule
+from models import SimulationEnvironment
 from optimizer import Randomizer, BaseGA
 from read_data import read_dataset_1, translate_1, read_dataset_3, translate_3
 from visualize import reformat_result, visualize
@@ -45,5 +44,5 @@ result, best_fitness_history, average_fitness_history, best_generation_history, 
 
 # Re-Format result for visualization
 
-workstation_assignments = reformat_result(result, orders, workstations, recipes, tasks)
+workstation_assignments = reformat_result(result, orders, env)
 visualize(workstation_assignments, best_fitness_history, average_fitness_history, best_generation_history, feasible_gen)
