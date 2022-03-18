@@ -132,6 +132,7 @@ class SimulationEnvironment:
                     # resource has to be bought
                     pass
         return jobs, assignments # making sure all assignments are at the same index as their respective job
+        
     def print(self):
         print(f'Printing Simulation Environment:')
         print(f'Workstations:')
@@ -153,19 +154,25 @@ class SimulationEnvironment:
             schedule.add(output[i][0], (jobs[i], output[i][1]))
         return schedule
 
-    def get_workstation(self, workstation_id):
+    def get_duration(self, task_id : int, workstation_id : int) -> int:
+        workstation : Workstation = self.get_workstation(workstation_id)
+        for task in workstation.tasks:
+            if task[0] == task_id:
+                return task[1]
+
+    def get_workstation(self, workstation_id : int) -> Workstation:
         for workstation in self.workstations:
             if workstation.id == workstation_id:
                 return workstation
         return None
     
-    def get_workstation_by_external_id(self, workstation_id):
+    def get_workstation_by_external_id(self, workstation_id : int) -> Workstation:
         for workstation in self.workstations:
             if workstation.external_id == workstation_id:
                 return workstation
         return None
 
-    def get_valid_workstations(self, task_id):
+    def get_valid_workstations(self, task_id : int):
         result = []
         for workstation in self.workstations:
             for task in workstation.tasks:
@@ -173,37 +180,37 @@ class SimulationEnvironment:
                     result.append(workstation)
         return result
 
-    def get_task(self, task_id):
+    def get_task(self, task_id : int) -> Task:
         for task in self.tasks:
             if task.id == task_id:
                 return task
         return None
     
-    def get_task_by_external_id(self, task_id):
+    def get_task_by_external_id(self, task_id : int) -> Task:
         for task in self.tasks:
             if task.external_id == task_id:
                 return task
         return None
 
-    def get_resource(self, resource_id):
+    def get_resource(self, resource_id : int) -> Resource:
         for resource in self.resources:
             if resource.id == resource_id:
                 return resource
         return None
     
-    def get_resource_by_external_id(self, resource_id):
+    def get_resource_by_external_id(self, resource_id : int) -> Resource:
         for resource in self.resources:
             if resource.external_id == resource_id:
                 return resource
         return None
     
-    def get_recipe(self, recipe_id):
+    def get_recipe(self, recipe_id : int) -> Recipe:
         for recipe in self.recipe:
             if recipe.id == recipe_id:
                 return recipe
         return None
     
-    def get_recipe_by_external_id(self, recipe_id):
+    def get_recipe_by_external_id(self, recipe_id : int) -> Recipe:
         for recipe in self.recipes:
             if recipe.external_id == recipe_id:
                 return recipe
