@@ -53,6 +53,10 @@ class GreedyAgent(Agent):
                     return True
                 if start_time + duration > assignment_start_time and start_time + duration < assignment_start_time + assignment_duration:
                     return True
+                if assignment_start_time > start_time and assignment_start_time < start_time + duration:
+                    return True
+                if assignment_start_time + assignment_duration > start_time and assignment_start_time + assignment_duration < start_time + duration:
+                    return True
         return False 
 
     def process(self, order : Order):
