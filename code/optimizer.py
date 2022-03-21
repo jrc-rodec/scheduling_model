@@ -143,6 +143,36 @@ class GA(Optimizer):
         population = all[0:population_size]
         return population
 
+    def run(self, population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose):
+        history = [] # fitness history (current best)
+        best_generation_history = [] # fitness history (generation best) (same as history with elitism)
+        avg_history = [] # fitness history (average of each generation)
+        feasible_gen = max_generation # the generation in which the first feasible solution was found
+        feasible = self.current_best.feasible
+        generation = 0
+        while generation < max_generation:
+            if verbose:
+                if feasible:
+                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
+                else:
+                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
+            population = self.next_generation(population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders)
+            # select current best
+            self.set_current_best(population)
+            history.append(self.current_best.fitness)
+            best_generation_history.append(population[0].fitness)
+            fitness = 0
+            for individual in population:
+                fitness += individual.fitness
+            avg_history.append(fitness / len(population))
+            if not feasible and self.current_best.feasible:
+                if verbose:
+                    print(f'Found first feasible solution!')
+                feasible_gen = generation
+                feasible = True
+            generation += 1
+        return history, avg_history, best_generation_history, feasible_gen
+
 ###############################################################
 ###################For Schedule Optimization###################
 ###############################################################
@@ -170,34 +200,8 @@ class BaseGA(GA):
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         # select current best
         self.set_current_best(population)
-        history = [] # fitness history (current best)
-        best_generation_history = [] # fitness history (generation best) (same as history with elitism)
-        avg_history = [] # fitness history (average of each generation)
-        feasible_gen = max_generation # the generation in which the first feasible solution was found
-        feasible = self.current_best.feasible
-        # start optimizing
-        generation = 0
-        while generation < max_generation:
-            if verbose:
-                if feasible:
-                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
-                else:
-                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
-            population = self.next_generation(population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders)
-            # select current best
-            self.set_current_best(population)
-            history.append(self.current_best.fitness)
-            best_generation_history.append(population[0].fitness)
-            fitness = 0
-            for individual in population:
-                fitness += individual.fitness
-            avg_history.append(fitness / len(population))
-            if not feasible and self.current_best.feasible:
-                if verbose:
-                    print(f'Found first feasible solution!')
-                feasible_gen = generation
-                feasible = True
-            generation += 1
+
+        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose)
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 ###############################################################
@@ -220,11 +224,6 @@ class SimpleAgentGA(BaseGA):
         return individual
 
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
-        history = [] # fitness history (current best)
-        best_generation_history = [] # fitness history (generation best) (same as history with elitism)
-        avg_history = [] # fitness history (average of each generation)
-        feasible_gen = max_generation # the generation in which the first feasible solution was found
-        
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
             self.configure('ordercount', 'nocrossover', 'roulettewheel', 'orderchange', 'agent')
             self.set_maximize()
@@ -234,30 +233,7 @@ class SimpleAgentGA(BaseGA):
             population.append(self.create_individual(self.sequence, orders, earliest_time_slot, last_time_slot))
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         self.set_current_best(population)
-        feasible = self.current_best.feasible
-        generation = 0
-        while generation < max_generation:
-            if verbose:
-                if feasible:
-                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
-                else:
-                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
-            population = self.next_generation(population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders)
-            # select current best
-            self.set_current_best(population)
-            history.append(self.current_best.fitness)
-            best_generation_history.append(population[0].fitness)
-            fitness = 0
-            for individual in population:
-                fitness += individual.fitness
-            avg_history.append(fitness / len(population))
-            self.current_best.is_feasible(orders, self.environment, earliest_time_slot, last_time_slot)
-            if not feasible and self.current_best.feasible:
-                if verbose:
-                    print(f'Found first feasible solution!')
-                feasible_gen = generation
-                feasible = True
-            generation += 1
+        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose)
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 
