@@ -11,10 +11,15 @@ class Individual:
         self.feasible = False
 
     def set_gene(self, index, gene):
-        self.genes[index] = gene
+        self.genes[index] = copy.deepcopy(gene)
     
     def get_gene(self, index):
-        return self.genes[index]
+        return copy.deepcopy(self.genes[index])
+    
+    def is_feasible(self, orders, environment, earliest_slot, last_slot):
+        pass
+    
+class ScheduleIndividual(Individual):
     
     def is_feasible(self, orders, environment, earliest_slot, last_slot):
         self.feasbile = False
@@ -56,7 +61,27 @@ class Individual:
                     if operation[2] <= prev[2] + environment.get_duration(prev[0], prev[1]):
                         return False
         self.feasible = True
-        return True
+        return self.feasible
+
+class AgentIndividual(Individual):
+    
+    def is_feasible(self, orders, environment, earliest_slot, last_slot):
+        self.feasible = True
+        return self.feasible
+
+class IndividualFactory:
+
+    def __init__(self, minimize = True):
+        self.minimize = minimize
+
+    def create_individual(self, type : str, genes):
+        fitness = float('inf')
+        if not self.minimize:
+            fitness = 0
+        if type == 'schedule':
+            return ScheduleIndividual(genes, fitness)
+        elif type == 'agent':
+            return AgentIndividual(genes, fitness)
 
 class Particle:
 

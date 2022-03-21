@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, NoCrossover, Particle, OrderCountEvaluator, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
+from optimizer_components import BaseInputGenerator, Individual, IndividualFactory, NoCrossover, Particle, OrderCountEvaluator, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
 from agent import Agent, AgentSimulator
 
 class Optimizer:
@@ -69,7 +69,7 @@ class GA(Optimizer):
     def mutate(self, individuals, orders, earliest_slot, last_slot):
         self.mutation_method.mutate(individuals, orders, self.environment, earliest_slot, last_slot)
 
-    def configure(self, evaluation : str, recombination : str, selection : str, mutation : str):
+    def configure(self, evaluation : str, recombination : str, selection : str, mutation : str, individual_type : str = 'schedule'):
         # evaluation method
         if evaluation.lower() == 'tardiness':
             self.evaluation_method = TardinessEvaluator()
@@ -92,6 +92,8 @@ class GA(Optimizer):
             self.mutation_method = OnlyFeasibleTimeSlotMutation()
         elif mutation.lower() == 'orderchange':
             self.mutation_method = OrderChangeMutation()
+        self.individual_factory = IndividualFactory(self.minimize)
+        self.individual_type = individual_type
     
     def set_input_generator(self, generator : str):
         if generator.lower() == 'baseinputgenerator':
@@ -99,15 +101,15 @@ class GA(Optimizer):
         elif generator.lower() == 'samelengthalternativesgenerator':
             self.input_generator = SameLengthAlternativesInputGenerator()
 
+###############################################################
+###################For Schedule Optimization###################
+###############################################################
 class BaseGA(GA):
 
     def create_individual(self, input_format, orders, earliest_slot, last_slot):
+        self.individual_factory.minimize = self.minimize
         genes = copy.deepcopy(input_format)
-        if self.minimize:
-            individual = Individual(genes, sys.float_info.max)
-        else:
-            individual = Individual(genes, sys.float_info.min)
-        #self.mutate([individual], orders, earliest_slot, last_slot)
+        individual = self.individual_factory.create_individual(self.individual_type, genes)
         for i in range(len(genes)):
             self.mutation_method.mutate_gene(individual, orders, self.environment, i, earliest_slot, last_slot)
         return individual
@@ -193,19 +195,24 @@ class BaseGA(GA):
             generation += 1
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
-
-class SimpleAgentGA(GA):
+###############################################################
+##################For Agent-based Optimization#################
+###############################################################
+class SimpleAgentGA(BaseGA):
     
     def __init__(self, simulation_environment : SimulationEnvironment, agent : Agent, simulator : AgentSimulator):
         self.simulator = simulator
         self.agent = agent
         super().__init__(simulation_environment)
-    
-    def create_individual(self, input_format, orders, earliest_slot, last_slot):
-        return Individual(input_format, 0)
 
     def set_sequence(self, sequence):
         self.sequence = sequence
+    
+    def create_individual(self, input_format, orders, earliest_slot, last_slot):
+        self.individual_factory.minimize = self.minimize
+        genes = copy.deepcopy(input_format)
+        individual = self.individual_factory.create_individual(self.individual_type, genes)
+        return individual
 
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
         history = [] # fitness history (current best)
@@ -214,12 +221,12 @@ class SimpleAgentGA(GA):
         feasible_gen = max_generation # the generation in which the first feasible solution was found
         
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
-            self.configure('ordercount', 'nocrossover', 'roulettewheel', 'orderchange')
+            self.configure('ordercount', 'nocrossover', 'roulettewheel', 'orderchange', 'agent')
             self.set_maximize()
         # create starting population
         population = []
         for _ in range(population_size):
-            population.append(self.create_individual(copy.deepcopy(self.sequence), orders, earliest_time_slot, last_time_slot))
+            population.append(self.create_individual(self.sequence, orders, earliest_time_slot, last_time_slot))
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         self.current_best = population[0]
         for individual in population[1:]:
@@ -273,7 +280,7 @@ class SimpleAgentGA(GA):
             for individual in population:
                 fitness += individual.fitness
             avg_history.append(fitness / len(population))
-            self.is_feasible(self.current_best)
+            self.current_best.is_feasible(orders, self.environment, earliest_time_slot, last_time_slot)
             if not feasible and self.current_best.feasible:
                 if verbose:
                     print(f'Found first feasible solution!')
@@ -281,9 +288,6 @@ class SimpleAgentGA(GA):
                 feasible = True
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
-    def is_feasible(self, individual):
-        # TODO: check for feasibility
-        individual.feasible = True
 
 class PSO(Optimizer):
     
