@@ -94,12 +94,37 @@ class GA(Optimizer):
             self.mutation_method = OrderChangeMutation()
         self.individual_factory = IndividualFactory(self.minimize)
         self.individual_type = individual_type
+        self.recombination_method.set_individual_factory(self.individual_factory, self.individual_type)
     
     def set_input_generator(self, generator : str):
         if generator.lower() == 'baseinputgenerator':
             self.input_generator = BaseInputGenerator()
         elif generator.lower() == 'samelengthalternativesgenerator':
             self.input_generator = SameLengthAlternativesInputGenerator()
+
+    def set_current_best(self, population):
+        if not self.current_best:
+            self.current_best = population[0]
+        for individual in population[1:]:
+            if self.minimize:
+                if individual.fitness < self.current_best.fitness:
+                    self.current_best = copy.deepcopy(individual)
+            else:
+                if individual.fitness > self.current_best.fitness:
+                    self.current_best = copy.deepcopy(individual)
+
+    def create_offsprings(self, population, offspring_amount):
+        offsprings = []
+        i = 0
+        while i < offspring_amount:
+            # recombine
+            offspring1, offspring2 = self.recombine(population)
+            offsprings.append(offspring1)
+            i += 1
+            if len(offsprings) + 1 < offspring_amount:
+                offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
+                i += 1
+        return offsprings
 
 ###############################################################
 ###################For Schedule Optimization###################
@@ -128,14 +153,7 @@ class BaseGA(GA):
         # evaluate starting population
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         # select current best
-        self.current_best = population[0]
-        for individual in population[1:]:
-            if self.minimize:
-                if individual.fitness < self.current_best.fitness:
-                    self.current_best = copy.deepcopy(individual)
-            else:
-                if individual.fitness > self.current_best.fitness:
-                    self.current_best = copy.deepcopy(individual)
+        self.set_current_best(population)
         history = [] # fitness history (current best)
         best_generation_history = [] # fitness history (generation best) (same as history with elitism)
         avg_history = [] # fitness history (average of each generation)
@@ -150,15 +168,7 @@ class BaseGA(GA):
                 else:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
             # create offsprings
-            i = 0
-            while i < offspring_amount:
-                # recombine
-                offspring1, offspring2 = self.recombine(population)
-                offsprings.append(offspring1)
-                i += 1
-                if len(offsprings) + 1 < offspring_amount:
-                    offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
-                    i += 1
+            offsprings = self.create_offsprings(population, offspring_amount)
             # mutation
             self.mutate(offsprings, orders, earliest_time_slot, last_time_slot)
             # evaluate offsprings
@@ -171,16 +181,7 @@ class BaseGA(GA):
                 all.sort(key=lambda x: x.fitness, reverse=True)
             population = all[0:population_size]
             # select current best
-            if self.minimize:
-                if population[0].fitness < self.current_best.fitness:
-                    if verbose:
-                        print(f'New best individual found!')
-                    self.current_best = copy.deepcopy(population[0])
-            else:
-                if population[0].fitness > self.current_best.fitness:
-                    if verbose:
-                        print(f'New best individual found!')
-                    self.current_best = copy.deepcopy(population[0])
+            self.set_current_best(population)
             history.append(self.current_best.fitness)
             best_generation_history.append(population[0].fitness)
             fitness = 0
@@ -228,14 +229,7 @@ class SimpleAgentGA(BaseGA):
         for _ in range(population_size):
             population.append(self.create_individual(self.sequence, orders, earliest_time_slot, last_time_slot))
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
-        self.current_best = population[0]
-        for individual in population[1:]:
-            if self.minimize:
-                if individual.fitness < self.current_best.fitness:
-                    self.current_best = copy.deepcopy(individual)
-            else:
-                if individual.fitness > self.current_best.fitness:
-                    self.current_best = copy.deepcopy(individual)
+        self.set_current_best(population)
         feasible = self.current_best.feasible
         offsprings = []
         for generation in range(max_generation):
@@ -245,15 +239,7 @@ class SimpleAgentGA(BaseGA):
                 else:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
             # create offsprings
-            i = 0
-            while i < offspring_amount:
-                # recombine
-                offspring1, offspring2 = self.recombine(population)
-                offsprings.append(offspring1)
-                i += 1
-                if len(offsprings) + 1 < offspring_amount:
-                    offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
-                    i += 1
+            self.create_offsprings(population, offspring_amount)
             # evaluate offsprings
             self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
             # select next generation
@@ -264,16 +250,7 @@ class SimpleAgentGA(BaseGA):
                 all.sort(key=lambda x: x.fitness, reverse=True)
             population = all[0:population_size]
             # select current best
-            if self.minimize:
-                if population[0].fitness < self.current_best.fitness:
-                    if verbose:
-                        print(f'New best individual found!')
-                    self.current_best = copy.deepcopy(population[0])
-            else:
-                if population[0].fitness > self.current_best.fitness:
-                    if verbose:
-                        print(f'New best individual found!')
-                    self.current_best = copy.deepcopy(population[0])
+            self.set_current_best(population)
             history.append(self.current_best.fitness)
             best_generation_history.append(population[0].fitness)
             fitness = 0

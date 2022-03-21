@@ -18,7 +18,7 @@ class Individual:
     
     def is_feasible(self, orders, environment, earliest_slot, last_slot):
         pass
-    
+
 class ScheduleIndividual(Individual):
     
     def is_feasible(self, orders, environment, earliest_slot, last_slot):
@@ -138,6 +138,10 @@ class OrderCountEvaluator(EvaluationMethod):
 # Recombination Methods
 class RecombinationMethod:
 
+    def set_individual_factory(self, individual_factory : IndividualFactory, type : str):
+        self.individual_factory = individual_factory
+        self.type = type
+
     def recombine(self, parent1, parent2):
         pass
 ##################################################
@@ -147,8 +151,10 @@ class OnePointCrossover(RecombinationMethod):
 
     def recombine(self, parent1, parent2):
         crossover_point = random.randint(0, len(parent1.genes))
-        child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
-        child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
+        child1 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent1.genes))
+        child2 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent2.genes))
+        #child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
+        #child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point, len(parent1.genes)):
             child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
             child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
@@ -159,8 +165,10 @@ class TwoPointCroosover(RecombinationMethod):
     def recombine(self, parent1, parent2):
         crossover_point1 = random.randint(0, len(parent1.genes) - 1) # -1 to make sure there can be a second point
         crossover_point2 = random.randint(crossover_point1 + 1, len(parent1.genes))
-        child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
-        child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
+        child1 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent1.genes))
+        child2 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent2.genes))
+        #child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
+        #child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point1, crossover_point2):
             child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
             child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
