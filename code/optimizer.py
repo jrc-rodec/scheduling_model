@@ -92,6 +92,7 @@ class GA(Optimizer):
             self.mutation_method = OnlyFeasibleTimeSlotMutation()
         elif mutation.lower() == 'orderchange':
             self.mutation_method = OrderChangeMutation()
+        # individual factory
         self.individual_factory = IndividualFactory(self.minimize)
         self.individual_type = individual_type
         self.recombination_method.set_individual_factory(self.individual_factory, self.individual_type)
@@ -126,6 +127,22 @@ class GA(Optimizer):
                 i += 1
         return offsprings
 
+    def next_generation(self, current_population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders):
+        # create offsprings
+        offsprings = self.create_offsprings(current_population, offspring_amount)
+        # mutation
+        self.mutate(offsprings, orders, earliest_time_slot, last_time_slot)
+        # evaluate offsprings
+        self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
+        # select next generation
+        all = current_population + offsprings # use elitism for now
+        if self.minimize:
+            all.sort(key=lambda x: x.fitness, reverse=False)
+        else:
+            all.sort(key=lambda x: x.fitness, reverse=True)
+        population = all[0:population_size]
+        return population
+
 ###############################################################
 ###################For Schedule Optimization###################
 ###############################################################
@@ -146,7 +163,6 @@ class BaseGA(GA):
             self.input_generator = BaseInputGenerator()
         input = self.input_generator.generate_input(orders, self.environment, earliest_time_slot, last_time_slot)
         population = []
-        offsprings = []
         # create starting population
         for _ in range(population_size):
             population.append(self.create_individual(input, orders, earliest_time_slot, last_time_slot))
@@ -167,19 +183,7 @@ class BaseGA(GA):
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
                 else:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
-            # create offsprings
-            offsprings = self.create_offsprings(population, offspring_amount)
-            # mutation
-            self.mutate(offsprings, orders, earliest_time_slot, last_time_slot)
-            # evaluate offsprings
-            self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
-            # select next generation
-            all = population + offsprings # use elitism for now
-            if self.minimize:
-                all.sort(key=lambda x: x.fitness, reverse=False)
-            else:
-                all.sort(key=lambda x: x.fitness, reverse=True)
-            population = all[0:population_size]
+            population = self.next_generation(population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders)
             # select current best
             self.set_current_best(population)
             history.append(self.current_best.fitness)
@@ -231,24 +235,14 @@ class SimpleAgentGA(BaseGA):
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         self.set_current_best(population)
         feasible = self.current_best.feasible
-        offsprings = []
-        for generation in range(max_generation):
+        generation = 0
+        while generation < max_generation:
             if verbose:
                 if feasible:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
                 else:
                     print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
-            # create offsprings
-            self.create_offsprings(population, offspring_amount)
-            # evaluate offsprings
-            self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
-            # select next generation
-            all = population + offsprings # use elitism for now
-            if self.minimize:
-                all.sort(key=lambda x: x.fitness, reverse=False)
-            else:
-                all.sort(key=lambda x: x.fitness, reverse=True)
-            population = all[0:population_size]
+            population = self.next_generation(population, population_size, offspring_amount, earliest_time_slot, last_time_slot, orders)
             # select current best
             self.set_current_best(population)
             history.append(self.current_best.fitness)
@@ -263,6 +257,7 @@ class SimpleAgentGA(BaseGA):
                     print(f'Found first feasible solution!')
                 feasible_gen = generation
                 feasible = True
+            generation += 1
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 

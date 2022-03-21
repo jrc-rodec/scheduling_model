@@ -312,7 +312,7 @@ class OrderChangeMutation(MutationMethod):
             p = self.p
         for individual in individuals:
             if random.uniform(0, 1) < p:
-                self.mutate_gene(individual, orders, environment, earliest_slot, last_slot)
+                self.mutate_gene(individual, orders, environment, 0, earliest_slot, last_slot)
 
 # Helper methods
 def map_index_to_operation(index, orders, environment):
