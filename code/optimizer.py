@@ -204,6 +204,9 @@ class SimpleAgentGA(GA):
     def create_individual(self, input_format, orders, earliest_slot, last_slot):
         return Individual(input_format, 0)
 
+    def set_sequence(self, sequence):
+        self.sequence = sequence
+
     def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
         history = [] # fitness history (current best)
         best_generation_history = [] # fitness history (generation best) (same as history with elitism)
@@ -216,7 +219,7 @@ class SimpleAgentGA(GA):
         # create starting population
         population = []
         for _ in range(population_size):
-            population.append(self.create_individual(copy.deepcopy(orders), orders, earliest_time_slot, last_time_slot))
+            population.append(self.create_individual(copy.deepcopy(self.sequence), orders, earliest_time_slot, last_time_slot))
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         self.current_best = population[0]
         for individual in population[1:]:
@@ -270,6 +273,7 @@ class SimpleAgentGA(GA):
             for individual in population:
                 fitness += individual.fitness
             avg_history.append(fitness / len(population))
+            self.is_feasible(self.current_best)
             if not feasible and self.current_best.feasible:
                 if verbose:
                     print(f'Found first feasible solution!')
@@ -277,6 +281,9 @@ class SimpleAgentGA(GA):
                 feasible = True
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
+    def is_feasible(self, individual):
+        # TODO: check for feasibility
+        individual.feasible = True
 
 class PSO(Optimizer):
     
