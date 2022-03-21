@@ -125,6 +125,11 @@ class TwoPointCroosover(RecombinationMethod):
             child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
         return child1, child2
 
+class NoCrossover(RecombinationMethod):
+
+    def recombine(self, parent1, parent2):
+        return copy.deepcopy(parent1), copy.deepcopy(parent2)
+
 # Selection Methods
 class SelectionMethod:
 
@@ -160,6 +165,9 @@ class RouletteWheelSelection(SelectionMethod):
 # Mutation Methods
 class MutationMethod:
 
+    def __init__(self, mutation_probability=None):
+        self.p = mutation_probability
+
     def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
         pass
 
@@ -191,7 +199,10 @@ class RandomizeMutation(MutationMethod):
 
     def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
-            p = 1 / len(individual.genes)
+            if not self.p:
+                p = 1 / len(individual.genes)
+            else:
+                p = self.p
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
                     self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
@@ -225,10 +236,34 @@ class OnlyFeasibleTimeSlotMutation(MutationMethod):
 
     def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
-            p = 1 / len(individual.genes)
+            if not self.p:
+                p = 1 / len(individual.genes)
+            else:
+                p = self.p
             for i in range(len(individual.genes)):
                 if random.uniform(0, 1) < p:
                     self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
+
+
+class OrderChangeMutation(MutationMethod):
+
+    def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
+        p1 = random.randint(0, len(individual.genes) - 2) # guarantee that a second point can exist
+        p2 = random.randint(p1, len(individual.genes) - 1)
+        genes = copy.deepcopy(individual.genes)
+        selected = copy.deepcopy(genes[p1 : p2 + 1]) # selector is upper bound exclusive 
+        selected.reverse()
+        for i in range(len(selected)):
+            individual.genes[p1 + i] = copy.deepcopy(selected[i])
+
+    def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
+        if not self.p:
+            p = 1.0
+        else:
+            p = self.p
+        for individual in individuals:
+            if random.uniform(0, 1) < p:
+                self.mutate_gene(individual, orders, environment, earliest_slot, last_slot)
 
 # Helper methods
 def map_index_to_operation(index, orders, environment):

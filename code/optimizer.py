@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, Particle, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation
+from optimizer_components import BaseInputGenerator, Individual, NoCrossover, Particle, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
 
 
 class Optimizer:
@@ -78,6 +78,8 @@ class GA(Optimizer):
             self.recombination_method = OnePointCrossover()
         elif recombination.lower() == 'twopointcrossover':
             self.recombination_method = TwoPointCroosover()
+        elif recombination.lower() == 'nocrossover':
+            self.recombination_method = NoCrossover()
         # selection method
         if selection.lower() == 'roulettewheel':
             self.selection_method = RouletteWheelSelection()
@@ -86,6 +88,8 @@ class GA(Optimizer):
             self.mutation_method = RandomizeMutation()
         elif mutation.lower() == 'onlyfeasibletimeslot':
             self.mutation_method = OnlyFeasibleTimeSlotMutation()
+        elif mutation.lower() == 'orderchange':
+            self.mutation_method = OrderChangeMutation()
     
     def set_input_generator(self, generator : str):
         if generator.lower() == 'baseinputgenerator':
