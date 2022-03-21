@@ -4,8 +4,8 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, NoCrossover, Particle, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
-
+from optimizer_components import BaseInputGenerator, Individual, NoCrossover, Particle, OrderCountEvaluator, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
+from agent import Agent, AgentSimulator
 
 class Optimizer:
 
@@ -73,6 +73,8 @@ class GA(Optimizer):
         # evaluation method
         if evaluation.lower() == 'tardiness':
             self.evaluation_method = TardinessEvaluator()
+        elif evaluation.lower() == 'ordercount':
+            self.evaluation_method = OrderCountEvaluator()
         # recombination method
         if recombination.lower() == 'onepointcrossover':
             self.recombination_method = OnePointCrossover()
@@ -98,9 +100,6 @@ class GA(Optimizer):
             self.input_generator = SameLengthAlternativesInputGenerator()
 
 class BaseGA(GA):
-
-    def __init__(self, simulation_environment : SimulationEnvironment):
-        super().__init__(simulation_environment)
 
     def create_individual(self, input_format, orders, earliest_slot, last_slot):
         genes = copy.deepcopy(input_format)
@@ -131,10 +130,10 @@ class BaseGA(GA):
         for individual in population[1:]:
             if self.minimize:
                 if individual.fitness < self.current_best.fitness:
-                    self.current_best = individual
+                    self.current_best = copy.deepcopy(individual)
             else:
                 if individual.fitness > self.current_best.fitness:
-                    self.current_best = individual
+                    self.current_best = copy.deepcopy(individual)
         history = [] # fitness history (current best)
         best_generation_history = [] # fitness history (generation best) (same as history with elitism)
         avg_history = [] # fitness history (average of each generation)
@@ -174,12 +173,12 @@ class BaseGA(GA):
                 if population[0].fitness < self.current_best.fitness:
                     if verbose:
                         print(f'New best individual found!')
-                    self.current_best = population[0]
+                    self.current_best = copy.deepcopy(population[0])
             else:
                 if population[0].fitness > self.current_best.fitness:
                     if verbose:
                         print(f'New best individual found!')
-                    self.current_best = population[0]
+                    self.current_best = copy.deepcopy(population[0])
             history.append(self.current_best.fitness)
             best_generation_history.append(population[0].fitness)
             fitness = 0
@@ -192,6 +191,90 @@ class BaseGA(GA):
                 feasible_gen = generation
                 feasible = True
             generation += 1
+        return self.current_best, history, avg_history, best_generation_history, feasible_gen
+
+
+class SimpleAgentGA(GA):
+    
+    def __init__(self, simulation_environment : SimulationEnvironment, agent : Agent, simulator : AgentSimulator):
+        self.simulator = simulator
+        self.agent = agent
+        super().__init__(simulation_environment)
+    
+    def create_individual(self, input_format, orders, earliest_slot, last_slot):
+        return Individual(input_format, 0)
+
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+        history = [] # fitness history (current best)
+        best_generation_history = [] # fitness history (generation best) (same as history with elitism)
+        avg_history = [] # fitness history (average of each generation)
+        feasible_gen = max_generation # the generation in which the first feasible solution was found
+        
+        if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
+            self.configure('ordercount', 'nocrossover', 'roulettewheel', 'orderchange')
+            self.set_maximize()
+        # create starting population
+        population = []
+        for _ in range(population_size):
+            population.append(self.create_individual(copy.deepcopy(orders), orders, earliest_time_slot, last_time_slot))
+        self.evaluate(population, orders, earliest_time_slot, last_time_slot)
+        self.current_best = population[0]
+        for individual in population[1:]:
+            if self.minimize:
+                if individual.fitness < self.current_best.fitness:
+                    self.current_best = copy.deepcopy(individual)
+            else:
+                if individual.fitness > self.current_best.fitness:
+                    self.current_best = copy.deepcopy(individual)
+        feasible = self.current_best.feasible
+        offsprings = []
+        for generation in range(max_generation):
+            if verbose:
+                if feasible:
+                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}')
+                else:
+                    print(f'Current generation: {generation}, Current Best: {self.current_best.fitness}, not feasible')
+            # create offsprings
+            i = 0
+            while i < offspring_amount:
+                # recombine
+                offspring1, offspring2 = self.recombine(population)
+                offsprings.append(offspring1)
+                i += 1
+                if len(offsprings) + 1 < offspring_amount:
+                    offsprings.append(offspring2) # discard offspring 2 if too many offsprings were created
+                    i += 1
+            # evaluate offsprings
+            self.evaluate(offsprings, orders, earliest_time_slot, last_time_slot)
+            # select next generation
+            all = population + offsprings # use elitism for now
+            if self.minimize:
+                all.sort(key=lambda x: x.fitness, reverse=False)
+            else:
+                all.sort(key=lambda x: x.fitness, reverse=True)
+            population = all[0:population_size]
+            # select current best
+            if self.minimize:
+                if population[0].fitness < self.current_best.fitness:
+                    if verbose:
+                        print(f'New best individual found!')
+                    self.current_best = copy.deepcopy(population[0])
+            else:
+                if population[0].fitness > self.current_best.fitness:
+                    if verbose:
+                        print(f'New best individual found!')
+                    self.current_best = copy.deepcopy(population[0])
+            history.append(self.current_best.fitness)
+            best_generation_history.append(population[0].fitness)
+            fitness = 0
+            for individual in population:
+                fitness += individual.fitness
+            avg_history.append(fitness / len(population))
+            if not feasible and self.current_best.feasible:
+                if verbose:
+                    print(f'Found first feasible solution!')
+                feasible_gen = generation
+                feasible = True
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 
@@ -277,4 +360,5 @@ class PSO(Optimizer):
             self.evaluate(orders, orders, last_time_slot)
         current_best.individual.genes = copy.deepcopy(current_best.best_genes)
         current_best.individual.fitness = copy.deepcopy(current_best.best_fitness)
+
         return current_best.individual

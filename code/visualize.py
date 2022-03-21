@@ -49,6 +49,18 @@ def visualize(workstations, history, avg_history, best_generation_history, feasi
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
     fig.show()
+    fitness_history_plot(history, avg_history, feasible_gen, best_generation_history)
+    """x = list(range(0, len(history)))
+    plt.plot(x, history)
+    plt.plot(x, avg_history, 'r')
+    plt.axvline(x=feasible_gen, color='g')
+    #plt.plot(x, best_generation_history, 'r+') # with elitism, current best is always part of current generation
+    plt.legend(['Best Known Fitness', 'Average Generation Fitness', 'First Feasible Solution', 'Best Generation Fitness'])
+    plt.xlabel = 'Generation'
+    plt.ylabel = 'Fitness'
+    plt.show()"""
+
+def fitness_history_plot(history, avg_history, feasible_gen, best_generation_history = None):
     x = list(range(0, len(history)))
     plt.plot(x, history)
     plt.plot(x, avg_history, 'r')

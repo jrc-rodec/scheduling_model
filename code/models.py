@@ -89,6 +89,7 @@ class Schedule:
     def is_feasible(self) -> bool:
         pass
 
+
 class SimulationEnvironment:
     
     def __init__(self, workstations, tasks, resources, recipes):

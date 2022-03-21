@@ -1,6 +1,8 @@
 import random
 import copy
 
+from agent import AgentSimulator, Agent
+
 class Individual:
 
     def __init__(self, genes, fitness):
@@ -93,6 +95,20 @@ class TardinessEvaluator(EvaluationMethod):
                 if individual.genes[i][2] + duration > order[1]:
                     fitness += 1 # counts every OPERATIONS after deadline
             individual.fitness = fitness
+
+
+class OrderCountEvaluator(EvaluationMethod):
+    
+    def set_simulator(self, simulator : AgentSimulator):
+        self.simulator = simulator
+    
+    def set_agent(self, agent : Agent):
+        self.agent = agent
+
+    def evaluate(self, individuals, orders, environment, earliest_slot, last_slot):
+        for individual in individuals:
+            _, schedule_count = self.simulator.simulate(self.agent, individual.genes)
+            individual.fitness = schedule_count
 
 # Recombination Methods
 class RecombinationMethod:
