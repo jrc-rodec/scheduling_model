@@ -81,10 +81,10 @@ class Schedule:
             return self.assignments[workstation_id]
         return None
 
-    def add(self, assignment : tuple, task_id : int):
+    def add(self, assignment : tuple, task_id : int, order_id : int):
         if assignment[0] not in self.assignments:
             self.assignments[assignment[0]] = list()
-        self.assignments[assignment[0]].append((task_id, assignment[1]))
+        self.assignments[assignment[0]].append([task_id, assignment[1], order_id])
 
     def is_feasible(self) -> bool:
         pass

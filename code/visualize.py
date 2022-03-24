@@ -80,7 +80,7 @@ def visualize_schedule(schedule : Schedule, environment : SimulationEnvironment)
         for assignment in schedule.assignments_for(workstation):
             duration = environment.get_duration(assignment[0], workstation.external_id)
             data.append(
-                dict(Task=label, Start=assignment[1], Finish=assignment[1] + duration, Resource=f'{assignment[0]}') # not last part should be replaced with order id
+                dict(Task=label, Start=assignment[1], Finish=assignment[1] + duration, Resource=f'{assignment[2]}') # not last part should be replaced with order id
             )
             if assignment[0] not in tasks:
                 tasks.append(assignment[0])

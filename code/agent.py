@@ -83,7 +83,7 @@ class GreedyAgent(Agent):
                         break            
                 if chosen_workstation:    
                     prev_duration += duration
-                    self.state.add((chosen_workstation, start_slot), task.external_id)
+                    self.state.add((chosen_workstation, start_slot), task.external_id, order.external_id)
                     success_count += 1
                 else:
                     if not order.divisible: # if order can not only be partially fullfilled too
