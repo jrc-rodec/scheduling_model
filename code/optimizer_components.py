@@ -45,15 +45,12 @@ class ScheduleIndividual(Individual):
                 order_operations[order[2]] = []
             order_operations[order[2]].append(data)
         for order_id in order_operations.keys():
-            order = None
+            #order = None
             for order in orders:
                 if order[2] == order_id:
                     order = order
                     break
-            amount = len(environment.recipes[order[0]].tasks)
-            # somehow an operation vanished
-            if len(order_operations[order_id]) != amount:
-                return False
+
             for j in range(len(order_operations[order_id])):
                 if j > 0:
                     operation = order_operations[order_id][j]
@@ -134,6 +131,21 @@ class OrderCountEvaluator(EvaluationMethod):
         for individual in individuals:
             _, schedule_count = self.simulator.simulate(self.agent, individual.genes)
             individual.fitness = schedule_count
+            individual.is_feasible(orders, environment, earliest_slot, last_slot)
+            if not individual.feasible:
+                individual.fitness = individual.fitness + len(orders)
+
+
+"""class MakeSpanEvaluator(EvaluationMethod):
+    
+    def evaluate(self, individuals, orders, environment, earliest_slot, last_slot):
+        for individual in individuals:
+            fitness = 0
+            # check for feasibility
+            if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
+                fitness += len(individual.genes)
+            # evaluate genes"""
+
 
 # Recombination Methods
 class RecombinationMethod:
