@@ -12,6 +12,23 @@ class Agent:
     def get_state(self) -> Schedule:
         return self.state
 
+    def is_blocked(self, workstation_id, start_time, duration):
+        assignments = self.state.assignments_for(workstation_id)
+        if assignments:
+            for assignment in assignments:
+                assignment_start_time = assignment[1]
+                assignment_duration = self.environment.get_duration(assignment[0], workstation_id)
+                if start_time > assignment_start_time and start_time < assignment_start_time + assignment_duration:
+                    return True
+                if start_time + duration > assignment_start_time and start_time + duration < assignment_start_time + assignment_duration:
+                    return True
+                # if new task is longer than already scheduled task, it could start before and end after -> overlap
+                if assignment_start_time > start_time and assignment_start_time < start_time + duration:
+                    return True
+                if assignment_start_time + assignment_duration > start_time and assignment_start_time + assignment_duration < start_time + duration:
+                    return True
+        return False
+
 class AgentSimulator:
 
     def __init__(self):
@@ -40,24 +57,7 @@ class GreedyAgent(Agent):
         task = random.choice(recipe.tasks)
         tasks.append(task)
         self.pick_random(task.id, tasks)
-        return tasks
-
-    def is_blocked(self, workstation_id, start_time, duration):
-        assignments = self.state.assignments_for(workstation_id)
-        if assignments:
-            for assignment in assignments:
-                assignment_start_time = assignment[1]
-                assignment_duration = self.environment.get_duration(assignment[0], workstation_id)
-                if start_time > assignment_start_time and start_time < assignment_start_time + assignment_duration:
-                    return True
-                if start_time + duration > assignment_start_time and start_time + duration < assignment_start_time + assignment_duration:
-                    return True
-                # if new task is longer than already scheduled task, it could start before and end after -> overlap
-                if assignment_start_time > start_time and assignment_start_time < start_time + duration:
-                    return True
-                if assignment_start_time + assignment_duration > start_time and assignment_start_time + assignment_duration < start_time + duration:
-                    return True
-        return False 
+        return tasks 
 
     def process(self, order : Order):
         recipes = []
