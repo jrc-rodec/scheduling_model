@@ -77,11 +77,11 @@ class GA(Optimizer):
             self.evaluation_method = OrderCountEvaluator()
         # recombination method
         if recombination.lower() == 'onepointcrossover':
-            self.recombination_method = OnePointCrossover()
+            self.recombination_method = OnePointCrossover(self.environment)
         elif recombination.lower() == 'twopointcrossover':
-            self.recombination_method = TwoPointCroosover()
+            self.recombination_method = TwoPointCroosover(self.environment)
         elif recombination.lower() == 'nocrossover':
-            self.recombination_method = NoCrossover()
+            self.recombination_method = NoCrossover(self.environment)
         # selection method
         if selection.lower() == 'roulettewheel':
             self.selection_method = RouletteWheelSelection()
@@ -149,6 +149,8 @@ class GA(Optimizer):
         avg_history = [] # fitness history (average of each generation)
         feasible_gen = max_generation # the generation in which the first feasible solution was found
         feasible = self.current_best.feasible
+        if feasible:
+            feasible_gen = 0
         generation = 0
         while generation < max_generation:
             if verbose:

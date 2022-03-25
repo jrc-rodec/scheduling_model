@@ -60,11 +60,22 @@ class ScheduleIndividual(Individual):
         self.feasible = True
         return self.feasible
 
+
 class AgentIndividual(Individual):
     
     def is_feasible(self, orders, environment, earliest_slot, last_slot):
         self.feasible = True
         return self.feasible
+
+
+class VLCIndividual(Individual):
+
+    def __init__(self, genes, fitness):
+        self.unscheduled_orders = []
+        super().__init__(genes, fitness)
+
+    def is_feasible(self, orders, environment, earliest_slot, last_slot):
+        return True
 
 class IndividualFactory:
 
@@ -150,6 +161,10 @@ class OrderCountEvaluator(EvaluationMethod):
 # Recombination Methods
 class RecombinationMethod:
 
+    def __init__(self, environment, orders = None):
+        self.environment = environment
+        self.orders = orders
+
     def set_individual_factory(self, individual_factory : IndividualFactory, type : str):
         self.individual_factory = individual_factory
         self.type = type
@@ -190,6 +205,85 @@ class NoCrossover(RecombinationMethod):
 
     def recombine(self, parent1, parent2):
         return copy.deepcopy(parent1), copy.deepcopy(parent2)
+
+def to_order_list(individual, orders, environment):
+    genes = copy.deepcopy(individual.genes)
+    current_order = -1
+    result = []
+    for i in range(len(genes)):
+        _, order_id = map_index_to_operation(i, orders, environment)
+        if order_id != current_order:
+            result.append(order_id)
+            current_order = order_id
+    return result
+
+def get_genes_for_order(id, individual, orders, environment):
+    result = []
+    for i in range(individual.genes):
+        _, order_id = map_index_to_operation(i, orders, environment)
+        if order_id == id:
+            result.append(copy.deepcopy(individual.genes[i]))
+    return result
+
+class VLCCrossover(RecombinationMethod):
+    
+    def __init__(self, environment, orders = None, minimize=True):
+        self.individual_factory = IndividualFactory(minimize)
+        self.type = "vlcindividual"
+    
+    def set_individual_factory(self, individual_factory : IndividualFactory, type : str):
+        print(f'IndividualFactory for VLC-Crossover is fixed and should not be changed')
+
+    def recombine(self, parent1, parent2):
+        p1 = copy.deepcopy(parent1)
+        p2 = copy.deepcopy(parent2)
+        # change list of genes into list of orders
+        p1_orders = to_order_list(p1, self.orders, self.environment)
+        p2_orders = to_order_list(p2, self.orders, self.environment)
+        # recombine on order basis
+        unscheduled_orders = []
+        for order in p1.unscheduled_orders:
+            if order not in unscheduled_orders:
+                unscheduled_orders.append(order)
+        for order in p2.unscheduled_orders:
+            if order not in unscheduled_orders:
+                unscheduled_orders.append(order)
+        c_unscheduled_orders = copy.deepcopy(unscheduled_orders)
+        c_genes = []
+        c_orders = []
+        # uniform crossover (including distinct orders)
+        shared_orders = []
+        for order in p1_orders:
+            if order not in p2_orders:
+                if random.uniform(0, 1) > 0.5:
+                    # take order from p1
+                    genes = get_genes_for_order(order, p1, self.orders, self.environment)
+                    c_genes.append(genes)
+                    c_orders.append(order)
+                elif order not in shared_orders:
+                    if random.uniform(0, 1) > 0.5:
+                        # take order from p1
+                        genes = get_genes_for_order(order, p1, self.orders, self.environment)
+                        c_genes.append(genes)
+                        c_orders.append(order)
+                    else:
+                        # take order from p2
+                        genes = get_genes_for_order(order, p2, self.orders, self.environment)
+                        c_genes.append(genes)
+                        c_orders.append(order)
+        for order in p2_orders:
+            if order not in p1_orders:
+                if random.uniform(0, 1) > 0.5:
+                    # take order from p2
+                    genes = get_genes_for_order(order, p2, self.orders, self.environment)
+                    c_genes.append(genes)
+                    c_orders.append(order)
+        child = self.individual_factory.create_individual(self.type, c_genes)
+        for order in c_unscheduled_orders:
+            if order not in c_orders:
+                child.unscheduled_orders.append(order)
+        return child
+
 
 # Selection Methods
 class SelectionMethod:
