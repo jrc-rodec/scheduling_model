@@ -90,6 +90,8 @@ class IndividualFactory:
             return ScheduleIndividual(genes, fitness)
         elif type == 'agent':
             return AgentIndividual(genes, fitness)
+        elif type == 'vlcindividual':
+            return VLCIndividual(genes, fitness)
 
 class Particle:
 
@@ -206,24 +208,6 @@ class NoCrossover(RecombinationMethod):
     def recombine(self, parent1, parent2):
         return copy.deepcopy(parent1), copy.deepcopy(parent2)
 
-def to_order_list(individual, orders, environment):
-    genes = copy.deepcopy(individual.genes)
-    current_order = -1
-    result = []
-    for i in range(len(genes)):
-        _, order_id = map_index_to_operation(i, orders, environment)
-        if order_id != current_order:
-            result.append(order_id)
-            current_order = order_id
-    return result
-
-def get_genes_for_order(id, individual, orders, environment):
-    result = []
-    for i in range(individual.genes):
-        _, order_id = map_index_to_operation(i, orders, environment)
-        if order_id == id:
-            result.append(copy.deepcopy(individual.genes[i]))
-    return result
 
 class VLCCrossover(RecombinationMethod):
     
@@ -420,6 +404,62 @@ class OrderChangeMutation(MutationMethod):
             if random.uniform(0, 1) < p:
                 self.mutate_gene(individual, orders, environment, 0, earliest_slot, last_slot)
 
+class VLCMutation(MutationMethod):
+
+    def __init__(self, mutation_probability=None):
+        self.add_p = 0.1 # probability of readding a currently unscheduled order
+        self.remove_p = 0.1 # probability of removing a currently scheduled order
+        super().__init__(mutation_probability)
+
+    # NOTE: copied from RandomizeMutation
+    def mutate_gene(self, individual, orders, environment, index, earliest_slot, last_slot):
+        # new gene format <task_id, machine_id, start_time>
+        operation_index, order = map_index_to_operation(index, orders, environment)
+        tasks = environment.recipes[order[0]].tasks#environment.get_all_tasks_for_recipe(environment.recipes[order[0]].external_id)#environment.recipes[order[0]].tasks#get_all_tasks_for_recipe(recipes[order[0]], tasks)
+        result_resource = tasks[operation_index].result_resources[0][0] # pick result resource 0 as default for now
+        possible_tasks = []
+        for task in tasks:
+            if task.result_resources[0][0] == result_resource:
+                possible_tasks.append(task)
+        task = random.choice(tasks)
+        workstation_list = []
+        for workstation in environment.workstations:
+            for w_task in workstation.tasks:
+                if w_task[0] == task.external_id:
+                    workstation_list.append(workstation)
+        individual.genes[index][0] = task.external_id
+        individual.genes[index][1] = random.choice(workstation_list).external_id
+        individual.genes[index][2] = random.randint(earliest_slot, last_slot)
+
+    def mutate(self, individuals, orders, environment, earliest_slot, last_slot):
+        for individual in individuals:
+            # add or remove orders
+            if len(individual.unscheduled_orders) > 0:
+                if random.uniform(0, 1) < self.add_p:
+                    order_id = random.choice(individual.unscheduled_orders)
+                    # create genes for selected order
+                    order = get_by_id(orders, order_id)
+                    tasks = order.tasks
+                    for task in tasks:
+                        individual.genes.append([task.external_id,0,0])
+            if len(individual.genes) > 0: # just to be safe
+                if random.uniform(0, 1) < self.remove_p:
+                    scheduled_orders = to_order_list(individual, orders, environment)
+                    order_id = random.choice(scheduled_orders)
+                    # remove genes for selected order
+                    genes = get_genes_for_order(order_id, individual, orders, environment)
+                    for gene in genes:
+                        individual.genes.remove(gene) # should work (?)
+                    individual.unscheduled_orders.append(order_id)
+            # mutate genes
+            if not self.p:
+                p = 1 / len(individual.genes)
+            else:
+                p = self.p
+            for i in range(len(individual.genes)):
+                if random.uniform(0, 1) < p:
+                    self.mutate_gene(individual, orders, environment, i, earliest_slot, last_slot)
+
 # Helper methods
 def map_index_to_operation(index, orders, environment):
     current = 0
@@ -440,6 +480,25 @@ def get_by_id(entities, id):
             return entity
     print(f'couldn\'t find {id} in {len(entities)} entities')
     return None
+
+def to_order_list(individual, orders, environment):
+    genes = copy.deepcopy(individual.genes)
+    current_order = -1
+    result = []
+    for i in range(len(genes)):
+        _, order_id = map_index_to_operation(i, orders, environment)
+        if order_id != current_order:
+            result.append(order_id)
+            current_order = order_id
+    return result
+
+def get_genes_for_order(id, individual, orders, environment):
+    result = []
+    for i in range(individual.genes):
+        _, order_id = map_index_to_operation(i, orders, environment)
+        if order_id == id:
+            result.append(copy.deepcopy(individual.genes[i]))
+    return result
 
 """
 def get_all_tasks(task, task_list):
