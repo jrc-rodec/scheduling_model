@@ -75,7 +75,13 @@ class VLCIndividual(Individual):
         super().__init__(genes, fitness)
 
     def is_feasible(self, orders, environment, earliest_slot, last_slot):
-        return True
+        return True # TODO: write feasibility function
+
+class TimeSlotIndividual(Individual):
+
+    def is_feasible(self, orders, environment, earliest_slot, last_slot):
+        return True # TODO: write feasibility function
+
 
 class IndividualFactory:
 
@@ -90,8 +96,11 @@ class IndividualFactory:
             return ScheduleIndividual(genes, fitness)
         elif type == 'agent':
             return AgentIndividual(genes, fitness)
-        elif type == 'vlcindividual':
+        elif type == 'vlc':
             return VLCIndividual(genes, fitness)
+        elif type == 'timeslot':
+            return TimeSlotIndividual(genes, fitness)
+
 
 class Particle:
 
@@ -213,7 +222,7 @@ class VLCCrossover(RecombinationMethod):
     
     def __init__(self, environment, orders = None, minimize=True):
         self.individual_factory = IndividualFactory(minimize)
-        self.type = "vlcindividual"
+        self.type = "vlc"
     
     def set_individual_factory(self, individual_factory : IndividualFactory, type : str):
         print(f'IndividualFactory for VLC-Crossover is fixed and should not be changed')

@@ -206,6 +206,23 @@ class BaseGA(GA):
         history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose)
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
+
+class TimeSlotGA(GA):
+
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+        # create jobs from orders
+        jobs = []
+        # TODO: create job list - fixed recipes for now - format: <job_id, task_id, order_id>
+        # setup
+        if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
+            self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
+        input_format = []
+        for _ in range(earliest_time_slot, last_time_slot):
+            input_format.append(0)
+        
+        # run
+        pass
+
 ###############################################################
 ##################For Agent-based Optimization#################
 ###############################################################
@@ -287,7 +304,6 @@ class PSO(Optimizer):
         # create starting population
         for _ in range(particle_amount):
             population.append(self.create_particle(input, orders, earliest_time_slot, last_time_slot))
-        population = []
         # evaluate current state
         self.evaluate(population, orders, last_time_slot)
         # note, particles start with 0 velocity in each dim right now
