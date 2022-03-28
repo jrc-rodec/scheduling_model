@@ -318,8 +318,8 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\begin{equation}
 	\label{objective_function_1}
 	\begin{split}
-		j := J_{i} \\
-		minimize \sum_{i=0}^{J}l_{j} 
+		X := X_{i} \\
+		minimize \sum_{i=0}^{X}l_{x} 
 	\end{split}
 	\end{equation}
 	\begin{equation}
@@ -332,9 +332,9 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\begin{equation}
 	\label{objective_function_3}
 	\begin{split}
-		j := J_{i} \\
-		y := x_{j} \\
-		minimize \sum_{i=0}^{J} |(j_{s} + d_{y,w}) - j_{dt}|
+		x := X_{i} \\
+		y := p_{j} \\
+		minimize \sum_{i=0}^{X} |(x_{s} + d_{y,w}) - x_{dt}|
 	\end{split}
 	\end{equation}
 	\begin{equation}
@@ -346,18 +346,18 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\begin{equation}
 	\label{objective_function_5}
 	\begin{split}
-		j := J_{i} \\
-		maximize |O_{c}| - \sum_{i=0}^{J}l_{j}
+		x := X_{i} \\
+		maximize |O_{c}| - \sum_{i=0}^{X}l_{x}
 	\end{split}
 	\end{equation}
 	\begin{equation}
 	\label{objective_function_6}
 	\begin{split}
-		j := J_{i} \\
-		y := x_{j} \\
+		x := X_{i} \\
+		y := p_{x} \\
 		z ... threshold for acceptable deviation \\
-		x := \sum_{i=0}^{J} (|(j_{s} + d_{y,w}) - j_{dt}| > z)\\
-		maximize |O_{c}| - x
+		d := \sum_{i=0}^{X} (|(x_{s} + d_{y,w}) - x_{dt}| > z)\\
+		maximize |O_{c}| - d
 	\end{split}
 	\end{equation}
 \end{flushleft}
