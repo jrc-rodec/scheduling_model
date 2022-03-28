@@ -398,23 +398,26 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 		r := R_{xi} \\
 		\sum_{i=0}^{R_{x}}(a_{r,t}-r\leq 0) < 1\\
 	\end{split}
-\end{equation}
-	NOT YET UPDATED:\linebreak
-
+	\end{equation}
 	\begin{equation}
 	\label{no_early_start}
 	\begin{split}
-		y \in T_{j_{x}p} \\
-		\sum_{m=1}^{y} ((j_{y_{m,}s} + d_{y_{m},w}) - (j_{y_{m - 1}} + d_{y_{m - 1},w}) < 0) < 1\\
+		y := P_{x_{p}pre, i} \\
+		y' := P_{x_{p}pre, i-1} \\
+		z := \sum_{i=1}^{P_{x_{p}pre}} (x_{ys} + d_{yw}) - (x_{y'} + d_{y'w}) < 0 \\
+		z < 1 \\
 	\end{split}
 	\end{equation}
 	\begin{equation}
 	\label{follow_up_tasks_early_start}
 	\begin{split}
-		y \in T_{j_{x}f} \\
-		\sum_{m=1}^{y} ((j_{y_{m - 1},s} + d_{y_{m - 1},w}) < j_{y_{m},s}) < 1\\
+		y := P_{x_{p}f, i}\\
+		y' := P_{x_{p}f, i-1}\\
+		z := \sum_{i=1}^{P_{x_{p}f}} (x_{y's} + d_{y'w}) < x_{ys}\\
+		z < 1
 	\end{split}
 	\end{equation}
+	NOT YET UPDATED:\linebreak
 	\begin{equation}
 	\label{no_multiple_workstation_occupations}
 	\begin{split}
