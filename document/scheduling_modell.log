@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.3.28)  28 MAR 2022 14:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.3.28)  28 MAR 2022 14:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1062,12 +1062,16 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [9]
-[10] [11]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [10]
+[11]
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 4
-26.
+33.
  (C:\Users\huda\AppData\Local\Programs\MiKTeX\tex/latex/base\t1cmtt.fd
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
-) [12]
+)
+[12]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [13]
@@ -1107,7 +1111,10 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [25]
-[26] (scheduling_modell.aux)
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [26]
+[27] (scheduling_modell.aux)
 
 LaTeX Warning: There were undefined references.
 
@@ -1123,9 +1130,9 @@ Package logreq Info: Writing requests to 'scheduling_modell.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 27078 strings out of 478582
- 489021 string characters out of 2844816
- 1500374 words of memory out of 3000000
+ 27079 strings out of 478582
+ 489028 string characters out of 2844816
+ 1506374 words of memory out of 3000000
  44337 multiletter control sequences out of 15000+600000
  478689 words of font info for 49 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -1149,9 +1156,9 @@ r8.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts
 /cm/cmsy10.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public/
 amsfonts/cm/cmsy6.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/
 public/amsfonts/cm/cmsy8.pfb>
-Output written on scheduling_modell.pdf (26 pages, 330723 bytes).
+Output written on scheduling_modell.pdf (27 pages, 331636 bytes).
 PDF statistics:
- 1150 PDF objects out of 1200 (max. 8388607)
- 619 named destinations out of 1000 (max. 500000)
+ 1155 PDF objects out of 1200 (max. 8388607)
+ 620 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -290,6 +290,7 @@ $R_{x}$ - Set of all Resources required for Job $x$, $x \in X$, $R_{x} \subset R
 $d_{pw}$ - Duration of Task $p$ on Workstation $w$, $p \in P$, $w \in W$, $d_{pw} \geq 0$ \linebreak
 $x_{w}$ - Selected Workstation $w$ for Job $x$, $x \in X$, $w \in W$, $x_{w} \in W$ \linebreak
 $x_{s}$ - Start time slot for Job $x$, $x \in X$, $x_{s} \geq 0$ \linebreak
+$x_{p}$ - Task $p$ corresponding to Job $x$, $x \in X$, $p \in P$, $x_{p} \in X$ \linebreak
 $x_{dt}$ - Delivery time slot for Job $x$, $x \in X$, $x_{dt} \geq 0$ \linebreak
 $x_{lt}$ - Latest acceptable time slot for Job $x$, $x \in X$, $x_{lt} \geq 0$, $x_{lt} \geq x_{dt}$ \linebreak
 $a_{r,t}$ - Amount of Resource $r$ in stock at time slot $t$, $r \in R$, $t \geq 0$, $a_{r,t} \geq 0$ \linebreak
@@ -371,23 +372,35 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 \autoref{no_multiple_workstation_occupations} only one active job at one time slot for each Workstation\linebreak
 \autoref{only_legal_timeslots} starting times need to be after timeslot 0\linebreak
 \end{flushleft}
+
 \begin{flushleft}
+	UPDATED:\linebreak
 	\begin{equation}
 	\label{not_late}
-		j_{s} \leq j_{lt} - d_{j,w}
+		x_{s} \leq x_{lt} - d_{x_{p}, x_{w}}
 	\end{equation}
 	\begin{equation}
-	\label{sufficient_resources}
+		\label{check_tardiness}
 		\begin{split}
-			\sum_{m=0}^{R_{j}}(i_{r_{m},t}-r_{m}\leq 0) < 1\\
+			l_{x} := x_{dt} \leq x_{s} \leq x_{lt} \\
 		\end{split}
 	\end{equation}
 	\begin{equation}
-	\label{check_tardiness}
+	\label{only_legal_timeslots}
 	\begin{split}
-		l_{j} := j_{dt} \leq j_{s} \leq j_{lt} \\
+		x := X_{i} \\
+		\sum_{i=0}^{X} (x_{s} < 0) < 1
 	\end{split}
 	\end{equation}
+	\begin{equation}
+	\label{sufficient_resources}
+	\begin{split}
+		r := R_{xi} \\
+		\sum_{i=0}^{R_{x}}(a_{r,t}-r\leq 0) < 1\\
+	\end{split}
+\end{equation}
+	NOT YET UPDATED:\linebreak
+
 	\begin{equation}
 	\label{no_early_start}
 	\begin{split}
@@ -413,13 +426,7 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 		\sum_{m=0}^{J_{w}} (\sum_{n = 0}^{J_{w}-1}((1-(j_{s} + d_{x',w} < i_{s})) + (1-(j_{s} > i_{s} + d_{x,w})))) < 1
 	\end{split}
 	\end{equation}
-	\begin{equation}
-	\label{only_legal_timeslots}
-	\begin{split}
-	j = J_{m} \\
-	\sum_{m=0}^{J} (j_{s} < 0) < 1
-	\end{split}
-	\end{equation}
+
 \end{flushleft}
 \section*{JSON-Beispiel}
 \label{json_example}
