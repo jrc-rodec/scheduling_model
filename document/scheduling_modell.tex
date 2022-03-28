@@ -365,12 +365,13 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 \subsubsection*{Nebenbedingungen}
 \begin{flushleft}
 \autoref{not_late} to make sure jobs finish before last possible time slot\linebreak
-\autoref{sufficient_resources} to make sure jobs have sufficient resources to start\linebreak
 \autoref{check_tardiness} checks if tardiness fee applies\linebreak
+\autoref{only_legal_timeslots} starting times need to be after timeslot 0\linebreak
+\autoref{sufficient_resources} to make sure jobs have sufficient resources to start\linebreak
 \autoref{no_early_start} jobs can't start before preceding tasks finish\linebreak
 \autoref{follow_up_tasks_early_start} follow up jobs can't start before job finished\linebreak
 \autoref{no_multiple_workstation_occupations} only one active job at one time slot for each Workstation\linebreak
-\autoref{only_legal_timeslots} starting times need to be after timeslot 0\linebreak
+
 \end{flushleft}
 
 \begin{flushleft}

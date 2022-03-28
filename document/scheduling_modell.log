@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.3.28)  28 MAR 2022 15:05
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.3.28)  28 MAR 2022 15:07
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1067,7 +1067,7 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
  [10]
 [11]
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 4
-38.
+37.
  (C:\Users\huda\AppData\Local\Programs\MiKTeX\tex/latex/base\t1cmtt.fd
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
 )
@@ -1132,7 +1132,7 @@ Package logreq Info: Writing requests to 'scheduling_modell.run.xml'.
 Here is how much of TeX's memory you used:
  27079 strings out of 478582
  489028 string characters out of 2844816
- 1502374 words of memory out of 3000000
+ 1503374 words of memory out of 3000000
  44337 multiletter control sequences out of 15000+600000
  478689 words of font info for 49 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -1155,7 +1155,7 @@ sers/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb
 sy10.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
 ts/cm/cmsy6.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public
 /amsfonts/cm/cmsy8.pfb>
-Output written on scheduling_modell.pdf (27 pages, 322671 bytes).
+Output written on scheduling_modell.pdf (27 pages, 322711 bytes).
 PDF statistics:
  1150 PDF objects out of 1200 (max. 8388607)
  620 named destinations out of 1000 (max. 500000)
