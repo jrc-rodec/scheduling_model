@@ -160,6 +160,7 @@ class SimulationEnvironment:
         for task in workstation.tasks:
             if task[0] == task_id:
                 return task[1]
+        return 0
 
     def get_workstation(self, workstation_id : int) -> Workstation:
         for workstation in self.workstations:
