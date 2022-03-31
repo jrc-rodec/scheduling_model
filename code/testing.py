@@ -50,34 +50,41 @@ for i in range(len(r)): # add random tasks to each recipe
 # CREATE VARIABLES
 jobs = [] # just for lookups
 lp_assignments = []
-lp_start_times = []
+"""lp_start_times = []"""
 j = 0
-assignments = []
-starttimes = []
+"""assignments = []
+starttimes = []"""
 for i in range(len(o)):
     recipe = r[o[i][1]]
     tasks = recipe[1]
     for task in tasks:
         jobs.append([task, o[i]]) # match task id to order
-        assignments.append(0)
+        """assignments.append(0)
         starttimes.append(0)
-        lp_start_times.append(LpVariable(f's{j}', lowBound=min_time, upBound=max_time, cat=LpInteger))
+        lp_start_times.append(LpVariable(f's{j}', lowBound=min_time, upBound=max_time, cat=LpInteger))"""
         lp_assignments.append(LpVariable(f'a{j}', lowBound=min(w), upBound=max(w), cat=LpInteger))
         j += 1
+assignments_needed = len(jobs)
+assignments = list(range(assignments_needed-1))#[random.choice(w) for _ in range(assignments_needed-1)]#
+for i in range(len(assignments)):
+    assignments[i] = random.choice(w)
+start_times = list(range(assignments_needed-1))
 
+#lp_assignments = LpVariable.dicts('assignments', assignments, lowBound=min(w), upBound=max(w), cat=LpInteger) # doesn't work -> reduces assignments to amount of workstations
+lp_start_times = LpVariable.dicts('starttimes', start_times, lowBound=min_time, upBound=max_time, cat=LpInteger)
 # CREATE PROBLEM
 problem = LpProblem('SchedulingProblem', LpMinimize)
-print([s.value() for s in lp_start_times])
+print([s for s in lp_start_times])
 print([a.value() for a in lp_assignments])
 # ADD OBJECTIVE
 #problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][random.choice(w)] - jobs[i][1][2] for i in range(len(jobs))]), 'Minimize_tardy_jobs')
-problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][lp_assignments[i].value()] - jobs[i][1][2] for i in range(len(jobs))]), 'Minimize_tardy_jobs') 
+problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][lp_assignments[i]] - jobs[i][1][2] for i in range(len(jobs)-1)]), 'Minimize_tardy_jobs') 
 
 # ADD CONSTRAINTS
-for i in range(len(jobs)):
-    problem += d[jobs[i][0]][lp_assignments[i].value()] > 0
-for i in range(len(lp_assignments)):
-    problem += lp_assignments[i] in w
+"""for i in range(len(jobs)):
+    problem += d[jobs[i][0]][assignments[i]] > 0"""
+"""for i in range(len(lp_assignments)):
+    problem += assignments[i] in w"""
 
 # Solve
 #problem.writeLP('SchedulingProblem.lp') # in case problem should be exported
