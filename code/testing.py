@@ -28,6 +28,7 @@ for i in range(recipes):
     r.append([i, []])
 for i in range(orders):
     o.append([i, random.randint(0, len(r)-1), random.randint(min_time, max_time)]) # choose a random recipe for each order
+
 p = 2 * len(w)/len(t)
 for i in range(len(t)):
     d[i] = []
@@ -50,7 +51,7 @@ for i in range(len(r)): # add random tasks to each recipe
 # CREATE VARIABLES
 jobs = [] # just for lookups
 lp_assignments = []
-"""lp_start_times = []"""
+lp_start_times = []
 j = 0
 """assignments = []
 starttimes = []"""
@@ -60,25 +61,25 @@ for i in range(len(o)):
     for task in tasks:
         jobs.append([task, o[i]]) # match task id to order
         """assignments.append(0)
-        starttimes.append(0)
-        lp_start_times.append(LpVariable(f's{j}', lowBound=min_time, upBound=max_time, cat=LpInteger))"""
+        starttimes.append(0)"""
+        lp_start_times.append(LpVariable(f's{j}', lowBound=min_time, upBound=max_time, cat=LpInteger))
         lp_assignments.append(LpVariable(f'a{j}', lowBound=min(w), upBound=max(w), cat=LpInteger))
         j += 1
-assignments_needed = len(jobs)
+"""assignments_needed = len(jobs)
 assignments = list(range(assignments_needed-1))#[random.choice(w) for _ in range(assignments_needed-1)]#
 for i in range(len(assignments)):
-    assignments[i] = random.choice(w)
-start_times = list(range(assignments_needed-1))
+    assignments[i] = i#random.choice(w)
+#start_times = list(range(assignments_needed-1))
 
-#lp_assignments = LpVariable.dicts('assignments', assignments, lowBound=min(w), upBound=max(w), cat=LpInteger) # doesn't work -> reduces assignments to amount of workstations
-lp_start_times = LpVariable.dicts('starttimes', start_times, lowBound=min_time, upBound=max_time, cat=LpInteger)
+lp_assignments = LpVariable.dicts('assignments', assignments, lowBound=min(w), upBound=max(w), cat=LpInteger) # doesn't work -> reduces assignments to amount of workstations"""
+#lp_start_times = LpVariable.dicts('starttimes', start_times, lowBound=min_time, upBound=max_time, cat=LpInteger)
 # CREATE PROBLEM
 problem = LpProblem('SchedulingProblem', LpMinimize)
 print([s for s in lp_start_times])
-print([a.value() for a in lp_assignments])
+print([a for a in lp_assignments])
 # ADD OBJECTIVE
-#problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][random.choice(w)] - jobs[i][1][2] for i in range(len(jobs))]), 'Minimize_tardy_jobs')
-problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][lp_assignments[i]] - jobs[i][1][2] for i in range(len(jobs)-1)]), 'Minimize_tardy_jobs') 
+problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][random.choice(w)] - jobs[i][1][2] for i in range(len(jobs))]), 'Minimize_tardy_jobs')
+#problem += (lpSum([lp_start_times[i] + d[jobs[i][0]][lp_assignments[i]] - jobs[i][1][2] for i in range(len(jobs)-1)]), 'Minimize_tardy_jobs')
 
 # ADD CONSTRAINTS
 """for i in range(len(jobs)):
