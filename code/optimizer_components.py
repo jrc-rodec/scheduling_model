@@ -45,7 +45,44 @@ class ScheduleIndividual(Individual):
                 order_operations[order[2]] = []
             order_operations[order[2]].append(data)
             i += 1
-        workstations = dict()
+            workstations = dict()
+            # map genes to workstations
+            if gene[1] not in workstations:
+                workstations[gene[1]] = []
+            workstations[gene[1]].append(copy.deepcopy(gene))
+            # check for overlap
+            for key in workstations.keys():
+                workstations[key].sort(key=lambda x: x[2]) # sort by start time slot
+                for o in range(len(workstations[key])):
+                    op = workstations[key][o]
+                    duration = environment.get_duration(op[0], op[1])
+                    start = op[2]
+                    end = op[2] + duration
+                    # fetch necessary data
+                    prev_start = earliest_slot
+                    prev_end = earliest_slot
+                    if o > 0:
+                        prev_start = workstations[key][o-1][2]
+                        prev_end = prev_start + environment.get_duration(workstations[key][o-1][0], workstations[key][o-1][1])
+                    follow_start = last_slot
+                    follow_end = last_slot
+                    if o < len(workstations[key]) - 1:
+                        follow_start = workstations[key][o+1][2]
+                        follow_end = follow_start + environment.get_duration(workstations[key][o-1][0], workstations[key][o-1][1])
+                    # check overlap with previous
+                    if start > prev_start and start < prev_end:
+                        return False
+                    if end > prev_start and end < prev_end:
+                        return False
+                    if prev_start > start and prev_start < end and prev_end > start and prev_end < end:
+                        return False
+                    # check overlap with following
+                    if start > follow_start and start < follow_end:
+                        return False
+                    if end > follow_start and end < follow_end:
+                        return False
+                    if follow_start > start and follow_start < end and follow_end > start and follow_end < end:
+                        return False
         for order_id in order_operations.keys():
             # check for correct sequence
             for j in range(len(order_operations[order_id])):
@@ -54,48 +91,6 @@ class ScheduleIndividual(Individual):
                 prev = order_operations[order_id][j-1]
                 if operation[2] <= prev[2] + environment.get_duration(prev[0], prev[1]):
                     return False
-                # map genes to workstations
-                if prev[1] not in workstations:
-                    workstations[prev[1]] = []
-                workstations[prev[1]].append(copy.deepcopy(order_operations[order_id]))
-                # check for overlap
-                for key in workstations.keys():
-                    if len(workstations[key]) >= 3:
-                        workstations[key].sort(key=lambda x: workstations[key][2]) # sort by start time slot
-                        for o in range(len(workstations[key])):
-                            op = workstations[key][o]
-                            duration = environment.get_duration(op[0], op[1])
-                            start = op[2]
-                            end = op[2] + duration
-                            # fetch necessary data
-                            prev_start = earliest_slot
-                            prev_end = earliest_slot
-                            if o > 0:
-                                prev_start = workstations[key][o-1][2]
-                                prev_end = prev_start + environment.get_duration(workstations[key][o-1][0], workstations[key][o-1][1])
-                            follow_start = last_slot
-                            follow_end = last_slot
-                            if o < len(workstations[key]) - 1:
-                                follow_start = workstations[key][o+1][2]
-                                follow_end = follow_start + environment.get_duration(workstations[key][o-1][0], workstations[key][o-1][1])
-                            # check overlap with previous
-                            if start > prev_start and start < prev_end:
-                                return False
-                            if end > prev_start and end < prev_end:
-                                return False
-                            if prev_start > start and prev_start < end and prev_end > start and prev_end < end:
-                                return False
-                            # check overlap with following
-                            if start > follow_start and start < follow_end:
-                                return False
-                            if end > follow_start and end < follow_end:
-                                return False
-                            if follow_start > start and follow_start < end and follow_end > start and follow_end < end:
-                                return False
-                    else:
-                        print('Something must\'ve gone horribly wrong')
-                        print(len(workstations[key]))
-                        print(type(workstations[key]))
         self.feasible = True
         return self.feasible
 
