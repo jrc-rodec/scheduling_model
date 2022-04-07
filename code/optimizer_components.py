@@ -35,22 +35,18 @@ class ScheduleIndividual(Individual):
             if duration == 0:
                 return False
             # finish everything before the end of the planning horizon
-            #if gene[2] + duration > last_slot:
-            #    return False
+            if gene[2] + duration > last_slot:
+                return False
+            # no operation scheduled before the earliest allowed time slot
             if gene[2] < earliest_slot:
                 return False
-            i += 1
             data = copy.deepcopy(gene)
             if order[2] not in order_operations.keys():
                 order_operations[order[2]] = []
             order_operations[order[2]].append(data)
+            i += 1
         for order_id in order_operations.keys():
-            #order = None
-            for order in orders:
-                if order[2] == order_id:
-                    order = order
-                    break
-
+            # check for correct sequence
             for j in range(len(order_operations[order_id])):
                 if j > 0:
                     operation = order_operations[order_id][j]
@@ -191,8 +187,6 @@ class OnePointCrossover(RecombinationMethod):
         crossover_point = random.randint(0, len(parent1.genes))
         child1 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent1.genes))
         child2 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent2.genes))
-        #child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
-        #child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point, len(parent1.genes)):
             child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
             child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
@@ -205,8 +199,6 @@ class TwoPointCroosover(RecombinationMethod):
         crossover_point2 = random.randint(crossover_point1 + 1, len(parent1.genes))
         child1 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent1.genes))
         child2 = self.individual_factory.create_individual(self.type, copy.deepcopy(parent2.genes))
-        #child1 = Individual(copy.deepcopy(parent1.genes), float('inf'))
-        #child2 = Individual(copy.deepcopy(parent2.genes), float('inf'))
         for i in range(crossover_point1, crossover_point2):
             child1.set_gene(i, copy.deepcopy(parent2.get_gene(i)))
             child2.set_gene(i, copy.deepcopy(parent1.get_gene(i)))
