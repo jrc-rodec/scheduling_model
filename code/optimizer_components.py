@@ -81,7 +81,9 @@ class ScheduleIndividual(Individual):
                         return False
                     if end > follow_start and end < follow_end:
                         return False
-                    if follow_start > start and follow_start < end and follow_end > start and follow_end < end:
+                    if follow_start > start and follow_start < end:
+                        return False
+                    if follow_end > start and follow_end < end:
                         return False
         for order_id in order_operations.keys():
             # check for correct sequence
