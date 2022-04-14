@@ -224,10 +224,12 @@ class SimulationEnvironment:
         if isinstance(task, int): # should never happen
             task = self.get_task(task)
         for pre in task.preceding_tasks:
-            all += self.get_all_tasks(pre)
+            if pre.result_resources[0][0] == task.result_resources[0][0]:
+                all += self.get_all_tasks(pre)
         all.append(task)
         for follow_up in task.follow_up_tasks:
-            all += self.get_all_tasks(follow_up)
+            if follow_up.result_resources[0][0] == task.result_resources[0][0]:
+                all += self.get_all_tasks(follow_up)
         return all
 
     # TODO: fix if needed after all
