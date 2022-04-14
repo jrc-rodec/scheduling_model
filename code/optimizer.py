@@ -4,7 +4,7 @@ from re import I
 import sys
 
 from models import SimulationEnvironment
-from optimizer_components import BaseInputGenerator, Individual, IndividualFactory, NoCrossover, Particle, OrderCountEvaluator, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
+from optimizer_components import MakeSpanEvaluator, BaseInputGenerator, Individual, IndividualFactory, NoCrossover, Particle, OrderCountEvaluator, SameLengthAlternativesInputGenerator, TardinessEvaluator, OnePointCrossover, RouletteWheelSelection, RandomizeMutation, TwoPointCroosover, OnlyFeasibleTimeSlotMutation, OrderChangeMutation
 from agent import Agent, AgentSimulator
 
 class Optimizer:
@@ -75,6 +75,8 @@ class GA(Optimizer):
             self.evaluation_method = TardinessEvaluator()
         elif evaluation.lower() == 'ordercount':
             self.evaluation_method = OrderCountEvaluator()
+        elif evaluation.lower() == 'makespan':
+            self.evaluation_method = MakeSpanEvaluator()
         # recombination method
         if recombination.lower() == 'onepointcrossover':
             self.recombination_method = OnePointCrossover(self.environment)

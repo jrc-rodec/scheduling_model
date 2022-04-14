@@ -194,16 +194,26 @@ class OrderCountEvaluator(EvaluationMethod):
                 individual.fitness = individual.fitness + len(orders)
 
 
-"""class MakeSpanEvaluator(EvaluationMethod):
+class MakeSpanEvaluator(EvaluationMethod):
     
     def evaluate(self, individuals, orders, environment, earliest_slot, last_slot):
         for individual in individuals:
             fitness = 0
             # check for feasibility
             if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
-                fitness += len(individual.genes)
-            # evaluate genes"""
-
+                fitness += abs(last_slot - earliest_slot)
+            # evaluate genes
+            # search first start and last end
+            min = float('inf')
+            max = -float('inf')
+            for gene in individual.genes:
+                if gene[2] < min:
+                    min = gene[2]
+                duration = environment.get_duration(gene[0], gene[1])
+                if gene[2] + duration > max:
+                    max = gene[2] + duration
+            fitness += abs(max - min)
+            individual.fitness = fitness
 
 # Recombination Methods
 class RecombinationMethod:
