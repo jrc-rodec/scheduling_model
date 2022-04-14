@@ -221,7 +221,7 @@ class SimulationEnvironment:
 
     def get_all_tasks(self, task):
         all = []
-        if isinstance(task, int):
+        if isinstance(task, int): # should never happen
             task = self.get_task(task)
         for pre in task.preceding_tasks:
             all += self.get_all_tasks(pre)
