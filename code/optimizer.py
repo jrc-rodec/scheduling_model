@@ -27,7 +27,7 @@ class Randomizer(Optimizer):
         super().__init__()
         self.name = "Randomizer"
     
-    def optimize(self, assignments, jobs, simulation_environment, last_timeslot):
+    def optimize(self, assignments, jobs, simulation_environment, last_timeslot, randomize_until_feasible : bool = False, randomize_until_feasible_probability : float = 1.0):
         for i in range(len(assignments)):
             job = jobs[i]
             assignment = assignments[i]
@@ -116,6 +116,9 @@ class GA(Optimizer):
                 if individual.fitness > self.current_best.fitness:
                     self.current_best = copy.deepcopy(individual)
 
+    def create_individual(self, input_format, orders, earliest_slot, last_slot):
+        pass
+
     def create_offsprings(self, population, offspring_amount):
         offsprings = []
         i = 0
@@ -145,7 +148,7 @@ class GA(Optimizer):
         population = all[0:population_size]
         return population
 
-    def run(self, population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose):
+    def run(self, population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose, randomize_until_feasible : bool = False, randomize_until_feasible_probability : float = 1.0):
         history = [] # fitness history (current best)
         best_generation_history = [] # fitness history (generation best) (same as history with elitism)
         avg_history = [] # fitness history (average of each generation)
@@ -154,6 +157,8 @@ class GA(Optimizer):
         if feasible:
             feasible_gen = 0
         generation = 0
+        if randomize_until_feasible:
+            input = self.input_generator.generate_input(orders, self.environment, earliest_time_slot, last_time_slot)
         while generation < max_generation:
             if verbose:
                 if feasible:
@@ -169,6 +174,11 @@ class GA(Optimizer):
             for individual in population:
                 fitness += individual.fitness
             avg_history.append(fitness / len(population))
+            if randomize_until_feasible and not self.current_best.feasible:
+                for i in range(population_size):
+                    if random.random() < randomize_until_feasible_probability:
+                        population[i] = self.create_individual(input, orders, earliest_time_slot, last_time_slot)
+                        self.evaluate([population[i]], orders, earliest_time_slot, last_time_slot)
             if not feasible and self.current_best.feasible:
                 if verbose:
                     print(f'Found first feasible solution!')
@@ -190,7 +200,7 @@ class BaseGA(GA):
             self.mutation_method.mutate_gene(individual, orders, self.environment, i, earliest_slot, last_slot)
         return individual
 
-    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False, randomize_until_feasible : bool = False, randomize_until_feasible_probability : float = 1.0):
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
             self.configure('tardiness', 'onepointcrossover', 'roulettewheel', 'randomize')
         if not self.input_generator:
@@ -205,13 +215,13 @@ class BaseGA(GA):
         # select current best
         self.set_current_best(population)
 
-        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose)
+        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose, randomize_until_feasible, randomize_until_feasible_probability)
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 
 class TimeSlotGA(GA):
 
-    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False, randomize_until_feasible : bool = False, randomize_until_feasible_probability : float = 1.0):
         # create jobs from orders
         jobs = []
         # TODO: create job list - fixed recipes for now - format: <job_id, task_id, order_id>
@@ -244,7 +254,7 @@ class SimpleAgentGA(BaseGA):
         individual = self.individual_factory.create_individual(self.individual_type, genes)
         return individual
 
-    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False):
+    def optimize(self, orders, max_generation : int, earliest_time_slot : int, last_time_slot : int, population_size : int, offspring_amount : int, verbose=False, randomize_until_feasible : bool = False, randomize_until_feasible_probability : float = 1.0):
         if self.evaluation_method == None or self.recombination_method == None or self.selection_method == None or self.mutation_method == None:
             self.configure('ordercount', 'nocrossover', 'roulettewheel', 'orderchange', 'agent')
             self.set_maximize()
@@ -254,7 +264,7 @@ class SimpleAgentGA(BaseGA):
             population.append(self.create_individual(self.sequence, orders, earliest_time_slot, last_time_slot))
         self.evaluate(population, orders, earliest_time_slot, last_time_slot)
         self.set_current_best(population)
-        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose)
+        history, avg_history, best_generation_history, feasible_gen = self.run(population, orders, population_size, offspring_amount, earliest_time_slot, last_time_slot, max_generation, verbose, randomize_until_feasible, randomize_until_feasible_probability)
         return self.current_best, history, avg_history, best_generation_history, feasible_gen
 
 
