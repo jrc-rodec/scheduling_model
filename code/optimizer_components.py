@@ -168,12 +168,15 @@ class TardinessEvaluator(EvaluationMethod):
         for individual in individuals:
             fitness = 0
             if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
-                fitness += len(individual.genes)
-            for i in range(len(individual.genes)):
-                _, order = map_index_to_operation(i, orders, environment)
-                duration = environment.get_duration(individual.genes[i][0], individual.genes[i][1])
-                if individual.genes[i][2] + duration > order[1]:
-                    fitness += 1 # counts every OPERATIONS after deadline
+                #fitness += len(individual.genes)
+                #return 2 * len(individual.genes)
+                fitness = 2* len(individual.genes)
+            else:
+                for i in range(len(individual.genes)):
+                    _, order = map_index_to_operation(i, orders, environment)
+                    duration = environment.get_duration(individual.genes[i][0], individual.genes[i][1])
+                    if individual.genes[i][2] + duration > order[1]:
+                        fitness += 1 # counts every OPERATIONS after deadline
             individual.fitness = fitness
 
 
@@ -191,7 +194,7 @@ class OrderCountEvaluator(EvaluationMethod):
             individual.fitness = schedule_count
             individual.is_feasible(orders, environment, earliest_slot, last_slot)
             if not individual.feasible:
-                individual.fitness = individual.fitness + len(orders)
+                individual.fitness = 0#2* len(orders)#individual.fitness + len(orders)
 
 
 class MakeSpanEvaluator(EvaluationMethod):
@@ -201,18 +204,20 @@ class MakeSpanEvaluator(EvaluationMethod):
             fitness = 0
             # check for feasibility
             if not individual.is_feasible(orders, environment, earliest_slot, last_slot):
-                fitness += abs(last_slot - earliest_slot)
-            # evaluate genes
-            # search first start and last end
-            min = float('inf')
-            max = -float('inf')
-            for gene in individual.genes:
-                if gene[2] < min:
-                    min = gene[2]
-                duration = environment.get_duration(gene[0], gene[1])
-                if gene[2] + duration > max:
-                    max = gene[2] + duration
-            fitness += abs(max - min)
+                fitness = abs(last_slot - earliest_slot)
+                #return 2*abs(last_slot - earliest_slot)
+            else:
+                # evaluate genes
+                # search first start and last end
+                min = float('inf')
+                max = -float('inf')
+                for gene in individual.genes:
+                    if gene[2] < min:
+                        min = gene[2]
+                    duration = environment.get_duration(gene[0], gene[1])
+                    if gene[2] + duration > max:
+                        max = gene[2] + duration
+                fitness += abs(max - min)
             individual.fitness = fitness
 
 # Recombination Methods

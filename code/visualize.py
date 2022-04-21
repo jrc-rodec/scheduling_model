@@ -48,6 +48,7 @@ def visualize(workstations, history, avg_history, best_generation_history, feasi
 
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
+    fig.update_layout(xaxis_type='linear')
     fig.show()
     fitness_history_plot(history, avg_history, feasible_gen, best_generation_history)
     """x = list(range(0, len(history)))
@@ -90,4 +91,5 @@ def visualize_schedule(schedule : Schedule, environment : SimulationEnvironment)
         colors[str(tasks[i])] = f'rgb({rgb_values[i][0]}, {rgb_values[i][1]}, {rgb_values[i][2]})'
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
+    fig.update_layout(xaxis_type='linear')
     fig.show()
