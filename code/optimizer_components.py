@@ -70,20 +70,20 @@ class ScheduleIndividual(Individual):
                         follow_start = workstations[key][o+1][2]
                         follow_end = follow_start + environment.get_duration(workstations[key][o-1][0], workstations[key][o-1][1])
                     # check overlap with previous
-                    if start >= prev_start and start <= prev_end:
+                    if start >= prev_start and start < prev_end:
                         return False
-                    if end >= prev_start and end <= prev_end:
+                    if end > prev_start and end <= prev_end:
                         return False
-                    if prev_start >= start and prev_start <= end and prev_end >= start and prev_end <= end:
+                    if prev_start >= start and prev_start < end and prev_end > start and prev_end <= end:
                         return False
                     # check overlap with following
-                    if start >= follow_start and start <= follow_end:
+                    if start >= follow_start and start < follow_end:
                         return False
-                    if end >= follow_start and end <= follow_end:
+                    if end > follow_start and end <= follow_end:
                         return False
-                    if follow_start >= start and follow_start <= end:
+                    if follow_start >= start and follow_start < end:
                         return False
-                    if follow_end >= start and follow_end <= end:
+                    if follow_end > start and follow_end <= end:
                         return False
         for order_id in order_operations.keys():
             # check for correct sequence
