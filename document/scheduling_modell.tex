@@ -101,87 +101,88 @@
 \thispagestyle{empty}
 \begin{titlepage}
   \begin{flushleft}
-  \section*{Modell für Scheduling}
+  \section*{Scheduling Model}
   
   \end{flushleft}
 \end{titlepage}
 
 % Kurzreferat:
 \newpage
-\section*{Benötigte Daten}
-\subsection*{Beschreibung}
-Die Daten sind in 2 Teile aufgeteilt:
+\section*{Necessary Data}
+\subsection*{Description}
+The data is split into 2 parts:
 \begin{itemize}
-	\item System-Info, beinhaltet Informationen über die Umgebung in der produziert wird
-	\item Orders, beinhaltet Kundenaufträge/Bestellungen, die in dem beschriebenen System umgesetzt werden sollen
+	\item System-Info, contains information about the production environment
+	\item Orders, contains orders made by customers, which need to be processed in the described production environment
 \end{itemize}
 \subsubsection*{System-Info}
-Beinhaltet Informationen über die Produktions-Umgebung
+Contains information about the production environment
 \paragraph*{Tasks}
-Alle Arbeitsschritte / Aktionen, die in der Produktions-Umgebung durchgeführt werden können.
-(Wichtig: Tasks die z.Bsp. bei Task A als „follow up task“ angegeben werden sollen KEINEN Verweis auf Task A in den „preciding tasks“ haben). Die zeitliche Dauer jedes Tasks ist bei den Workstations( \autoref{workstation}) abgebildet, um die Umsetzung einer Aufgabe mit verschiedenen Maschinen/Werkzeugen zu berücksichtigen.
+All steps / actions, that can be performed in the production environment.
+(Important: Tasks which are added as "follow up task" to a task should NOT have this task added as "preciding task"). The duration of each task can be found in the data of the workstations (\autoref{workstation}), so the processing of different tasks on different machines/workstations can be accounted for.
+
 \begin{itemize}
-	\item id – eindeutige ID des Tasks (kann fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item name – Name des Tasks (für einfacher lesbare Ergebnisse)
-	\item resources – (liste) benötigt Ressourcen, um den Task durchzuführen (id + anzahl)
-	\item products – (liste) alle Ressourcen (ID + Anzahl (Losgröße)) die durch den Task entstehen
-	\item preceding\_tasks – (liste) Tasks, die gemeinsam mit diesem Task durchgeführt werden müssen (vorangestellte Tasks, müssen daher nicht extra als Arbeitsschritt übermittelt werden)
-	\item follow\_up\_tasks – (liste) Tasks, die nach dem Task durchgeführt werden müssen (wie preciding tasks)
-	\item independent – boolean, um festzustellen, ob der Task im Schedule verwendet werden soll (e.g. false für Tasks die immer nur als vorangestellter Task vorkommen und allein keinen Sinn ergeben)
-	\item prepare\_time – Zeit die zum Einrichten der Maschine/Arbeitsstation für diesen Task benötigt wird
-	\item unpreprare\_time – Zeit, die nach der Verwendung der Maschine/Arbeitsstation für diesen Task benötigt wird
+	\item id – unique ID of the task (just used for internal identification)
+	\item name – name of the task (for easier readable/interpretable results)
+	\item resources – (list) needed resources, to process the task (id + amonut)
+	\item products – (list) all resources (id + amount) which are created by completing the task
+	\item preceding\_tasks – (list) tasks, which need to be scheduled before this task can be done
+	\item follow\_up\_tasks – (list) tasks, which need to be scheduled after this task is completed
+	\item independent – boolean, to flag if the task should be used in the schedule on it's own (e.g. false for tasks which only ever appear as "preciding tasks" and wouldn't make sense on their own)
+	\item prepare\_time – the time needed to prepare the machine/workstation for this task
+	\item unpreprare\_time – the time needed to unprepare a machine/workstation after it was used for this task
 \end{itemize}
 \paragraph*{Recipes}
-Die Rezepte für die verschiedenen Ressourcen, die hergestellt werden sollen (Produkte oder auch Zwischenprodukte)
+The recipies for the different resources, which are supposed to be produced (final products or intermediate products)
 \begin{itemize}
-	\item id – eindeutige ID des Rezepts (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item name – Name des Rezepts (für einfacher lesbare Ergebnisse)
-	\item tasks – (liste) IDs der Tasks, die durchgeführt werden müssen, um das Rezept umzusetzen (Ergebnis und Ergebnismenge ergeben sich aus dem letzten Task)
+	\item id – unique ID of the recipe (just used for internal identification)
+	\item name – name of the recipe (for easier readable/interpretable results)
+	\item tasks – (list) IDs of all tasks, which need to be scheduled/processed, to finish this recipe (result resources and amounts can be looked up from the result products of the last task in the recipe)
 \end{itemize}
 \paragraph*{Resources}
-Alle Ressourcen, die in der Produktions-Umgebung verwendet oder hergestellt werden können
+All resources, which can either be used or produced in the production environment
 \begin{itemize}
-	\item id – eindeutige ID der Ressource (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item name – Name der Ressource (für einfacher lesbare Ergebnisse)
-	\item stock – Anzahl der Ressource im Lagerbestand
-	\item price – Preis pro Einheit, um die Ressource einzukaufen (0 wenn die Ressource nicht gekauft werden kann)
-	\item delivery\_time - Erwartete Wartezeit, falls die Ressource eingekauft werden muss
-	\item renewable – boolean, um festzustellen, ob die Ressource verbraucht wird oder nicht (könnte z.Bsp. auch Ressource Mitarbeiter sein, der wieder verfügbar ist, wenn ein Task beendet ist)
-	\item recipes – (liste) IDs der Rezepte, durch die diese Ressource hergestellt werden kann (falls vorhanden, sonst leere Liste)
+	\item id – unique ID of the resource (just used for internal identification)
+	\item name – name of the resource (for easier readable/interpretable results)
+	\item stock – amount of this resource currently in stock
+	\item price – price per unit to buy this resource (0, if the resource can not be bought)
+	\item delivery\_time - expected delivery time, if the resource has to be bought
+	\item renewable – boolean, to flag if the resource is consumed or not (e.g. a resource representing an employee is renewable, because they are usable again once a task is done)
+	\item recipes – (list) IDs of the recipes, with which this resource can be produced (if there are any, otherwise empty list)
 \end{itemize}
 \paragraph*{Workstations}
 \label{workstation}
-Alle Maschinen / Arbeitsstationen, die in der Produktions-Umgebung vorhanden sind
+All machines/workstations, which are available in the production environment
 \begin{itemize}
-	\item id – eindeutige ID der Maschine/Arbeitsstation (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item name – Name der Maschine/Arbeitsstation (für einfacher lesbare Ergebnisse)
-	\item basic\_resources – (liste) beinhaltet die IDs der benötigten Ressourcen + die Anzahl für jede Ressource, die (unabhängig der bevorstehenden Tasks) benötigt werden um die Maschine/Arbeitsstation zu betreiben (z.Bsp. Mitarbeiter)
-	\item tasks – (liste) IDs aller Tasks, die auf dieser Maschine/Arbeitsstation durchgeführt werden können + die Dauer des Tasks auf dieser Maschine/Arbeitsstation
+	\item id – unique ID of the workstation (just used for internal identification)
+	\item name – name of the workstation (for easier readable/interpretable results)
+	\item basic\_resources – (list) contains the IDs of the necessary resources + amount, which will be needed to run the workstation (independent of the resources needed to process a task)
+	\item tasks – (list) IDs of all tasks, which can be processed on this workstation + the duration of each task on this workstation
 \end{itemize}
 
 \subsubsection*{Orders}
-Repräsentiert Kundenaufträge/Bestellungen, die mithilfe der Produktions-Umgebung umgesetzt werden soll.
+Describes orders made by customers, which are supposed to be processed in the production environment.
 \begin{itemize}
-	\item id – eindeutige ID der Bestellung (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item arrival\_time – Zeitpunkt, zu dem die Bestellung im System eingegangen ist
-	\item delivery\_time – Zeitpunkt, zu dem die Bestellung fertig sein soll
-	\item latest\_acceptable\_time – Spätester Zeitpunkt, zu dem die Bestellung fertig sein soll, 
-	falls der gewünschte Lieferzeitpunkt nicht eingehalten kann
-	\item resources – (liste) IDs + Anzahl der bestellten Ressourcen, die hergestellt werden sollen, + der Preis, den der Kunde für diese Ressource bezahlen wird
-	\item penalty – falls die Bestellung nicht durchgeführt wird
-	\item tardiness\_fee – falls die Bestellung nach dem gewünschten Termin, aber vor dem letzten möglichen Termin durchgeführt wird
-	\item divisible – boolean, gibt an ob auch nur Teile der Bestellung bearbeitet werden können, oder ob alle bestellten Ressourcen geliefert werden müssen (oder gar keine)
-	\item customer\_id – ID des Kunden, von dem der Auftrag stammt
-	\item optional - boolean, gibt an ob eine Bestellung zwingend im Schedule vorhanden sein muss oder nicht (default: true)
+	\item id – unique ID of the order (just used for internal identiciation)
+	\item arrival\_time – timestamp, when the order was made
+	\item delivery\_time – timestamp, when the order is supposed to be done
+	\item latest\_acceptable\_time – timestampe, latest acceptable point in time to which the order needs to be completed if the given delivery time can not be met
+	\item resources – (list) IDs + amounts of ordered resources, + the price the customer pays for each of the resources
+	\item penalty – penalty if the order is not processed
+	\item tardiness\_fee – fee, if the order is only completed after the delivery time but before the latest acceptable time
+	\item divisible – boolean, to flag if the order can be split and only partially fullfilled or if all of the ordered resources have to be done (or none)
+	\item customer\_id – unique ID of the customer
+	\item optional - boolean, flags if the order has to be scheduled or if it is optional (default: true)
 \end{itemize}
 
 \subsection*{Jobs}
-Repräsentiert die spezifische Ausführung eines Tasks für eine Bestellung
+Describes a specific instance of a task for an order.
+
 \begin{itemize}
-	\item id - eindeutige ID des Jobs (kann auch fortlaufende Nummer sein, nur für interne Identifizierung)
-	\item order\_id - ID der Bestellung, für die der Job ausgeführt werden muss
-	\item task\_id - ID des Tasks, der ausgeführt werden soll
-	\item to\_id - Spezifische Zuteilungs-ID zwischen Tasks und Bestellungen, um den Job im Schedule genau zuordnen zu können
+	\item id - unique ID of the job (just used for internal identification)
+	\item order\_id - ID of the order, for which the job is being scheduled
+	\item task\_id - ID of the task which is processed
+	\item to\_id - specific assignment ID between the tasks and the orders to make it easier to link specific tasks to orders
 \end{itemize}
 
 \begin{figure}[H]
@@ -192,7 +193,7 @@ Repräsentiert die spezifische Ausführung eines Tasks für eine Bestellung
 \end{figure}
 
 \section*{Input / Output}
-Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\autoref{json_example})
+Exact structure of the data for with example data can be seen at "JSON-Example" (\autoref{json_example}).
 \begin{flushleft}
 	Input:\linebreak
 	Orders:\linebreak
@@ -205,8 +206,7 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 	$latest\_date$\linebreak
 	$optional$\linebreak
 	
-	Mapping von Tasks zu Jobs Bsp.:\linebreak
-	(Zuteilung zu exakten Job, Bsp. Task: Material schneiden -> Job: Material schneiden für Bestellung A)\linebreak
+	Mapping of tasks to jobs example::\linebreak
 	$Task A.1$\linebreak
 	$Task ID$\linebreak
 	$Job ID$ \linebreak\linebreak
@@ -236,8 +236,8 @@ Genaue Struktur der Datenübertragung mit Beispieldaten unter "JSON-Beispiel"(\a
 		\label{fig:ablauf}
 	\end{figure}
 \end{flushleft}
-\section*{Modell}
-\subsection*{Variablen Definition}
+\section*{Model}
+\subsection*{Variable Definition}
 \begin{flushleft}
 OLD: \linebreak
 $O$ - Set of all Orders\linebreak
@@ -307,7 +307,7 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 
 \end{flushleft}
 
-\subsection*{Objective Function + Nebenbedingungen}
+\subsection*{Objective Function + Constraints}
 \subsubsection*{Objective Functions}
 \begin{flushleft}
 \autoref{objective_function_1} Minimize tardy jobs\linebreak
@@ -362,7 +362,7 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\end{split}
 	\end{equation}
 \end{flushleft}
-\subsubsection*{Nebenbedingungen}
+\subsubsection*{Constraints}
 \begin{flushleft}
 \autoref{not_late} to make sure jobs finish before last possible time slot\linebreak
 \autoref{check_tardiness} checks if tardiness fee applies\linebreak
@@ -431,8 +431,57 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\end{split}
 	\end{equation}
 
+\section{Tests \& Experiments}
+
+\subsection{Used Objective Functions}
+
+\subsubsection{Makespan}
+
+\subsubsection{Min Deadline Deviation}
+\begin{equation}
+	\label{min_deadline_deviation}
+	\begin{split}
+		x := X_{i} \\
+		y := p_{j} \\
+		minimize \sum_{i=0}^{X} |(x_{s} + d_{y,w}) - x_{dt}|
+	\end{split}
+\end{equation}
+
+\subsubsection{Min Idle Time}
+
+\subsection{Genetic Algorithm Approach}
+Tested own implementation and PyGAD library - currently using PyGAD library (~same results, but faster runtime)
+
+\subsubsection{Encoding}
+
+\paragraph{1-Stage Optimization}
+For every Job which needs to be scheduled, on pair of <workstation, start time> is used - the duration for each job can be looked up using the workstation and the type of Job for each gene.
+
+\paragraph{2-Stage Optimization}
+In Stage 1, every Job is represented by a single integer <workstation>
+In Stage 2, every Job is represented by a single integer <start time> - the workstation assignments needed for the fitness function are taken of the result
+of Stage 1
+
+\subsubsection{Selection}
+The selection method used for all current experiments / tests was the "Roulette Wheel Selection", both with the PyGAD library and the self implemented GA version.
+
+\subsubsection{Recombination}
+
+\paragraph{One-Point-Crossover}
+
+\paragraph{Two-Point-Crossover}
+
+\subsubsection{Mutation}
+
+\subsubsection{Manual Result Improvement}
+
+\subsection{Agent-Based Approach}
+
+\subsection{CMA-ES}
+
+
 \end{flushleft}
-\section*{JSON-Beispiel}
+\section*{JSON-Example}
 \label{json_example}
 \begin{lstlisting}[language=json,firstnumber=1]
 {
