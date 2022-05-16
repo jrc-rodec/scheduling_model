@@ -101,30 +101,30 @@
 \thispagestyle{empty}
 \begin{titlepage}
   \begin{flushleft}
-  \section*{Scheduling Model}
+  \chapter{Scheduling Model}
   
   \end{flushleft}
 \end{titlepage}
 
 % Kurzreferat:
 \newpage
-\section*{Necessary Data}
-\subsection*{Description}
+\section{Necessary Data}
+\subsection{Description}
 The data is split into 2 parts:
 \begin{itemize}
 	\item System-Info, contains information about the production environment
 	\item Orders, contains orders made by customers, which need to be processed in the described production environment
 \end{itemize}
-\subsubsection*{System-Info}
+\subsubsection{System-Info}
 Contains information about the production environment
-\paragraph*{Tasks}
+\paragraph{Tasks}
 All steps / actions, that can be performed in the production environment.
 (Important: Tasks which are added as "follow up task" to a task should NOT have this task added as "preciding task"). The duration of each task can be found in the data of the workstations (\autoref{workstation}), so the processing of different tasks on different machines/workstations can be accounted for.
 
 \begin{itemize}
 	\item id – unique ID of the task (just used for internal identification)
 	\item name – name of the task (for easier readable/interpretable results)
-	\item resources – (list) needed resources, to process the task (id + amonut)
+	\item resources – (list) needed resources, to process the task (id + amount)
 	\item products – (list) all resources (id + amount) which are created by completing the task
 	\item preceding\_tasks – (list) tasks, which need to be scheduled before this task can be done
 	\item follow\_up\_tasks – (list) tasks, which need to be scheduled after this task is completed
@@ -132,14 +132,14 @@ All steps / actions, that can be performed in the production environment.
 	\item prepare\_time – the time needed to prepare the machine/workstation for this task
 	\item unpreprare\_time – the time needed to unprepare a machine/workstation after it was used for this task
 \end{itemize}
-\paragraph*{Recipes}
+\paragraph{Recipes}
 The recipies for the different resources, which are supposed to be produced (final products or intermediate products)
 \begin{itemize}
 	\item id – unique ID of the recipe (just used for internal identification)
 	\item name – name of the recipe (for easier readable/interpretable results)
 	\item tasks – (list) IDs of all tasks, which need to be scheduled/processed, to finish this recipe (result resources and amounts can be looked up from the result products of the last task in the recipe)
 \end{itemize}
-\paragraph*{Resources}
+\paragraph{Resources}
 All resources, which can either be used or produced in the production environment
 \begin{itemize}
 	\item id – unique ID of the resource (just used for internal identification)
@@ -150,7 +150,7 @@ All resources, which can either be used or produced in the production environmen
 	\item renewable – boolean, to flag if the resource is consumed or not (e.g. a resource representing an employee is renewable, because they are usable again once a task is done)
 	\item recipes – (list) IDs of the recipes, with which this resource can be produced (if there are any, otherwise empty list)
 \end{itemize}
-\paragraph*{Workstations}
+\paragraph{Workstations}
 \label{workstation}
 All machines/workstations, which are available in the production environment
 \begin{itemize}
@@ -160,22 +160,22 @@ All machines/workstations, which are available in the production environment
 	\item tasks – (list) IDs of all tasks, which can be processed on this workstation + the duration of each task on this workstation
 \end{itemize}
 
-\subsubsection*{Orders}
+\subsubsection{Orders}
 Describes orders made by customers, which are supposed to be processed in the production environment.
 \begin{itemize}
-	\item id – unique ID of the order (just used for internal identiciation)
+	\item id – unique ID of the order (just used for internal identification)
 	\item arrival\_time – timestamp, when the order was made
 	\item delivery\_time – timestamp, when the order is supposed to be done
-	\item latest\_acceptable\_time – timestampe, latest acceptable point in time to which the order needs to be completed if the given delivery time can not be met
+	\item latest\_acceptable\_time – timestamp, latest acceptable point in time to which the order needs to be completed if the given delivery time can not be met
 	\item resources – (list) IDs + amounts of ordered resources, + the price the customer pays for each of the resources
 	\item penalty – penalty if the order is not processed
 	\item tardiness\_fee – fee, if the order is only completed after the delivery time but before the latest acceptable time
-	\item divisible – boolean, to flag if the order can be split and only partially fullfilled or if all of the ordered resources have to be done (or none)
+	\item divisible – boolean, to flag if the order can be split and only partially fulfilled or if all of the ordered resources have to be done (or none)
 	\item customer\_id – unique ID of the customer
 	\item optional - boolean, flags if the order has to be scheduled or if it is optional (default: true)
 \end{itemize}
 
-\subsection*{Jobs}
+\subsection{Jobs}
 Describes a specific instance of a task for an order.
 
 \begin{itemize}
@@ -192,7 +192,7 @@ Describes a specific instance of a task for an order.
 	\label{fig:dependencies}
 \end{figure}
 
-\section*{Input / Output}
+\section{Input / Output}
 Exact structure of the data for with example data can be seen at "JSON-Example" (\autoref{json_example}).
 \begin{flushleft}
 	Input:\linebreak
@@ -236,8 +236,8 @@ Exact structure of the data for with example data can be seen at "JSON-Example" 
 		\label{fig:ablauf}
 	\end{figure}
 \end{flushleft}
-\section*{Model}
-\subsection*{Variable Definition}
+\section{Model}
+\subsection{Variable Definition}
 \begin{flushleft}
 OLD: \linebreak
 $O$ - Set of all Orders\linebreak
@@ -307,8 +307,8 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 
 \end{flushleft}
 
-\subsection*{Objective Function + Constraints}
-\subsubsection*{Objective Functions}
+\subsection{Objective Function + Constraints}
+\subsubsection{Objective Functions}
 \begin{flushleft}
 \autoref{objective_function_1} Minimize tardy jobs\linebreak
 \autoref{objective_function_2} Maximize earning\linebreak
@@ -362,7 +362,7 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 	\end{split}
 	\end{equation}
 \end{flushleft}
-\subsubsection*{Constraints}
+\subsubsection{Constraints}
 \begin{flushleft}
 \autoref{not_late} to make sure jobs finish before last possible time slot\linebreak
 \autoref{check_tardiness} checks if tardiness fee applies\linebreak
@@ -433,9 +433,13 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 
 \section{Tests \& Experiments}
 
-\subsection{Used Objective Functions}
+\subsection{Currently used Objective Functions}
 
-\subsubsection{Makespan}
+\subsubsection{Make-span}
+\begin{equation}
+	\label{makespan}
+	test	
+\end{equation}
 
 \subsubsection{Min Deadline Deviation}
 \begin{equation}
@@ -448,40 +452,112 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 \end{equation}
 
 \subsubsection{Min Idle Time}
+\begin{equation}
+	\label{min_idle_time}
+	\begin{split}
+		x := w_{i}\\
+		x' := w_{i-1}\\
+		w := W_{j} \\
+		\sum_{j=0}^{W} w_{0s} + \sum_{i=1}^{w} x_{s} - (x'_{s} + d_{x'_{p}w})
+	\end{split}
+\end{equation}
 
 \subsection{Genetic Algorithm Approach}
 Tested own implementation and PyGAD library - currently using PyGAD library (~same results, but faster runtime)
 
+\subsubsection{Feasibility Function}
+
+The current version of the feasibility function tests the following cases:
+\begin{itemize}
+	\item start times < earliest allowed time slot
+	\item end times > last allowed time slot
+	\item overlap of jobs scheduled on the same workstation
+	\item correct sequence of jobs for each order (including no overlap)
+\end{itemize}
 \subsubsection{Encoding}
+There are currently two different encodings in use, depending on which strategy is being used. The 1-Stage Optimization attempts to optimize both the workstation assignment and the start times of each job at the same time, while the 2-Stage Optimization handles the assignments to the workstations first and only after this finished, the start times are adapted to create a feasible schedule.
 
 \paragraph{1-Stage Optimization}
 For every Job which needs to be scheduled, on pair of <workstation, start time> is used - the duration for each job can be looked up using the workstation and the type of Job for each gene.
 
 \paragraph{2-Stage Optimization}
 In Stage 1, every Job is represented by a single integer <workstation>
-In Stage 2, every Job is represented by a single integer <start time> - the workstation assignments needed for the fitness function are taken of the result
-of Stage 1
+In Stage 2, every Job is represented by a single integer <start time> - the workstation assignments needed for the fitness function are taken of the result of Stage 1
 
 \subsubsection{Selection}
 The selection method used for all current experiments / tests was the "Roulette Wheel Selection", both with the PyGAD library and the self implemented GA version.
 
 \subsubsection{Recombination}
+On the used scale of complexity in the chosen test problems for scheduling, there was no significant difference in the performance of the two tested recombination methods. Once the GA manages to find any feasible solution, both methods keep improving the solution.
 
 \paragraph{One-Point-Crossover}
+For the used One-Point-Crossover Variant, 2 parents are selected, a random point between 0 and n is chosen (n = amount of genes) and 2 new offsprings are created.
 
 \paragraph{Two-Point-Crossover}
+For the used Two-Point-Crossover Variant, 2 parents are selected, two random points between 0 and n is chosen (n = amount of genes - 1) and between Point 1 and m (m = amount of genes) and 2 new offsprings are created.
 
 \subsubsection{Mutation}
 
+\paragraph{Random}
+The random mutation randomly chooses genes of an individual and changes them to any of the available options for the respective gene (e.g. any time slot between the earliest allowed and last allowed time slot)
+
+\paragraph{Only Feasible Mutations}
+This mutation method also randomizes the genes of an individual, but only picks from the pool of feasible combinations (task-workstation assignment).
+
 \subsubsection{Manual Result Improvement}
+At the end of the optimization using a GA, the order and assignments of the Jobs may already be good, but some unnecessary unused space is either in front of all jobs on a workstation or in between jobs on a workstation. To circumvent this, an algorithm to improve the result is used, which removes the unused space and shifts all jobs closer together (without violating constraints).
+The algorithm currently used works like this:
+\begin{algorithm}[H]
+	\label{Result Compression Algorithm}
+	\caption{Result Compression Algorithm}
+\begin{algorithmic}
+	\STATE $new\_solution$ = deepcopy($solution$)
+	\STATE $changes\_made$ = True
+	\WHILE{$changes\_made$}
+		\STATE $changes\_made$ = False
+		\FOR{all workstations $w$ in $workstations$}
+			\STATE sort jobs on workstation $w$ by start time
+			\FOR{Job $j$ in sorted jobs of workstation $w$}
+				\IF{$j$ is the first job in order sequence}
+					\STATE $shift$ = 0
+					\IF{$j$ is the first job on current workstation}
+						\STATE $shift$ = $new\_solution[j]$ - $earliest\_allowed\_time$
+					\ELSE
+						\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$ + $durations[j-1]$
+					\ENDIF
+				\ELSE
+					\STATE $previous\_job\_end$ = $new\_solution[j-1]$ + $durations[j-1]$
+					\STATE $max\_shift$ = $new\_solution[j]$ - $previous\_job\_end$
+					\IF{$j$ is the first job on current workstation}
+						\STATE $shift$ = $max\_shift$
+					\ELSE
+						\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$
+						\IF{$max\_shift$ < $shift$}
+							\STATE $shift$ = $max\_shift$
+						\ENDIF
+					\ENDIF
+				\ENDIF
+				\STATE $new\_solution[j]$ = $new\_solution[j]$ - $shift$
+				\STATE $changes\_made$ = $shift$ > 0
+			\ENDFOR
+		\ENDFOR
+	\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+This algorithm currently does not scale well for higher complexities, but has a lot of potential for improvement.
+The algorithm iteratively improves the schedule until there are no more (legal) changes to be made.
 
 \subsection{Agent-Based Approach}
 
-\subsection{CMA-ES}
+The current Agent-Based Approach is built like an Autonomous System and works with a simplistic strategy (greedy) just to demonstrate how such a solution could work.
+It currently simulates the process of continually feeding new orders into the system by processing them one at a time.
+To test a hybrid approach, a second version of the same agent exists, for which a GA tries to optimize the sorting of the incoming orders to improve the result. 
 
+\subsection{CMA-ES}
+The used CMA-ES library can not differ between multiple gene types, so currently, the only comparison can be done with the 2-Stage Optimization.
 
 \end{flushleft}
-\section*{JSON-Example}
+\section{JSON-Example}
 \label{json_example}
 \begin{lstlisting}[language=json,firstnumber=1]
 {
