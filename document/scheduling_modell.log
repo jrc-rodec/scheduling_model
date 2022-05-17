@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.5.4)  16 MAY 2022 14:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.5.4)  16 MAY 2022 15:18
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1040,10 +1040,10 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
  [10]
 [11] [12] [13]
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 510.
+put line 512.
  [14] [15]
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 5
-60.
+62.
 
 (C:\Users\huda\AppData\Local\Programs\MiKTeX\tex/latex/base\t1cmtt.fd
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
@@ -1103,10 +1103,10 @@ Package logreq Info: Writing requests to 'scheduling_modell.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 27259 strings out of 478547
- 491928 string characters out of 2842308
- 1509367 words of memory out of 3000000
- 44492 multiletter control sequences out of 15000+600000
+ 27256 strings out of 478547
+ 491795 string characters out of 2842308
+ 1501364 words of memory out of 3000000
+ 44489 multiletter control sequences out of 15000+600000
  480236 words of font info for 51 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  108i,17n,106p,10614b,2361s stack positions out of 10000i,1000n,20000p,200000b,80000s
@@ -1130,9 +1130,9 @@ m/cmr8.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsf
 onts/cm/cmsy10.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/type1/pub
 lic/amsfonts/cm/cmsy6.pfb><C:/Users/huda/AppData/Local/Programs/MiKTeX/fonts/ty
 pe1/public/amsfonts/cm/cmsy8.pfb>
-Output written on scheduling_modell.pdf (30 pages, 370075 bytes).
+Output written on scheduling_modell.pdf (30 pages, 371279 bytes).
 PDF statistics:
- 1403 PDF objects out of 1440 (max. 8388607)
+ 1407 PDF objects out of 1440 (max. 8388607)
  678 named destinations out of 1000 (max. 500000)
- 299 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 307 words of extra memory for PDF output out of 10000 (max. 10000000)
 

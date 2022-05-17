@@ -231,9 +231,6 @@ class TimeSlotGA(GA):
         input_format = []
         for _ in range(earliest_time_slot, last_time_slot):
             input_format.append(0)
-        
-        # run
-        pass
 
 ###############################################################
 ##################For Agent-based Optimization#################
