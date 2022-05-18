@@ -551,7 +551,8 @@ The algorithm iteratively improves the schedule until there are no more (legal) 
 
 The current Agent-Based Approach is built like an Autonomous System and works with a simplistic strategy (greedy) just to demonstrate how such a solution could work.
 It currently simulates the process of continually feeding new orders into the system by processing them one at a time.
-To test a hybrid approach, a second version of the same agent exists, for which a GA tries to optimize the sorting of the incoming orders to improve the result. 
+To test a hybrid approach, a second version of the same agent exists, for which a GA tries to optimize the sorting of the incoming orders to improve the result.
+A second version (currently untested) is also implemented, which in addition to the greedy assignment strategy, follows a secondary strategy for cases in which a job can not be scheduled in a good (or just valid) timeslot, to make sure more complex problems could be solved by the approach as well.
 
 \subsection{CMA-ES}
 The used CMA-ES library can not differ between multiple gene types, so currently, the only comparison can be done with the 2-Stage Optimization.

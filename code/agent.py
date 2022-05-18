@@ -173,6 +173,8 @@ class CompactGreedyAgent(Agent):
                         # makespan (earliest possible), change prev job start as soon as possible after - repeat for prev
                         # jobs of the prev job, ... until the whole recipe is rescheduled in a valid way
                         best_fit = self.find_best_fit(possible_workstations, jobs[j], last_acceptable)
+                        prev_jobs = [] # needed to store other jobs which belong to the same recipe
+                        # TODO: fill in prev_jobs
                         if best_fit is not None:
                             duration = self.environment.get_duration(jobs[j].external_id, best_fit[0].external_id)
                             best_start_slot = best_fit[1] - duration
@@ -191,5 +193,4 @@ class CompactGreedyAgent(Agent):
                                         earliest_possible = (workstation, end)
                             self.state.add((earliest_possible[0], earliest_possible[1]), jobs[j].external_id, order.external_id)
                             # TODO: go through previous tasks, add after this task
-                        pass
         return success_count
