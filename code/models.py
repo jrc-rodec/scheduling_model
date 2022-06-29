@@ -93,6 +93,13 @@ class Schedule:
                     return workstation
         return -1 
 
+    def start_time_for(self, job_id):
+        assignemnts = self.assignments_for(self.workstation_for(job_id))
+        for assignment in assignemnts:
+            if assignment[0] == job_id:
+                return assignment[1]
+        return -1
+
     def is_feasible(self) -> bool:
         pass
 
