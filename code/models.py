@@ -86,6 +86,13 @@ class Schedule:
             self.assignments[assignment[0]] = list()
         self.assignments[assignment[0]].append([task_id, assignment[1], order_id])
 
+    def workstation_for(self, task_id):
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment[0] == task_id:
+                    return workstation
+        return -1 
+
     def is_feasible(self) -> bool:
         pass
 
