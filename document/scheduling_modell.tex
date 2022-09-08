@@ -553,9 +553,35 @@ The current Agent-Based Approach is built like an Autonomous System and works wi
 It currently simulates the process of continually feeding new orders into the system by processing them one at a time.
 To test a hybrid approach, a second version of the same agent exists, for which a GA tries to optimize the sorting of the incoming orders to improve the result.
 A second version (currently untested) is also implemented, which in addition to the greedy assignment strategy, follows a secondary strategy for cases in which a job can not be scheduled in a good (or just valid) timeslot, to make sure more complex problems could be solved by the approach as well.
+\newline
+\newline
+TODO: 
+There are different approaches to the agent-based approach, where either all agents perform the full optimization and the results are compared, and where the optimization with each agent is performed step by step and the population for all is chosen from all agents. (skeletons for both are implemented)
+
+
+
+\subsubsection{3-Stage Agent-Based Optimization}
+Based on: http://link.springer.com/10.1007/s40092-017-0204-z \\
+The described scheduling system consists of 3 parts, which can be implemented using 3 agents working in sequence. First, a GA, using an adapted crossover method based on iPOX, creates a population of feasible schedules. For the mutation of the workstation assignments, a random assignment is chosen and replaced with another workstation which can be used for the given task. The mutation of the operation order is conducted by randomly selecting 2 indices and swapping the respective selected operations.
+In the second step, the found solutions in the result population of the GA are clustered to find the different groups of solutions.
+The third agent performs a local search in each cluster to find the best solution from the given suggestions (in the paper, the local search method used is Tabu Search, other examples use e.g. Harmony Search).
+The best solution is chosen from the search result of each cluster.
 
 \subsection{CMA-ES}
-The used CMA-ES library can not differ between multiple gene types, so currently, the only comparison can be done with the 2-Stage Optimization.
+The used CMA-ES library can not differ between multiple gene types, so currently, the only comparison can be done with the 2-Stage Optimization. In the first stage, the workstation assignments are done while in the second stage the start times are optimized. 
+
+\subsection{Comparison}
+
+To compare the different approaches, multiple evaluation functions have been implemented. Since every optimization method can produce a schedule according to the data model, the functions can evaluate the results of all methods.
+The currently implemented comparison functions are:
+
+\begin{itemize}
+	\item Makespan - Time needed to complete all scheduled tasks from first scheduled task to the end of the last scheduled task
+	\item Tardiness - Sum of all delays between delivery times and last acceptable times
+	\item Deviation - Sum of all schedule deviations from delivery times
+	\item Idle-Time - Sum of all idle times on each workstation
+	\item Profit - Sum of all profits over all scheduled orders - penalties and fees for delays and orders not being processed at all
+\end{itemize}
 
 \end{flushleft}
 \section{JSON-Example}
