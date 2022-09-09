@@ -438,7 +438,12 @@ $O_{c}$ - Set of all Orders which could be completed in the schedule, $O_{c} \su
 \subsubsection{Make-span}
 \begin{equation}
 	\label{makespan}
-	test	
+	\begin{split}
+		x_{end, p} = x_s + d_{pw} \\
+		p_{first} ... first scheduled task \\
+		p_{last} ... last scheduled task \\
+		minimize x_{end, p_{last}} - x_{s, p_first}
+	\end{split}
 \end{equation}
 
 \subsubsection{Min Deadline Deviation}
@@ -510,39 +515,39 @@ The algorithm currently used works like this:
 \begin{algorithm}[H]
 	\label{Result Compression Algorithm}
 	\caption{Result Compression Algorithm}
-\begin{algorithmic}
-	\STATE $new\_solution$ = deepcopy($solution$)
-	\STATE $changes\_made$ = True
-	\WHILE{$changes\_made$}
-		\STATE $changes\_made$ = False
-		\FOR{all workstations $w$ in $workstations$}
-			\STATE sort jobs on workstation $w$ by start time
-			\FOR{Job $j$ in sorted jobs of workstation $w$}
-				\IF{$j$ is the first job in order sequence}
-					\STATE $shift$ = 0
-					\IF{$j$ is the first job on current workstation}
-						\STATE $shift$ = $new\_solution[j]$ - $earliest\_allowed\_time$
+	\begin{algorithmic}
+		\STATE $new\_solution$ = deepcopy($solution$)
+		\STATE $changes\_made$ = True
+		\WHILE{$changes\_made$}
+			\STATE $changes\_made$ = False
+			\FOR{all workstations $w$ in $workstations$}
+				\STATE sort jobs on workstation $w$ by start time
+				\FOR{Job $j$ in sorted jobs of workstation $w$}
+					\IF{$j$ is the first job in order sequence}
+						\STATE $shift$ = 0
+						\IF{$j$ is the first job on current workstation}
+							\STATE $shift$ = $new\_solution[j]$ - $earliest\_allowed\_time$
+						\ELSE
+							\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$ + $durations[j-1]$
+						\ENDIF
 					\ELSE
-						\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$ + $durations[j-1]$
-					\ENDIF
-				\ELSE
-					\STATE $previous\_job\_end$ = $new\_solution[j-1]$ + $durations[j-1]$
-					\STATE $max\_shift$ = $new\_solution[j]$ - $previous\_job\_end$
-					\IF{$j$ is the first job on current workstation}
-						\STATE $shift$ = $max\_shift$
-					\ELSE
-						\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$
-						\IF{$max\_shift$ < $shift$}
+						\STATE $previous\_job\_end$ = $new\_solution[j-1]$ + $durations[j-1]$
+						\STATE $max\_shift$ = $new\_solution[j]$ - $previous\_job\_end$
+						\IF{$j$ is the first job on current workstation}
 							\STATE $shift$ = $max\_shift$
+						\ELSE
+							\STATE $shift$ = $new\_solution[j]$ - $new\_solution[j-1]$
+							\IF{$max\_shift$ < $shift$}
+								\STATE $shift$ = $max\_shift$
+							\ENDIF
 						\ENDIF
 					\ENDIF
-				\ENDIF
-				\STATE $new\_solution[j]$ = $new\_solution[j]$ - $shift$
-				\STATE $changes\_made$ = $shift$ > 0 OR $changes\_made$
+					\STATE $new\_solution[j]$ = $new\_solution[j]$ - $shift$
+					\STATE $changes\_made$ = $shift$ > 0 OR $changes\_made$
+				\ENDFOR
 			\ENDFOR
-		\ENDFOR
-	\ENDWHILE
-\end{algorithmic}
+		\ENDWHILE
+	\end{algorithmic}
 \end{algorithm}
 This algorithm currently does not scale well for higher complexities, but has a lot of potential for improvement.
 The algorithm iteratively improves the schedule until there are no more (legal) changes to be made.
@@ -555,9 +560,12 @@ To test a hybrid approach, a second version of the same agent exists, for which 
 A second version (currently untested) is also implemented, which in addition to the greedy assignment strategy, follows a secondary strategy for cases in which a job can not be scheduled in a good (or just valid) timeslot, to make sure more complex problems could be solved by the approach as well.
 \newline
 \newline
+
 TODO: 
 There are different approaches to the agent-based approach, where either all agents perform the full optimization and the results are compared, and where the optimization with each agent is performed step by step and the population for all is chosen from all agents. (skeletons for both are implemented)
-
+\newline
+Additionally, every other approach can be implemented as agent-based solution and be compatible to work with a multi-agent system.
+Reinforcement learning and other machine learning methods can also be applied to the agent-based approach.
 
 
 \subsubsection{3-Stage Agent-Based Optimization}
@@ -581,6 +589,14 @@ The currently implemented comparison functions are:
 	\item Deviation - Sum of all schedule deviations from delivery times
 	\item Idle-Time - Sum of all idle times on each workstation
 	\item Profit - Sum of all profits over all scheduled orders - penalties and fees for delays and orders not being processed at all
+\end{itemize}
+
+\subsection{Currently missing}:
+
+\begin{itemize}
+	\item Optimization with regard to resource constraints
+	\item Predictions included into the optimization process (missing data), e.g. workstation maintenance, resource delivery, expected workloads/orders, ...
+	\item Well structured re-implementation of useful comparison methods
 \end{itemize}
 
 \end{flushleft}
