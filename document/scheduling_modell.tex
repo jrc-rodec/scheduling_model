@@ -538,7 +538,7 @@ The algorithm currently used works like this:
 					\ENDIF
 				\ENDIF
 				\STATE $new\_solution[j]$ = $new\_solution[j]$ - $shift$
-				\STATE $changes\_made$ = $shift$ > 0
+				\STATE $changes\_made$ = $shift$ > 0 OR $changes\_made$
 			\ENDFOR
 		\ENDFOR
 	\ENDWHILE
