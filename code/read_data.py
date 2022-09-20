@@ -158,6 +158,7 @@ def translate_1(instance, generated_orders, earliest = 200, latest = 5000):
     recipe_id = 0
     operation_id = 0
     resource_id = instance[0][2] + 1 # n workers + 1
+    external_task_id = 0
     for recipe in recipes_data:
         task_id = 0
         tasks_of_recipe = []
@@ -173,6 +174,7 @@ def translate_1(instance, generated_orders, earliest = 200, latest = 5000):
                     if not contains(resources, worker):
                         resources.append(Resource(worker, f'Worker#{worker}', 1, 0, True, [], 0))
                     task = Task(operation_id, f'R{recipe_id}o{task_id}w{machine}r{worker}', [(worker, 1)], [(resource_id, 1)], [], [], True, 0, 0) # Recipe/operation/workstation/resource for the name
+                    #task.external_id = external_task_id # TODO: double check
                     if task_id > 0:
                         tasks[operation_id - 1].follow_up_tasks.append(operation_id)
                     tasks.append(task)
@@ -180,6 +182,7 @@ def translate_1(instance, generated_orders, earliest = 200, latest = 5000):
                     workstations[len(workstations) - 1].tasks.append((operation_id, duration))
                     operation_id += 1
             task_id += 1
+            external_task_id += 1
         recipes.append(Recipe(recipe_id, f'Recipe#{recipe_id}', tasks_of_recipe))
         recipe_id += 1
     orders = []
