@@ -198,6 +198,60 @@ def translate_1(instance, generated_orders, earliest = 200, latest = 5000):
         i += 1
     return recipes, workstations, resources, tasks, orders
 
+def translate_1_testing(instance, generated_orders, earliest = 200, latest = 5000):
+    # gather resources (in case of dataset 1 = workers)
+    # gather workstations (in case of dataset 1 = machines)
+    # gather recipes (in case of dataset 1 = lines 1:end)
+    # gather tasks (in case of dataset 1 = combinations of machines and workers for each job)
+    meta = instance[0]
+    recipes_data = instance[1]
+    resources = []
+    workstations = []
+    recipes = []
+    tasks = []
+    recipe_id = 0
+    operation_id = 0
+    resource_id = instance[0][2] + 1 # n workers + 1
+    external_task_id = 0
+    for recipe in recipes_data:
+        task_id = 0
+        tasks_of_recipe = []
+        for recipe_task in recipe:
+            resource_id += 1 # add pseudo resource to identify exchangable tasks
+            for possible_machine_combination in recipe_task:
+                for possible_workers_for_machine in possible_machine_combination:
+                    machine = possible_workers_for_machine[0]
+                    worker = possible_workers_for_machine[1]
+                    duration = possible_workers_for_machine[2]
+                    if not contains(workstations, machine):
+                        workstations.append(Workstation(machine, f'machine#{machine}', [], []))
+                    if not contains(resources, worker):
+                        resources.append(Resource(worker, f'Worker#{worker}', 1, 0, True, [], 0))
+                    task = Task(operation_id, f'R{recipe_id}o{task_id}w{machine}r{worker}', [(worker, 1)], [(resource_id, 1)], [], [], True, 0, 0) # Recipe/operation/workstation/resource for the name
+                    task.external_id = external_task_id # TODO: double check
+                    if task_id > 0:
+                        tasks[operation_id - 1].follow_up_tasks.append(operation_id)
+                    tasks.append(task)
+                    tasks_of_recipe.append(task)
+                    workstations[len(workstations) - 1].tasks.append((external_task_id, duration))
+                    operation_id += 1
+            task_id += 1
+            external_task_id += 1
+        recipes.append(Recipe(recipe_id, f'Recipe#{recipe_id}', tasks_of_recipe))
+        recipe_id += 1
+    orders = []
+    i = 0
+    for resource in resources:
+        resource.recipes.append(random.choice(recipes))
+    for order in generated_orders:
+        #delivery_time = datetime.now()
+        #td = timedelta(minutes=order[1])
+        #delivery_time += td
+        delivery_time = random.randint(earliest, latest)
+        orders.append(Order(order[2], datetime.now(), delivery_time, delivery_time, [random.choice(resources)], 0, 0, False, 0, True))
+        i += 1
+    return recipes, workstations, resources, tasks, orders
+
 def translate_3(instance, n_workstations, generated_orders, earliest = 200, latest = 5000):
     # instance structure ([n_resources, resources_state, n_tasks, durations, rr, succession_tasks])    
     recipes = []
