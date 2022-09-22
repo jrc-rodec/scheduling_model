@@ -189,6 +189,15 @@ class SimulationEnvironment:
                 return workstation
         return None
 
+    def get_valid_workstations_by_external_id(self, task_id : int):
+        result = []
+        for workstation in self.workstations:
+            for task in workstation.tasks:
+                if self.get_task(task[0]).external_id == task_id:
+                    result.append(workstation)
+                    break
+        return result
+
     def get_valid_workstations(self, task_id : int):
         result = []
         for workstation in self.workstations:
