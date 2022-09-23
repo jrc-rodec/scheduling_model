@@ -553,6 +553,21 @@ The algorithm currently used works like this:
 This algorithm currently does not scale well for higher complexities, but has a lot of potential for improvement.
 The algorithm iteratively improves the schedule until there are no more (legal) changes to be made.
 
+\subsubsection{GA with built-in start time calculation and load balancing}
+Based on: Mesghouni, Khaled; Hammadi, Slim (2004): “Evolutionary algorithms for job-shop scheduling.” In: Int. J. Appl. Math. Comput. Sci, 14 (2004), p. 91–103. 
+
+While the same encoding as in the other GA versions can be used, the mutation and crossover functions differ.
+\paragraph{Crossover}
+According to the paper, a single gene (workstation assignment + start time) is chosen. This gene is exchanged between two parents, while all other genes stay the same.
+
+\paragraph{Mutation}
+For the mutation operator, the paper specifies a load balancing function which (if a gene is supposed to be mutated), compares the current loads on all applicable workstations for the given task. The task is then reassigned to a workstation with a smaller workload.
+
+\paragraph{Fitness}
+The fitness for this version is calculated according to \autoref{makespan}. Since the start times of the different tasks are not mutated or changed through crossover, they get calculated to take the next eligible slot they can (maximum between last current task ending on assigned workstation and ending of a potential previous task in the same recipe that needs to be completed first). This skips the manual result improvement implemented for the GA versions, but it introduces a dependency on the ordering of the task sequence - earlier tasks in the sequence will always be scheduled first.
+
+
+
 \subsection{Agent-Based Approach}
 
 The current Agent-Based Approach is built like an Autonomous System and works with a simplistic strategy (greedy) just to demonstrate how such a solution could work.
