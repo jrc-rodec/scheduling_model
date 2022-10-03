@@ -1,4 +1,4 @@
-from code.models import SimulationEnvironment
+from models import SimulationEnvironment
 from models import Order, Schedule, SimulationEnvironment
 
 def get_first(schedule : Schedule, order : Order):
@@ -93,7 +93,10 @@ def max_profit(schedule : Schedule, orders, environment : SimulationEnvironment)
     profit = 0
     # sum profits of all scheduled orders
     for order in orders:
-        profit += order.payment_amount
+        payment_amount = 0
+        for resource in order.resources:
+            payment_amount += resource[2]
+        profit += payment_amount # order.payment_amount
         assignment, workstation =  get_last(schedule, order, environment)
         duration = environment.get_duration(assignment[0], workstation.external_id)
         end = assignment[1] + duration

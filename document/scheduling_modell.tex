@@ -124,7 +124,7 @@ All steps / actions, that can be performed in the production environment.
 \begin{itemize}
 	\item id – unique ID of the task (just used for internal identification)
 	\item name – name of the task (for easier readable/interpretable results)
-	\item resources – (list) needed resources, to process the task (id + amount)
+	\item required\_resources – (list) needed resources, to process the task (id + amount)
 	\item products – (list) all resources (id + amount) which are created by completing the task
 	\item preceding\_tasks – (list) tasks, which need to be scheduled before this task can be done
 	\item follow\_up\_tasks – (list) tasks, which need to be scheduled after this task is completed
@@ -172,6 +172,7 @@ Describes orders made by customers, which are supposed to be processed in the pr
 	\item tardiness\_fee – fee, if the order is only completed after the delivery time but before the latest acceptable time
 	\item divisible – boolean, to flag if the order can be split and only partially fulfilled or if all of the ordered resources have to be done (or none)
 	\item customer\_id – unique ID of the customer
+	%\item payment\_amount - the amount of money the customer pays for the order
 	\item optional - boolean, flags if the order has to be scheduled or if it is optional (default: true)
 \end{itemize}
 
@@ -187,7 +188,7 @@ Describes a specific instance of a task for an order.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=8cm]{images/dependencies_v3}
+	\includegraphics[width=8cm]{images/dependencies_v2}
 	\caption{Dependencies}
 	\label{fig:dependencies}
 \end{figure}
