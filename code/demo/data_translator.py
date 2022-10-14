@@ -1,0 +1,2 @@
+class DataTranslator:
+    pass

@@ -5,14 +5,14 @@ def get_data(id):
     if id == 0:
         # Instance 1, Kacem et al. (2002b)
         n_workstations = 5
-        recipes = [3, 3, 4, 2]  # contains amount of jobs per recipe
+        recipes = [3, 3, 4, 2]  # contains amount of tasks per recipe
         operation_times = [
-            [2, 5, 4, 1, 2],
-            [5, 4, 5, 7, 5],
-            [4, 5, 5, 4, 5],
-            [2, 5, 4, 7, 8],
-            [5, 6, 9, 8, 5],
-            [4, 5, 4, 54, 5],
+            [2, 5, 4, 1, 2], # recipe 0, task 0 processing times
+            [5, 4, 5, 7, 5], # recipe 0, task 1 processing times
+            [4, 5, 5, 4, 5], # recipe 0, task 2 processing times
+            [2, 5, 4, 7, 8], # recipe 1, task 0 processing times
+            [5, 6, 9, 8, 5], # recipe 1, task 1 processing times
+            [4, 5, 4, 54, 5], # . . .
             [9, 8, 6, 7, 9],
             [6, 1, 2, 5, 4],
             [2, 5, 4, 2, 4],

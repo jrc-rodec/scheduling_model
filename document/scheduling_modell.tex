@@ -186,6 +186,13 @@ Describes a specific instance of a task for an order.
 	\item to\_id - specific assignment ID between the tasks and the orders to make it easier to link specific tasks to orders
 \end{itemize}
 
+\subsection{Schedule}
+Describes the result schedule of the optimization
+\begin{itemize}
+	\item assignments - (list) list for each workstation, containing each job scheduled on the workstation with the start time
+	\item objective\_values - (list/dictionary) contains the result value of each objective function used to evaluate the schedule
+\end{itemize}
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=8cm]{images/dependencies_v2}
