@@ -30,3 +30,20 @@ class Recipe:
         self.external_id = id
         self.name = name
         self.tasks = tasks
+
+
+class Order:
+
+    def __init__(self, id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional, payment_amount = 0):
+        self.id = id
+        self.external_id = id
+        self.arrival_time = arrival_time
+        self.delivery_time = delivery_time
+        self.latest_acceptable_time = latest_acceptable_time
+        self.resources = resources # <Resource, (Amount + Price)> currently [resource_id, amount, price]
+        self.penalty = penalty
+        self.tardiness_fee = tardiness_fee
+        self.divisible = divisible
+        self.customer_id = customer_id
+        self.optional = optional
+        self.payment_amount = payment_amount
