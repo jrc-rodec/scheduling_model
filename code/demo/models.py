@@ -47,3 +47,17 @@ class Order:
         self.customer_id = customer_id
         self.optional = optional
         self.payment_amount = payment_amount
+
+class SimulationEnvironment:
+    
+    def __init__(self, workstations, tasks, resources, recipes):
+        # TODO: change all lists to dictionaries
+        self.workstations = workstations # set of all workstations
+        self.tasks = tasks # set of all possible tasks
+        self.resources = resources # set of all existing resources
+        self.recipes = recipes # set of all available recipes
+        self.inventory = dict() # <Resource, amount> starting state of the systems resources
+        for resource in self.resources:
+            if not resource in self.inventory:
+                self.inventory[resource] = 0
+            self.inventory[resource] += resource.stock

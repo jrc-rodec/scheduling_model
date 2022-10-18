@@ -1,4 +1,4 @@
-from models import Workstation, Task, Recipe
+from models import SimulationEnvironment, Workstation, Task, Recipe
 import random
 
 class DataTranslator:
@@ -40,3 +40,24 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
 n_workstations, recipes, operation_times = get_data(0)
 recipies, workstations, resources, tasks, orders = TestTranslator().translate(n_workstations, recipes, operation_times)
 print('end')"""
+
+class EncodeForGA(DataTranslator):
+
+    def translate(self, env : SimulationEnvironment, orders):
+        values = []
+        pass
+
+class EncodeForPSO(DataTranslator):
+
+    def translate(self, env : SimulationEnvironment, orders):
+        values = []
+        pass
+
+class EncodeForGreedyAgent(DataTranslator):
+
+    def translate(self, env: SimulationEnvironment, orders):
+        values = []
+        pass
+
+
+
