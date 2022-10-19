@@ -31,7 +31,6 @@ class Recipe:
         self.name = name
         self.tasks = tasks
 
-
 class Order:
 
     def __init__(self, id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, optional, payment_amount = 0):
@@ -61,3 +60,17 @@ class SimulationEnvironment:
             if not resource in self.inventory:
                 self.inventory[resource] = 0
             self.inventory[resource] += resource.stock
+
+    def get_recipe_by_id(self, id : int):
+        for recipe in self.recipes:
+            if recipe.id == id:
+                return recipe
+        return None
+
+    def get_all_workstations_for_task(self, id : int):
+        result = []
+        for workstation in self.workstations:
+            for task_duration in workstation.tasks:
+                if task_duration[0] == id:
+                    result.append(workstation)
+        return result

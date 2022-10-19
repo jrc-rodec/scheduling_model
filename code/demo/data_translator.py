@@ -4,6 +4,9 @@ import random
 class DataTranslator:
     pass
 
+"""
+    TRANSLATORS FOR DATASOURCES
+"""
 class TestTranslator(DataTranslator): # no resources used for this dataset
 
     def translate(self, n_workstations, recipies, processing_times):
@@ -35,17 +38,41 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
             r_id = r_id + 1
         return recipies_list, workstations, [], tasks, [] # recipies, workstations, resources, tasks, orders
 
-"""from hybrid_solution_data_loader import get_data
-
-n_workstations, recipes, operation_times = get_data(0)
-recipies, workstations, resources, tasks, orders = TestTranslator().translate(n_workstations, recipes, operation_times)
-print('end')"""
-
+"""
+    TRANSLATORS FOR SOLVERS
+"""
 class EncodeForGA(DataTranslator):
 
     def translate(self, env : SimulationEnvironment, orders):
         values = []
-        pass
+        alternative_tasks_per_job = [] # for each index (job), add all possible alternatives eligible for this slot (starting task + all alternatives)
+        durations = dict() # durations on each workstation for each indexed task
+        all_jobs = [] # gather all jobs
+        for order in orders:
+            recipe_id = order.resources[0] # saved recipe in there for now, change later
+            recipe : Recipe = env.get_recipe_by_id(recipe_id)
+            for task in recipe.tasks:
+                values.append(0) # slot for workstation
+                values.append(0) # slot for start time
+                all_jobs.append(task.id) # just add the starting task id for now
+                alternatives = task.alternatives
+                all_possibilities = []
+                all_possibilities.append(task.id)
+                for alternative in alternatives:
+                    all_possibilities.append(alternative.id)
+                alternative_tasks_per_job.append(all_possibilities) # add all possible tasks for encoding index x
+                for possibility in all_possibilities:
+                    if possibility not in durations:
+                        d = []
+                        for _ in range(len(env.workstations)):
+                            d.append(0)
+                        possible_workstations = env.get_all_workstations_for_task(possibility)
+                        for possible_workstation in possible_workstations:
+                            for task_duration in possible_workstation.tasks:
+                                if task_duration[0] == possibility:
+                                    d[possible_workstation.id] = task_duration[1]
+                                    break
+        return values, durations, all_jobs, alternative_tasks_per_job # encoding, duration lookup table, list of all jobs (probably not needed), list of all possible alternatives for each slot
 
 class EncodeForPSO(DataTranslator):
 

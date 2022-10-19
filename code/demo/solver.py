@@ -1,11 +1,27 @@
 import random
+import pygad
 
 class Solver:
     pass
 
 class GASolver(Solver):
 
-    # TODO: inputs needed for each function
+    def __init__(self, encoding, durations, job_list, alternatives):
+        self.encoding = encoding
+        self.durations = durations
+        self.jobs = job_list
+        self.alternatives = alternatives
+
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 1000):
+        # create initial population
+        self.population_size = population_size
+        self.offspring_amount = offspring_amount
+        self.max_generations = max_generations
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=offspring_amount, fitness_func=fitness_func, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=init_range_low, init_range_high=init_range_high, parent_selection_type=parent_selection_type, keep_parents=keep_parents, crossover_type=crossover_type, mutation_type=mutation_type, mutation_percent_genes=mutation_percentage_genes, gene_type=gene_type, gene_space=gene_space)
+        
+        self.best_population = None
+
+    """# TODO: inputs needed for each function
     def mutation_function(offsprings, ga_instance):
         for offspring in offsprings:
             p = 1 / (len(offspring)/2) # amount of jobs
@@ -142,4 +158,4 @@ class GASolver(Solver):
         ga_instance.run()
         solution, solution_fitness, solution_idx = ga_instance.best_solution()
         print("Parameters of the best solution : {solution}".format(solution=solution))
-        print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=abs(solution_fitness) - 1))
+        print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=abs(solution_fitness) - 1))"""
