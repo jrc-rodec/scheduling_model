@@ -57,7 +57,7 @@ class EncodeForGA(DataTranslator):
                 all_jobs.append(task.id) # just add the starting task id for now
                 alternatives = task.alternatives
                 all_possibilities = []
-                all_possibilities.append(task.id)
+                all_possibilities.append(task.id) 
                 for alternative in alternatives:
                     all_possibilities.append(alternative.id)
                 alternative_tasks_per_job.append(all_possibilities) # add all possible tasks for encoding index x
@@ -72,6 +72,7 @@ class EncodeForGA(DataTranslator):
                                 if task_duration[0] == possibility:
                                     d[possible_workstation.id] = task_duration[1]
                                     break
+                        durations[possibility] = d
         return values, durations, all_jobs, alternative_tasks_per_job # encoding, duration lookup table, list of all jobs (probably not needed), list of all possible alternatives for each slot
 
 class EncodeForPSO(DataTranslator):

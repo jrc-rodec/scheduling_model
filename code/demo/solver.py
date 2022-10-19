@@ -6,43 +6,44 @@ class Solver:
 
 class GASolver(Solver):
 
+    instance = None
+
     def __init__(self, encoding, durations, job_list, alternatives):
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
         self.alternatives = alternatives
+        GASolver.instance = self
 
     def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 1000):
         # create initial population
+        self.earliest_slot = earliest_slot
+        self.last_slot = last_slot
         self.population_size = population_size
         self.offspring_amount = offspring_amount
         self.max_generations = max_generations
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=offspring_amount, fitness_func=fitness_func, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=init_range_low, init_range_high=init_range_high, parent_selection_type=parent_selection_type, keep_parents=keep_parents, crossover_type=crossover_type, mutation_type=mutation_type, mutation_percent_genes=mutation_percentage_genes, gene_type=gene_type, gene_space=gene_space)
+        self.crossover_type = 'two_points'
+        self.parent_selection_type = 'rws'
+        self.gene_type = int
+
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=offspring_amount, fitness_func=fitness_func, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=keep_parents, crossover_type=self.crossover_type, mutation_type=mutation_type, mutation_percent_genes=mutation_percentage_genes, gene_type=self.gene_type, gene_space=gene_space)
         
         self.best_population = None
 
-    """# TODO: inputs needed for each function
     def mutation_function(offsprings, ga_instance):
+        instance : GASolver = GASolver.instance
         for offspring in offsprings:
             p = 1 / (len(offspring)/2) # amount of jobs
-            j = 0
             for i in range(len(offspring)):
-                if j == 0:
+                if i % 2 == 0:
                     if random.random() < p:
-                        options = []
-                        job = index_to_job(i)
-                        for w in range(len(job_durations)):
-                            if job_durations[w][job] > 0:
-                                options.append(w)
+                        alternatives = instance.alternatives[int(i/2)]
                         # mutate workstation assignment
-                        offspring[i] = random.choice(options)
+                        offspring[i] = random.choice(alternatives)
                         # mutate start time
-                        offspring[i+1] = random.randint(0, last_slot)
-                j += 1
-                if j > 1:
-                    j = 0
-                    
+                        offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
         return offsprings
+    """# TODO: inputs needed for each function
 
     def is_feasible(solution):
         j = 0
