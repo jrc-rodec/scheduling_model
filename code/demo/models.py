@@ -47,6 +47,38 @@ class Order:
         self.optional = optional
         self.payment_amount = payment_amount
 
+class Schedule:
+    
+    def __init__(self):
+        self.assignments = dict() # <workstation_id, list of jobs>
+
+    def assignments_for(self, workstation_id : int) -> list:
+        if workstation_id in self.assignments:
+            return self.assignments[workstation_id]
+        return None
+
+    def add(self, assignment : tuple, task_id : int, order_id : int):
+        if assignment[0] not in self.assignments: #workstation id
+            self.assignments[assignment[0]] = list()
+        self.assignments[assignment[0]].append([task_id, assignment[1], order_id]) # task id, start time, order id
+
+    def workstation_for(self, task_id):
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment[0] == task_id:
+                    return workstation
+        return -1 
+
+    def start_time_for(self, job_id):
+        assignemnts = self.assignments_for(self.workstation_for(job_id))
+        for assignment in assignemnts:
+            if assignment[0] == job_id:
+                return assignment[1]
+        return -1
+
+    def is_feasible(self) -> bool:
+        pass
+
 class SimulationEnvironment:
     
     def __init__(self, workstations, tasks, resources, recipes):
@@ -73,4 +105,18 @@ class SimulationEnvironment:
             for task_duration in workstation.tasks:
                 if task_duration[0] == id:
                     result.append(workstation)
+                    break
         return result
+
+    def get_duration(self, task_id : int, workstation_id : int) -> int:
+        workstation : Workstation = self.get_workstation(workstation_id)
+        for task in workstation.tasks:
+            if task[0] == task_id:
+                return task[1]
+        return 0
+
+    def get_workstation(self, workstation_id : int) -> Workstation:
+        for workstation in self.workstations:
+            if workstation.id == workstation_id:
+                return workstation
+        return None

@@ -1,4 +1,4 @@
-from models import SimulationEnvironment, Workstation, Task, Recipe
+from models import SimulationEnvironment, Workstation, Task, Recipe, Schedule
 import random
 
 class DataTranslator:
@@ -22,14 +22,16 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
             for i in range(recipe):
                 alternatives = [] # needed for this dataset, also easier for other datasets, could be replaced by searching for tasks with same result resources (if given)
                 w_id = 0
+                index = 0
                 for duration in processing_times[i]:
                     # create task + add to workstation
                     task = Task(t_id, f't{t_id}', [], [], [], [], True, 0, 0, []) # id, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time, alternatives
-                    t_id = t_id + 1
                     alternatives.append(task)
                     workstations[w_id].tasks.append((t_id, duration))
+                    t_id = t_id + 1
                     w_id = w_id + 1
                     tasks.append(task) # add to list of all tasks
+                    index += 1
                 for task in alternatives:
                     task.alternatives = alternatives.copy()
                     task.alternatives.remove(task) # remove self from alternative list
@@ -87,5 +89,24 @@ class EncodeForGreedyAgent(DataTranslator):
         values = []
         pass
 
+"""
+    TRANSLATORS BACK TO SCHEDULE MODEL
+"""
 
+class GAToScheduleTranslator(DataTranslator):
 
+    def translate(self, result, jobs, env : SimulationEnvironment, orders):
+        schedule = Schedule()
+        for i in range(0, len(result), 2): # go through workstation assignments
+            schedule.add((result[i], result[i+1]), jobs[int(i/2)], self.get_order(i, env, orders))
+        return schedule
+
+    def get_order(self, index, env, orders):
+        job_index = int(index/2)
+        sum = 0
+        for order in orders:
+            if sum >= job_index:
+                return order
+            recipe = env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            sum += len(recipe.tasks)
+        return orders[len(orders)-1]
