@@ -8,15 +8,16 @@ class GASolver(Solver):
 
     instance = None
 
-    def __init__(self, encoding, durations, job_list, alternatives):
+    def __init__(self, encoding, durations, job_list, alternatives, env, orders):
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
         self.alternatives = alternatives
+        self.env = env
+        self.orders = orders
         GASolver.instance = self
 
     def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 1000):
-        # create initial population
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -24,11 +25,32 @@ class GASolver(Solver):
         self.max_generations = max_generations
         self.crossover_type = 'two_points'
         self.parent_selection_type = 'rws'
+        self.mutation_type = GASolver.mutation_function
+        self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
-
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=offspring_amount, fitness_func=fitness_func, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=keep_parents, crossover_type=self.crossover_type, mutation_type=mutation_type, mutation_percent_genes=mutation_percentage_genes, gene_type=self.gene_type, gene_space=gene_space)
+        self.keep_parents = int(self.population_size / 2) # TODO: add as parameter
+        gene_space_workstations = {'low': 0, 'high': len(self.env.workstations)}
+        gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
+        self.gene_space = []
+        for i in range(0, len(self.encoding), 2):
+            self.gene_space.append(gene_space_workstations)
+            self.gene_space.append(gene_space_starttime)
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=offspring_amount, fitness_func=GASolver.fitness_function, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
         
-        self.best_population = None
+        self.best_solution = None
+
+    def run(self):
+        self.ga_instance.run()
+        solution, solution_fitness, solution_idx = self.ga_instance.best_solution()
+        print("Parameters of the best solution : {solution}".format(solution=solution))
+        print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=abs(solution_fitness) - 1))
+        self.best_solution = (solution, solution_fitness)
+
+    def get_best(self):
+        return self.best_solution[0]
+
+    def get_best_fitness(self):
+        return self.best_solution[1]
 
     def mutation_function(offsprings, ga_instance):
         instance : GASolver = GASolver.instance
@@ -39,124 +61,81 @@ class GASolver(Solver):
                     if random.random() < p:
                         alternatives = instance.alternatives[int(i/2)]
                         # mutate workstation assignment
-                        offspring[i] = random.choice(alternatives)
+                        alternative = random.choice[alternatives]
+                        instance.jobs[int(i/2)] = alternative
+                        workstations = instance.env.get_all_workstations_for_task(alternative)
+                        offspring[i] = random.choice(workstations).id
                         # mutate start time
                         offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
         return offsprings
-    """# TODO: inputs needed for each function
+
+    def fitness_function(solution, solution_idx):
+        if not GASolver.is_feasible(solution):
+            return - 2 * GASolver.instance.last_slot
+        # use makespan for now
+        min = float('inf')
+        max = -float('inf')
+        for i in range(1, len(solution), 2): # go through all start times
+            if solution[i] < min:
+                min = solution[i]
+            task = GASolver.instance.jobs[int((i-1) / 2)]
+            if solution[i] + GASolver.instance.durations[task][solution[i-1]] > max:
+                max = solution[i] + GASolver.instance.durations[task][solution[i-1]]
+        fitness = abs(max - min)
+        return -fitness # NOTE: PyGAD always maximizes
 
     def is_feasible(solution):
-        j = 0
-        order = 0
-        for i in range(len(solution)):
-            if j == 0:
-                job = index_to_job(i)
-                
-            if j == 1: # timeslot
-                # check for last time slot
-                if solution[i] + job_durations[solution[i-1]][job] > last_slot:
-                    return False
-                # check for first slot
-                if solution[i] < first_slot: # should never happen
-                    return False
-            else: # assigned workstation
-                # check for overlaps
-                y = 0
-                for x in range(len(solution)):
-                    if y == 0 and not y == i:
-                        if solution[y] == solution[i]: # tasks run on the same workstation, check overlap
-                            y_job = index_to_job(y)
-                            i_start = solution[i+1]
-                            y_start = solution[y+1]
-                            i_duration = job_durations[solution[i]][job]
-                            y_duration = job_durations[solution[y]][y_job]
-                            i_end = i_start + i_duration
-                            y_end = y_start + y_duration
-                            if i_start >= y_start and i_start < y_end:
-                                return False
-                            if i_end > y_start and i_end <= y_end:
-                                return False
-                            if y_start >= i_start and y_start < i_end:
-                                return False
-                            if y_end > i_start and y_end <= i_end:
-                                return False
-                    y+=1
-                    if y > 1:
-                        y = 0
-                # check for correct sequence
-                prev_order = order
-                order = index_to_order(i)
-                if i != 0 and order == prev_order: # not the first job of the order, check previous jobs
-                    l = 1
-                    while index_to_order(i - 2*l) == order:
-                        prev_start = solution[i - 2*l + 1]
-                        prev_end = prev_start + job_durations[solution[i - 2*l]][index_to_job(i-2*l)]
-                        start = solution[i+1]
-                        if start < prev_end:
+        order = None
+        instance : GASolver = GASolver.instance
+        for i in range(0, len(solution), 2): # go through all workstation assignments
+            job = instance.jobs[int(i/2)]
+            # check for last time slot
+            if solution[i+1] + instance.durations[job][solution[i]] > instance.last_slot:
+                return False
+            # check for earliest time slot
+            if solution[i+1] < instance.earliest_slot:
+                return False
+            # check for overlaps
+            for j in range(0, len(solution), 2):
+                if not i == j:
+                    if solution[i] == solution[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = solution[i+1]
+                        other_start = solution[j+1]
+                        own_duration = instance.durations[job][solution[i]]
+                        other_duration = instance.duration[other_job][solution[j]]
+                        own_end = own_start + own_duration
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
                             return False
-                        l+=1
-            j+=1
-            if j > 1:
-                j = 0
+                        if own_end > other_start and own_end <= other_end:
+                            return False
+                        if other_start >= own_start and other_start < own_end:
+                            return False
+                        if other_end > own_start and other_end <= own_end:
+                            return False
+            # check for correct sequence
+            prev_order = order
+            order = GASolver.get_order(i) # find order corresponding to task
+            if order:
+                if not prev_order is None and order.id == prev_order.id: # if current task is not the first job of this order, check if the previous job ends before the current one starts
+                    prev_start = solution[i-1]
+                    prev_end = prev_start + instance.durations[instance.jobs[int(i/2) - 1][solution[i-2]]]
+                    if solution[i+1] < prev_end:
+                        return False
+            else:
+                print("Something went completely wrong!") # TODO: should probably throw exception
         return True
 
-    def fitness_function(solution, solution_idx): # NOTE: PyGAD always maximizes
-        fitness = 1#0
-        if not is_feasible(solution):
-            #fitness += last_slot
-            return -2 * last_slot
-        max = -float('inf')
-        min = float('inf')
-        j = 0
-        for i in range(len(solution)):
-            if j == 1: # time assignment
-                start = solution[i]
-                end = start + job_durations[solution[i-1]][index_to_job(i-1)]
-                if end > max:
-                    max = end
-                if start < min:
-                    min = solution[i]
-            j+=1
-            if j > 1:
-                j = 0
-        fitness += abs(max - min)
-        return -fitness
-
-    def run(self):
-        delivery_space = {'low': first_slot, 'high': last_slot}
-        workstation_space = {'low': 0, 'high': len(available_workstations)-1}
-        gene_space = []
-        input = []
-        for order in orders:
-            for job in available_tasks[order[0]]:
-                input.append(0)
-                input.append(0)
-        j = 0
-        for i in range(len(input)): # set lower and upper bounds for mutation for each gene
-            if j == 0:
-                gene_space.append(workstation_space)
-            else:
-                gene_space.append(delivery_space)
-            j+=1
-            if j > 1:
-                j = 0
-
-        num_genes = len(input)
-        num_generations = 5000
-        num_parents_mating = 50
-        sol_per_pop = 100
-        init_range_low = 0
-        init_range_high = last_slot
-        parent_selection_type = 'rws'
-        keep_parents = 10
-        crossover_type = 'two_points'
-        mutation_type = mutation_function
-        mutation_percentage_genes = 10 # not needed for custom mutation functions
-        fitness_func = fitness_function
-        gene_type = int
-
-        ga_instance = pygad.GA(num_generations=num_generations, num_parents_mating=num_parents_mating, fitness_func=fitness_func, sol_per_pop=sol_per_pop, num_genes=num_genes, init_range_low=init_range_low, init_range_high=init_range_high, parent_selection_type=parent_selection_type, keep_parents=keep_parents, crossover_type=crossover_type, mutation_type=mutation_type, mutation_percent_genes=mutation_percentage_genes, gene_type=gene_type, gene_space=gene_space)
-        ga_instance.run()
-        solution, solution_fitness, solution_idx = ga_instance.best_solution()
-        print("Parameters of the best solution : {solution}".format(solution=solution))
-        print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=abs(solution_fitness) - 1))"""
+    def get_order(index):
+        instance = GASolver.instance
+        job_index = int(index/2)
+        #job = instance.jobs[int(index/2)]
+        sum = 0
+        for order in instance.orders:
+            if sum >= job_index:
+                return order
+            recipe = instance.env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            sum += len(recipe.tasks)
+        return None
+    
