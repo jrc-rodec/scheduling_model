@@ -43,7 +43,7 @@ def min_tardiness(schedule : Schedule, orders, environment : SimulationEnvironme
     # for each order, find last task
     for order in orders:
         last_assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(last_assignment, workstation.external_id)
+        duration = environment.get_duration(last_assignment[0], workstation.external_id)
         start = last_assignment[1]
         end = start + duration
         if end > order.delivery_time:
@@ -56,7 +56,7 @@ def min_deviation(schedule : Schedule, orders, environment : SimulationEnvironme
     # for each order, find last task
     for order in orders:
         last_assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(last_assignment, workstation.external_id)
+        duration = environment.get_duration(last_assignment[0], workstation.external_id)
         start = last_assignment[1]
         end = start + duration
         # sum all delays
@@ -98,7 +98,7 @@ def max_profit(schedule : Schedule, orders, environment : SimulationEnvironment)
             payment_amount += resource[2]
         profit += payment_amount # order.payment_amount
         assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(assignment, workstation.external_id)
+        duration = environment.get_duration(assignment[0], workstation.external_id)
         end = assignment[1] + duration
         penalty = 0
         if end > order.latest_acceptable_time:

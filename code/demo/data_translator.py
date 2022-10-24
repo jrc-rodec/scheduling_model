@@ -73,7 +73,6 @@ class EncodeForGA(DataTranslator):
                             for task_duration in possible_workstation.tasks:
                                 if task_duration[0] == possibility:
                                     d[possible_workstation.id] = task_duration[1]
-                                    break
                         durations[possibility] = d
         return values, durations, all_jobs, alternative_tasks_per_job # encoding, duration lookup table, list of all jobs (probably not needed), list of all possible alternatives for each slot
 

@@ -18,6 +18,10 @@ class GASolver(Solver):
         GASolver.instance = self
 
     def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000):
+        jobs = []
+        for _ in range(population_size):
+            jobs.append(self.jobs)
+        self.jobs = jobs
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -28,7 +32,7 @@ class GASolver(Solver):
         self.mutation_type = GASolver.mutation_function
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
-        self.keep_parents = int(self.population_size / 2) # TODO: add as parameter
+        self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
         gene_space_workstations = {'low': 0, 'high': len(self.env.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
@@ -42,6 +46,7 @@ class GASolver(Solver):
     def run(self):
         self.ga_instance.run()
         solution, solution_fitness, solution_idx = self.ga_instance.best_solution()
+        self.solution_index = solution_idx
         self.best_solution = (solution, solution_fitness)
         print("Done")
 
@@ -51,26 +56,30 @@ class GASolver(Solver):
     def get_best_fitness(self):
         return self.best_solution[1]
 
+    def get_result_jobs(self):
+        return self.jobs[self.solution_index]
+
     def mutation_function(offsprings, ga_instance):
         instance : GASolver = GASolver.instance
+        index = 0
         for offspring in offsprings:
             p = 1 / (len(offspring)/2) # amount of jobs
-            for i in range(len(offspring)):
-                if i % 2 == 0:
-                    if random.random() < p:
-                        alternatives = instance.alternatives[int(i/2)]
-                        # mutate workstation assignment
-                        alternative = random.choice(alternatives)
-                        instance.jobs[int(i/2)] = alternative
-                        workstations = instance.env.get_all_workstations_for_task(alternative)
-                        offspring[i] = random.choice(workstations).id
-                        # mutate start time
-                        offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
+            for i in range(0, len(offspring), 2):
+                if random.random() < p:
+                    alternatives = instance.alternatives[int(i/2)]
+                    # mutate workstation assignment
+                    alternative = random.choice(alternatives)
+                    instance.jobs[index][int(i/2)] = alternative
+                    workstations = instance.env.get_all_workstations_for_task(alternative)
+                    offspring[i] = random.choice(workstations).id
+                    # mutate start time
+                    offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
+            index += 1
         return offsprings
 
     def fitness_function(solution, solution_idx):
         fitness = 0
-        if not GASolver.is_feasible(solution):
+        if not GASolver.is_feasible(solution, solution_idx):
             fitness += (2 * GASolver.instance.last_slot)
         # use makespan for now
         min = float('inf')
@@ -78,17 +87,17 @@ class GASolver(Solver):
         for i in range(1, len(solution), 2): # go through all start times
             if solution[i] < min:
                 min = solution[i]
-            task = GASolver.instance.jobs[int((i-1) / 2)]
+            task = GASolver.instance.jobs[solution_idx][int((i-1) / 2)]
             if solution[i] + GASolver.instance.durations[task][solution[i-1]] > max:
                 max = solution[i] + GASolver.instance.durations[task][solution[i-1]]
         fitness += abs(max - min)
         return -fitness # NOTE: PyGAD always maximizes
 
-    def is_feasible(solution):
+    def is_feasible(solution, index):
         order = None
         instance : GASolver = GASolver.instance
         for i in range(0, len(solution), 2): # go through all workstation assignments
-            job = instance.jobs[int(i/2)]
+            job = instance.jobs[index][int(i/2)]
             # check for last time slot
             if solution[i+1] + instance.durations[job][solution[i]] > instance.last_slot:
                 return False
@@ -99,7 +108,7 @@ class GASolver(Solver):
             for j in range(0, len(solution), 2):
                 if not i == j:
                     if solution[i] == solution[j]: # tasks run on the same workstation
-                        other_job = instance.jobs[int(j/2)]
+                        other_job = instance.jobs[index][int(j/2)]
                         own_start = solution[i+1]
                         other_start = solution[j+1]
                         own_duration = instance.durations[job][solution[i]]
@@ -120,7 +129,7 @@ class GASolver(Solver):
             if order:
                 if not prev_order is None and order.id == prev_order.id: # if current task is not the first job of this order, check if the previous job ends before the current one starts
                     prev_start = solution[i-1]
-                    prev_end = prev_start + instance.durations[instance.jobs[int(i/2) - 1]][solution[i-2]]
+                    prev_end = prev_start + instance.durations[instance.jobs[index][int(i/2) - 1]][solution[i-2]]
                     if solution[i+1] < prev_end:
                         return False
             else:
