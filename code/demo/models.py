@@ -103,7 +103,7 @@ class SimulationEnvironment:
         result = []
         for workstation in self.workstations:
             for task_duration in workstation.tasks:
-                if task_duration[0] == id:
+                if task_duration[0] == id and task_duration[1] != 0: #NOTE: for now, duration 0 just indicates the task can not be processed on the workstation
                     result.append(workstation)
                     break
         return result

@@ -20,22 +20,21 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
         for recipe in recipies:
             tasks_for_recipe = []
             for i in range(recipe):
-                alternatives = [] # needed for this dataset, also easier for other datasets, could be replaced by searching for tasks with same result resources (if given)
+                #alternatives = [] # needed for this dataset, also easier for other datasets, could be replaced by searching for tasks with same result resources (if given)
                 w_id = 0
-                index = 0
+                task = Task(t_id, f't{t_id}', [], [], [], [], True, 0, 0, []) # id, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time, alternatives
                 for duration in processing_times[i]:
                     # create task + add to workstation
-                    task = Task(t_id, f't{t_id}', [], [], [], [], True, 0, 0, []) # id, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time, alternatives
-                    alternatives.append(task)
+                    #alternatives.append(task)
                     workstations[w_id].tasks.append((t_id, duration))
-                    t_id = t_id + 1
                     w_id = w_id + 1
-                    tasks.append(task) # add to list of all tasks
-                    index += 1
-                for task in alternatives:
-                    task.alternatives = alternatives.copy()
-                    task.alternatives.remove(task) # remove self from alternative list
-                tasks_for_recipe.append(random.choice(alternatives)) # choose random task as placeholder in recipe
+                tasks.append(task) # add to list of all tasks
+                #for task in alternatives:
+                #    task.alternatives = alternatives.copy()
+                #    task.alternatives.remove(task) # remove self from alternative list
+                #tasks_for_recipe.append(random.choice(alternatives)) # choose random task as placeholder in recipe
+                tasks_for_recipe.append(task)
+                t_id = t_id + 1
             recipies_list.append(Recipe(r_id, f'r{r_id}', tasks_for_recipe))
             r_id = r_id + 1
         return recipies_list, workstations, [], tasks, [] # recipies, workstations, resources, tasks, orders
@@ -57,7 +56,7 @@ class EncodeForGA(DataTranslator):
                 values.append(0) # slot for workstation
                 values.append(0) # slot for start time
                 all_jobs.append(task.id) # just add the starting task id for now
-                alternatives = task.alternatives
+                """alternatives = task.alternatives
                 all_possibilities = []
                 all_possibilities.append(task.id) 
                 for alternative in alternatives:
@@ -73,7 +72,16 @@ class EncodeForGA(DataTranslator):
                             for task_duration in possible_workstation.tasks:
                                 if task_duration[0] == possibility:
                                     d[possible_workstation.id] = task_duration[1]
-                        durations[possibility] = d
+                        durations[possibility] = d"""
+                d = [] # TODO: test after adjusting for new duration table
+                for _ in range(len(env.workstations)):
+                    d.append(0)
+                possible_workstations = env.get_all_workstations_for_task(task.id)
+                for possible_workstation in possible_workstations:
+                    for task_duration in possible_workstation.tasks:
+                        if task_duration[0] == task.id:
+                            d[possible_workstation.id] = task_duration[1]
+                durations[task.id] = d
         return values, durations, all_jobs, alternative_tasks_per_job # encoding, duration lookup table, list of all jobs (probably not needed), list of all possible alternatives for each slot
 
 class EncodeForPSO(DataTranslator):
