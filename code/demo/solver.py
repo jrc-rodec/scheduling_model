@@ -106,7 +106,7 @@ class GASolver(Solver):
                 # find first slot big enough to fit the job
                 if len(assignments) > 1: # if more than one job is on the same workstation, find first fitting slot
                     for j in range(1, len(assignments)):
-                        if assignments[j][0] - assignments[j-1][1] >= current_duration:
+                        if assignments[j][0] - assignments[j-1][1] >= current_duration and assignments[j-1][1] >= min_time_previous_job:
                             min_time_workstation = assignments[j-1][1]
                             break
                     if min_time_workstation == -1: # this should only be the case if there is no free slot in between, so put it at the end
