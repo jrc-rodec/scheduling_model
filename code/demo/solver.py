@@ -92,7 +92,6 @@ class GASolver(Solver):
                     # adjust workstation
                     workstations = instance.env.get_all_workstations_for_task( instance.jobs[int(i/2)])
                     offspring[i] = random.choice(workstations).id
-                    pass
                 # adjust start time for all, independent of workstation assignment mutation
                 min_time_previous_job = 0
                 if prev_order == current_order:
