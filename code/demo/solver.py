@@ -79,7 +79,7 @@ class GASolver(Solver):
     def alternative_mutation_function(offsprings, ga_isntance):
         instance = GASolver.instance
         for offspring in offsprings:
-            prev_order = 0
+            prev_order = -1
             current_order = 0
             p = 1 / (len(offspring)/2)
             for i in range(0, len(offspring), 2):
