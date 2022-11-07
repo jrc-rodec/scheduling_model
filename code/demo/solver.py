@@ -221,41 +221,46 @@ class PSOSolver(Solver):
     
     instance = None
 
-    def init(self, encoding, durations, job_list, environment, orders):
+    def __init__(self, encoding, durations, job_list, environment, orders):
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
         self.environment = environment
         self.orders = orders
 
+        self.assignments_best = []
+        self.average_assignments = []
         PSOSolver.instance = self
 
-    def initialize(self, earliest_slot, last_slot):
-        self.options = {'c1': 0.5, 'c2': 0.3, 'w':0.9} # TODO: add as parameter
-        self.swarmsize = 100 # TODO: add as parameter
-        self.iters = 1000 # TODO: add as parameter
+    def initialize(self, earliest_slot, last_slot, c1 : float = 0.5, c2 : float = 0.3, w : float = 0.9, swarmsize : int = 100, max_iter : int = 1000):
+        self.options = {'c1': c1, 'c2': c2, 'w':w}
+        self.swarmsize = swarmsize
+        self.max_iter = max_iter
         self.minstep = 0.1 # minimum stepsize of swarm's position before the search terminates, currently unused
         self.lb = [] # TODO: maybe add as parameter?
         self.ub = []
         for i in range(0, len(self.encoding), 2):
             self.lb.append(0)
-            self.ub.append(len(self.environment.workstations))
+            self.ub.append(len(self.environment.workstations)-1) # NOTE: the upper bounds are inclusive
             self.lb.append(earliest_slot)
-            self.ub.append(self.get_order(i).latest_acceptable_time)
+            self.ub.append(min(self.get_order(i).latest_acceptable_time, last_slot))
 
     def run(self):
         # Perform optimization
-        xopt, fopt = pso(PSOSolver.objective_function, self.lb, self.ub, iters=self.iters, phip=self.options['c1'], phig=self.options['c2'], omega=self.options['w'], swarmsize=self.swarmsize, ieqcons=[PSOSolver.correct_assignment_con, PSOSolver.correct_sequence_con, PSOSolver.no_overlaps_con]) # maybe needs lb=lb, ub=ub
+        xopt, fopt = pso(PSOSolver.objective_function, self.lb, self.ub, maxiter=self.max_iter, phip=self.options['c1'], phig=self.options['c2'], omega=self.options['w'], swarmsize=self.swarmsize, ieqcons=[PSOSolver.correct_assignment_con, PSOSolver.correct_sequence_con, PSOSolver.no_overlaps_con]) # maybe needs lb=lb, ub=ub
         self.best_solution = (xopt, fopt)
 
     def correct_assignment_con(x):
         instance = PSOSolver.instance
         result = []
         for i in range(0, len(x), 2):
-            if instance.durations[instance.jobs[int(i/2)]][int(x+0.5)] == 0:
+            if instance.durations[instance.jobs[int(i/2)]][int(x[i] + 0.5)] == 0:
                 result.append(-1)
+                return -1
             else:
-                result.append(int(x+0.5)) # shouldn't really matter
+                result.append(int(x[i] + 0.5)) # shouldn't really matter
+            result.append(0.0) # add one more because of stepsize 2
+        return 0.0
         return result
     
     def correct_sequence_con(x):
@@ -266,10 +271,14 @@ class PSOSolver(Solver):
             current_order = instance.get_order_index(i)
             if prev_order == current_order:
                 start = int(x[i+1] + 0.5)
-                prev_end = int(x[i-1] + 0.5) + instance.durations[instance.jobs[int((i-2)/2)]][int(x[i-2]+0.5)]
+                prev_end = int(x[i-1] + 0.5) + instance.durations[instance.jobs[int((i-2)/2)]][int(x[i-2] + 0.5)]
                 result.append(start - prev_end)
+                if start - prev_end < 0:
+                    return -1
             else:
                 result.append(0.0)
+            result.append(0.0) # add one more because of stepsize 2
+        return 0.0
         return result
 
     def no_overlaps_con(x):
@@ -303,9 +312,12 @@ class PSOSolver(Solver):
                         overlap = True
                         break
             if overlap:
+                return -1
                 result.append(-1)
             else:
                 result.append(0.0)
+            result.append(0.0) # add one more because of stepsize 2
+        return 0.0
         return result
 
     # objective function - using makespan for now
@@ -323,4 +335,14 @@ class PSOSolver(Solver):
                 max = end
         return max - min
         
+    def get_best_real_values(self):
+        return self.best_solution[0]
 
+    def get_best(self):
+        result = []
+        for value in self.best_solution[0]:
+            result.append(int(value+0.5))
+        return result
+
+    def get_best_fitness(self):
+        return self.best_solution[1]
