@@ -40,7 +40,7 @@ def get_colors(n):
     fig.update_layout(xaxis_type='linear')
     fig.show()
 """
-def visualize_schedule(schedule : Schedule, environment : SimulationEnvironment, orders):
+def visualize_schedule_demo(schedule : Schedule, environment : SimulationEnvironment, orders):
     data = []
     tasks = []
     workstations = schedule.assignments.keys()
@@ -67,8 +67,8 @@ def get_order(index, env, orders):
     #job = instance.jobs[int(index/2)]
     sum = 0
     for order in orders:
-        if sum >= job_index:
-            return order
         recipe = env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+        if job_index < sum + len(recipe.tasks):
+            return order
         sum += len(recipe.tasks)
     return orders[len(orders)-1]

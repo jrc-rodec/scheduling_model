@@ -17,17 +17,21 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
         for w_id in range(n_workstations):
             workstations.append(Workstation(w_id, f'w{w_id}', [], [])) # id, name, basic resources, tasks
         t_id = 0
+        processing_index = 0
         for recipe in recipies:
             tasks_for_recipe = []
+            
             for i in range(recipe):
                 #alternatives = [] # needed for this dataset, also easier for other datasets, could be replaced by searching for tasks with same result resources (if given)
                 w_id = 0
                 task = Task(t_id, f't{t_id}', [], [], [], [], True, 0, 0, []) # id, name, resources, result_resources, preceding_tasks, follow_up_tasks, independent, prepare_time, unprepare_time, alternatives
-                for duration in processing_times[i]:
+                for duration in processing_times[processing_index]:
                     # create task + add to workstation
                     #alternatives.append(task)
                     workstations[w_id].tasks.append((t_id, duration))
                     w_id = w_id + 1
+                
+                processing_index += 1
                 tasks.append(task) # add to list of all tasks
                 #for task in alternatives:
                 #    task.alternatives = alternatives.copy()
@@ -112,8 +116,8 @@ class GAToScheduleTranslator(DataTranslator):
         job_index = int(index/2)
         sum = 0
         for order in orders:
-            if sum >= job_index:
-                return order
             recipe = env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            if job_index < sum + len(recipe.tasks):
+                return order
             sum += len(recipe.tasks)
         return orders[len(orders)-1]

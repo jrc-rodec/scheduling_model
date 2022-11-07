@@ -19,18 +19,14 @@ class GASolver(Solver):
         self.average_assignments = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000):
-        #jobs = []
-        #for _ in range(population_size):
-        #    jobs.append(self.jobs)
-        #self.jobs = jobs
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws'):
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
         self.offspring_amount = offspring_amount
         self.max_generations = max_generations
-        self.crossover_type = 'two_points'
-        self.parent_selection_type = 'rws'
+        self.crossover_type = crossover
+        self.parent_selection_type = selection
         #self.mutation_type = GASolver.mutation_function
         self.mutation_type = GASolver.alternative_mutation_function
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
@@ -199,11 +195,11 @@ class GASolver(Solver):
         #job = instance.jobs[int(index/2)]
         sum = 0
         for order in instance.orders:
-            if sum >= job_index:
-                return order
             recipe = instance.env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            if job_index < sum + len(recipe.tasks):# >= job_index:
+                return order
             sum += len(recipe.tasks)
-        return order
+        return instance.orders[len(instance.orders)-1]
     
     def get_order_index(index):
         instance = GASolver.instance
@@ -212,9 +208,11 @@ class GASolver(Solver):
         sum = 0
         index = 0
         for order in instance.orders:
-            if sum >= job_index:
-                return index
+            """if sum >= job_index:
+                return index"""
             recipe = instance.env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            if job_index < sum + len(recipe.tasks):# >= job_index:
+                return index
             sum += len(recipe.tasks)
             index += 1
-        return index
+        return len(instance.orders) -1
