@@ -2,7 +2,29 @@ import random
 import pygad
 
 class Solver:
-    pass
+    
+    def get_order(self, index):
+        job_index = int(index/2)
+        sum = 0
+        for order in self.orders:
+            recipe = self.environment.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            if job_index < sum + len(recipe.tasks):
+                return order
+            sum += len(recipe.tasks)
+        return self.orders[len(self.orders)-1]
+
+    def get_order_index(self, index):
+        job_index = int(index/2)
+        #job = instance.jobs[int(index/2)]
+        sum = 0
+        index = 0
+        for order in self.orders:
+            recipe = self.environment.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
+            if job_index < sum + len(recipe.tasks):
+                return index
+            sum += len(recipe.tasks)
+            index += 1
+        return len(self.orders) -1
 
 class GASolver(Solver):
 
@@ -13,7 +35,7 @@ class GASolver(Solver):
         self.durations = durations
         self.jobs = job_list
         #self.alternatives = alternatives
-        self.env = env
+        self.environment = env
         self.orders = orders
         self.assignments_best = []
         self.average_assignments = []
@@ -32,7 +54,7 @@ class GASolver(Solver):
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
         self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
-        gene_space_workstations = {'low': 0, 'high': len(self.env.workstations)}
+        gene_space_workstations = {'low': 0, 'high': len(self.environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
         for i in range(0, len(self.encoding), 2):
@@ -69,7 +91,7 @@ class GASolver(Solver):
                     # mutate workstation assignment
                     #alternative = random.choice(alternatives)
                     #instance.jobs[index][int(i/2)] = alternative
-                    workstations = instance.env.get_all_workstations_for_task( instance.jobs[int(i/2)])
+                    workstations = instance.environment.get_all_workstations_for_task( instance.jobs[int(i/2)])
                     offspring[i] = random.choice(workstations).id
                     # mutate start time
                     offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
@@ -83,10 +105,10 @@ class GASolver(Solver):
             current_order = 0
             p = 1 / (len(offspring)/2)
             for i in range(0, len(offspring), 2):
-                current_order = GASolver.get_order_index(i)
+                current_order = instance.get_order_index(i)
                 if random.random() < p:
                     # adjust workstation
-                    workstations = instance.env.get_all_workstations_for_task( instance.jobs[int(i/2)])
+                    workstations = instance.environment.get_all_workstations_for_task( instance.jobs[int(i/2)])
                     offspring[i] = random.choice(workstations).id
                 # adjust start time for all, independent of workstation assignment mutation
                 min_time_previous_job = 0
@@ -178,7 +200,7 @@ class GASolver(Solver):
                             return False
             # check for correct sequence
             prev_order = order
-            order = GASolver.get_order(i) # find order corresponding to task
+            order = instance.get_order(i) # find order corresponding to task
             if order:
                 if not prev_order is None and order.id == prev_order.id: # if current task is not the first job of this order, check if the previous job ends before the current one starts
                     prev_start = solution[i-1]
@@ -189,30 +211,116 @@ class GASolver(Solver):
                 print("Something went completely wrong!") # TODO: should probably throw exception
         return True
 
-    def get_order(index):
-        instance = GASolver.instance
-        job_index = int(index/2)
-        #job = instance.jobs[int(index/2)]
-        sum = 0
-        for order in instance.orders:
-            recipe = instance.env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
-            if job_index < sum + len(recipe.tasks):# >= job_index:
-                return order
-            sum += len(recipe.tasks)
-        return instance.orders[len(instance.orders)-1]
+class GreedyAgentSolver(Solver):
+    pass
+
+from pyswarm import pso # NOTE: pyswarm, not pyswarms (2 different libraries) -> pyswarm allows constraints and multiple lb+ub
+# example and explanation for pyswarm: https://pythonhosted.org/pyswarm/
+#NOTE: pyswarm always minimizes
+class PSOSolver(Solver):
     
-    def get_order_index(index):
-        instance = GASolver.instance
-        job_index = int(index/2)
-        #job = instance.jobs[int(index/2)]
-        sum = 0
-        index = 0
-        for order in instance.orders:
-            """if sum >= job_index:
-                return index"""
-            recipe = instance.env.get_recipe_by_id(order.resources[0]) # currently where the recipe is stored, temporary
-            if job_index < sum + len(recipe.tasks):# >= job_index:
-                return index
-            sum += len(recipe.tasks)
-            index += 1
-        return len(instance.orders) -1
+    instance = None
+
+    def init(self, encoding, durations, job_list, environment, orders):
+        self.encoding = encoding
+        self.durations = durations
+        self.jobs = job_list
+        self.environment = environment
+        self.orders = orders
+
+        PSOSolver.instance = self
+
+    def initialize(self, earliest_slot, last_slot):
+        self.options = {'c1': 0.5, 'c2': 0.3, 'w':0.9} # TODO: add as parameter
+        self.swarmsize = 100 # TODO: add as parameter
+        self.iters = 1000 # TODO: add as parameter
+        self.minstep = 0.1 # minimum stepsize of swarm's position before the search terminates, currently unused
+        self.lb = [] # TODO: maybe add as parameter?
+        self.ub = []
+        for i in range(0, len(self.encoding), 2):
+            self.lb.append(0)
+            self.ub.append(len(self.environment.workstations))
+            self.lb.append(earliest_slot)
+            self.ub.append(self.get_order(i).latest_acceptable_time)
+
+    def run(self):
+        # Perform optimization
+        xopt, fopt = pso(PSOSolver.objective_function, self.lb, self.ub, iters=self.iters, phip=self.options['c1'], phig=self.options['c2'], omega=self.options['w'], swarmsize=self.swarmsize, ieqcons=[PSOSolver.correct_assignment_con, PSOSolver.correct_sequence_con, PSOSolver.no_overlaps_con]) # maybe needs lb=lb, ub=ub
+        self.best_solution = (xopt, fopt)
+
+    def correct_assignment_con(x):
+        instance = PSOSolver.instance
+        result = []
+        for i in range(0, len(x), 2):
+            if instance.durations[instance.jobs[int(i/2)]][int(x+0.5)] == 0:
+                result.append(-1)
+            else:
+                result.append(int(x+0.5)) # shouldn't really matter
+        return result
+    
+    def correct_sequence_con(x):
+        instance = PSOSolver.instance
+        result = []
+        for i in range(2, len(x), 2):
+            prev_order = instance.get_order_index(i-2)
+            current_order = instance.get_order_index(i)
+            if prev_order == current_order:
+                start = int(x[i+1] + 0.5)
+                prev_end = int(x[i-1] + 0.5) + instance.durations[instance.jobs[int((i-2)/2)]][int(x[i-2]+0.5)]
+                result.append(start - prev_end)
+            else:
+                result.append(0.0)
+        return result
+
+    def no_overlaps_con(x):
+        instance = PSOSolver.instance
+        result = []
+        for i in range(0, len(x), 2):
+            workstation = int(x[i] + 0.5)
+            start = int(x[i+1] + 0.5)
+            duration = instance.durations[instance.jobs[int(i / 2)]][workstation]
+            end = start + duration
+            overlap = False
+            for j in range(0, len(x), 2):
+                if j != i and int(x[j] + 0.5) == workstation:
+                    # check for overlaps
+                    other_start = int(x[j+1] + 0.5)
+                    other_duration = instance.durations[instance.jobs[int(j/2)]][workstation]
+                    other_end = other_start + other_duration
+                    # check if start is between other_start and other_end
+                    if start >= other_start and start < other_end:
+                        overlap = True
+                        break
+                    # check if end is between other_start and other_end
+                    if end > other_start and end <= other_end:
+                        overlap = True
+                        break
+                    # check the other way around, in case other is enclosed by the current task
+                    if other_start >= start and other_start < end:
+                        overlap = True
+                        break
+                    if other_end > start and other_end <= end:
+                        overlap = True
+                        break
+            if overlap:
+                result.append(-1)
+            else:
+                result.append(0.0)
+        return result
+
+    # objective function - using makespan for now
+    def objective_function(x):
+        instance = PSOSolver.instance
+        min = float('inf')
+        max = 0
+        for i in range(0, len(x), 2):
+            workstation = int(x[i] + 0.5)
+            start = int(x[i+1] + 0.5)
+            end = start + instance.durations[instance.jobs[int(i / 2)]][workstation]
+            if start < min:
+                min = start
+            if end > max:
+                max = end
+        return max - min
+        
+
