@@ -6,7 +6,7 @@ def get_first(schedule : Schedule, order : Order):
     assigned_workstation = None
     for workstation in schedule.assignments:
         for assignment in schedule.assignments[workstation]:
-            if assignment[2] == order.external_id:
+            if assignment[2].id == order.id:
                 if assignment[1] < first[1]:
                     first = assignment
                     assigned_workstation = workstation
@@ -18,8 +18,8 @@ def get_last(schedule : Schedule, order : Order, environment : SimulationEnviron
     assigned_workstation = None
     for workstation in schedule.assignments:
         for assignment in schedule.assignments[workstation]:
-            if assignment[2] == order.external_id:
-                duration = environment.get_duration(assignment[0], workstation.external_id)
+            if assignment[2].id == order.id:
+                duration = environment.get_duration(assignment[0], workstation)
                 if assignment[1] + duration > last[1]:
                     last = assignment
                     assigned_workstation = workstation
@@ -43,7 +43,7 @@ def min_tardiness(schedule : Schedule, orders, environment : SimulationEnvironme
     # for each order, find last task
     for order in orders:
         last_assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(last_assignment[0], workstation.external_id)
+        duration = environment.get_duration(last_assignment[0], workstation)
         start = last_assignment[1]
         end = start + duration
         if end > order.delivery_time:
@@ -56,7 +56,7 @@ def min_deviation(schedule : Schedule, orders, environment : SimulationEnvironme
     # for each order, find last task
     for order in orders:
         last_assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(last_assignment[0], workstation.external_id)
+        duration = environment.get_duration(last_assignment[0], workstation)
         start = last_assignment[1]
         end = start + duration
         # sum all delays
@@ -73,7 +73,7 @@ def min_idle_time(schedule : Schedule, environment : SimulationEnvironment):
             slots = []
             for assignment in schedule.assignments[workstation.id]:
                 start = assignment[1]
-                duration = environment.get_duration(assignment[0], workstation.external_id)
+                duration = environment.get_duration(assignment[0], workstation.id)
                 end = start + duration
                 slots.append((start, end))
                 if end > last_timeslot:
@@ -98,7 +98,7 @@ def max_profit(schedule : Schedule, orders, environment : SimulationEnvironment)
         #    payment_amount += resource[2]
         profit += payment_amount # order.payment_amount
         assignment, workstation = get_last(schedule, order, environment)
-        duration = environment.get_duration(assignment[0], workstation.external_id)
+        duration = environment.get_duration(assignment[0], workstation)
         end = assignment[1] + duration
         penalty = 0
         if end > order.latest_acceptable_time:
@@ -114,12 +114,13 @@ def max_profit(schedule : Schedule, orders, environment : SimulationEnvironment)
 def calculate_comparison_values(schedule : Schedule, orders, environment : SimulationEnvironment):
     # NOTE: unscheduled orders are currently not accounted for in these functions
     makespan_fitness = makespan(schedule, environment)
-    #tardiness_fitness = min_tardiness(schedule, orders, environment)
-    #deviation_fitness = min_deviation(schedule, orders, environment)
-    tardiness_fitness = float('inf')
-    deviation_fitness = float('inf')
+    tardiness_fitness = min_tardiness(schedule, orders, environment)
+    deviation_fitness = min_deviation(schedule, orders, environment)
+    #tardiness_fitness = float('inf')
+    #deviation_fitness = float('inf')
     idle_time_fitness = min_idle_time(schedule, environment)
-    #profit_fitness = max_profit(schedule, orders, environment)
-    profit_fitness = float('inf')
+    #idle_time_fitness = float('inf')
+    profit_fitness = max_profit(schedule, orders, environment)
+    #profit_fitness = float('inf')
     # add additional functions here
     return makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness
