@@ -252,44 +252,30 @@ class PSOSolver(Solver):
 
     def correct_assignment_con(x):
         instance = PSOSolver.instance
-        result = []
         for i in range(0, len(x), 2):
             if instance.durations[instance.jobs[int(i/2)]][int(x[i] + 0.5)] == 0:
-                result.append(-1)
                 return -1
-            else:
-                result.append(int(x[i] + 0.5)) # shouldn't really matter
-            result.append(0.0) # add one more because of stepsize 2
         return 0.0
-        return result
     
     def correct_sequence_con(x):
         instance = PSOSolver.instance
-        result = []
         for i in range(2, len(x), 2):
             prev_order = instance.get_order_index(i-2)
             current_order = instance.get_order_index(i)
             if prev_order == current_order:
                 start = int(x[i+1] + 0.5)
                 prev_end = int(x[i-1] + 0.5) + instance.durations[instance.jobs[int((i-2)/2)]][int(x[i-2] + 0.5)]
-                result.append(start - prev_end)
                 if start - prev_end < 0:
                     return -1
-            else:
-                result.append(0.0)
-            result.append(0.0) # add one more because of stepsize 2
         return 0.0
-        return result
 
     def no_overlaps_con(x):
         instance = PSOSolver.instance
-        result = []
         for i in range(0, len(x), 2):
             workstation = int(x[i] + 0.5)
             start = int(x[i+1] + 0.5)
             duration = instance.durations[instance.jobs[int(i / 2)]][workstation]
             end = start + duration
-            overlap = False
             for j in range(0, len(x), 2):
                 if j != i and int(x[j] + 0.5) == workstation:
                     # check for overlaps
@@ -298,27 +284,16 @@ class PSOSolver(Solver):
                     other_end = other_start + other_duration
                     # check if start is between other_start and other_end
                     if start >= other_start and start < other_end:
-                        overlap = True
-                        break
+                        return -1
                     # check if end is between other_start and other_end
                     if end > other_start and end <= other_end:
-                        overlap = True
-                        break
+                        return -1
                     # check the other way around, in case other is enclosed by the current task
                     if other_start >= start and other_start < end:
-                        overlap = True
-                        break
+                        return -1
                     if other_end > start and other_end <= end:
-                        overlap = True
-                        break
-            if overlap:
-                return -1
-                result.append(-1)
-            else:
-                result.append(0.0)
-            result.append(0.0) # add one more because of stepsize 2
+                        return -1
         return 0.0
-        return result
 
     # objective function - using makespan for now
     def objective_function(x):
