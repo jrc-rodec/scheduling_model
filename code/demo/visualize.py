@@ -72,3 +72,25 @@ def get_order(index, env, orders):
             return order
         sum += len(recipe.tasks)
     return orders[len(orders)-1]
+
+def visualize_schedule_comparison(schedule : Schedule, environment : SimulationEnvironment, orders):
+    data = []
+    tasks = []
+    workstations = schedule.assignments.keys()
+    for workstation in workstations:
+        label = f'w{workstation}'
+        for assignment in schedule.assignments_for(workstation):
+            duration = environment.get_duration(assignment[0], workstation)
+            data.append(
+                dict(Task=label, Start=assignment[1], Finish=assignment[1] + duration, Resource=f'Order {assignment[2]["id"]}') # not last part should be replaced with order id
+            )
+            if assignment[0] not in tasks:
+                tasks.append(assignment[0])
+    colors = {}
+    rgb_values = get_colors(len(orders))
+    for i in range(len(orders)):
+        colors[str(f'Order {i}')] = f'rgb({rgb_values[i][0]}, {rgb_values[i][1]}, {rgb_values[i][2]})'
+    fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
+                        group_tasks=True)
+    fig.update_layout(xaxis_type='linear')
+    fig.show()

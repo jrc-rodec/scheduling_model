@@ -1,3 +1,5 @@
+from solver import Solver
+
 class Workstation:
 
     def __init__(self, id, name, basic_resources, tasks):
@@ -47,47 +49,15 @@ class Order:
         self.optional = optional
         self.payment_amount = payment_amount
 
-class Schedule:
-    
-    def __init__(self):
-        self.assignments = dict() # <workstation_id, list of jobs>
-
-    def assignments_for(self, workstation_id : int) -> list:
-        if workstation_id in self.assignments:
-            return self.assignments[workstation_id]
-        return None
-
-    def add(self, assignment : tuple, task_id : int, order_id : int):
-        if assignment[0] not in self.assignments: #workstation id
-            self.assignments[assignment[0]] = list()
-        self.assignments[assignment[0]].append([task_id, assignment[1], order_id]) # task id, start time, order id
-
-    def workstation_for(self, task_id):
-        for workstation in self.assignments.keys():
-            for assignment in self.assignments[workstation]:
-                if assignment[0] == task_id:
-                    return workstation
-        return -1 
-
-    def start_time_for(self, job_id):
-        assignemnts = self.assignments_for(self.workstation_for(job_id))
-        for assignment in assignemnts:
-            if assignment[0] == job_id:
-                return assignment[1]
-        return -1
-
-    def is_feasible(self) -> bool:
-        pass
-
 class SimulationEnvironment:
     
-    def __init__(self, workstations, tasks, resources, recipes):
+    def __init__(self, workstations, tasks, resources, recipes, inventory = dict()):
         # TODO: change all lists to dictionaries
         self.workstations = workstations # set of all workstations
         self.tasks = tasks # set of all possible tasks
         self.resources = resources # set of all existing resources
         self.recipes = recipes # set of all available recipes
-        self.inventory = dict() # <Resource, amount> starting state of the systems resources
+        self.inventory = inventory # <Resource, amount> starting state of the systems resources
         for resource in self.resources:
             if not resource in self.inventory:
                 self.inventory[resource] = 0
@@ -120,3 +90,47 @@ class SimulationEnvironment:
             if workstation.id == workstation_id:
                 return workstation
         return None
+
+class Schedule:
+    
+    def __init__(self):
+        self.assignments = dict() # <workstation_id, list of jobs>
+        self.created_by = None
+        self.created_in = None
+        self.created_for = None
+
+    def __init__(self, assignments = dict(), created_by = None, created_in : SimulationEnvironment = None, created_for = None):
+        self.assignments = assignments
+        self.created_by = created_by
+        if created_in is not None:
+            self.created_in = SimulationEnvironment(**created_in)
+        else:
+            self.created_in = created_in
+        self.created_for = created_for
+
+    def assignments_for(self, workstation_id : int) -> list:
+        if workstation_id in self.assignments:
+            return self.assignments[workstation_id]
+        return None
+
+    def add(self, assignment : tuple, task_id : int, order_id : int):
+        if assignment[0] not in self.assignments: #workstation id
+            self.assignments[assignment[0]] = list()
+        self.assignments[assignment[0]].append([task_id, assignment[1], order_id]) # task id, start time, order id
+
+    def workstation_for(self, task_id):
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment[0] == task_id:
+                    return workstation
+        return -1 
+
+    def start_time_for(self, job_id):
+        assignemnts = self.assignments_for(self.workstation_for(job_id))
+        for assignment in assignemnts:
+            if assignment[0] == job_id:
+                return assignment[1]
+        return -1
+
+    def is_feasible(self) -> bool:
+        pass

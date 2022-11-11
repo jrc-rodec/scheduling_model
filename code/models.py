@@ -77,6 +77,9 @@ class Schedule:
     def __init__(self):
         self.assignments = dict() # <workstation_id, list of jobs>
 
+    def __init__(self, assignments):
+        self.assignments = assignments
+
     def assignments_for(self, workstation_id : int) -> list:
         if workstation_id in self.assignments:
             return self.assignments[workstation_id]

@@ -32,6 +32,7 @@ class GASolver(Solver):
     instance = None
 
     def __init__(self, encoding, durations, job_list, alternatives, env, orders):
+        self.name = "GASolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
@@ -220,6 +221,7 @@ class PSOSolver(Solver):
     instance = None
 
     def __init__(self, encoding, durations, job_list, environment, orders):
+        self.name = "PSOSolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
@@ -326,6 +328,7 @@ class GreedyAgentSolver(Solver):
     instance = None
 
     def __init__(self, encoding, durations, job_list, environment, orders):
+        self.name = "GreedyAgentSolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
