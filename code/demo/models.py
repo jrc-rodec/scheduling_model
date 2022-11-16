@@ -100,7 +100,7 @@ class Schedule:
         self.created_for = None
         self.evaluation_results = []
 
-    def __init__(self, assignments = dict(), created_by = None, created_in : SimulationEnvironment = None, created_for = None):
+        """    def __init__(self, assignments, created_by = None, created_in : SimulationEnvironment = None, created_for = None):
         self.assignments = assignments
         self.created_by = created_by
         if created_in is not None:
@@ -108,7 +108,7 @@ class Schedule:
         else:
             self.created_in = created_in
         self.created_for = created_for
-        self.evaluation_results = []
+        self.evaluation_results = []"""
 
     def assignments_for(self, workstation_id : int) -> list:
         if workstation_id in self.assignments:
