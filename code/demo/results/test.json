@@ -62,16 +62,16 @@
                 }
             ],
             [
-                0,
+                6,
                 12,
                 {
-                    "id": 4,
-                    "external_id": 4,
+                    "id": 6,
+                    "external_id": 6,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
-                        0
+                        2
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -82,16 +82,16 @@
                 }
             ],
             [
-                1,
-                13,
+                7,
+                19,
                 {
-                    "id": 4,
-                    "external_id": 4,
+                    "id": 6,
+                    "external_id": 6,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
-                        0
+                        2
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -102,16 +102,36 @@
                 }
             ],
             [
-                2,
-                20,
+                8,
+                24,
                 {
-                    "id": 4,
-                    "external_id": 4,
+                    "id": 6,
+                    "external_id": 6,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
-                        0
+                        2
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                9,
+                26,
+                {
+                    "id": 6,
+                    "external_id": 6,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        2
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -184,16 +204,16 @@
                 }
             ],
             [
-                10,
+                1,
                 16,
                 {
-                    "id": 3,
-                    "external_id": 3,
+                    "id": 4,
+                    "external_id": 4,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
-                        3
+                        0
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -204,56 +224,16 @@
                 }
             ],
             [
-                11,
-                21,
+                2,
+                20,
                 {
-                    "id": 3,
-                    "external_id": 3,
+                    "id": 4,
+                    "external_id": 4,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
-                        3
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                10,
-                22,
-                {
-                    "id": 9,
-                    "external_id": 9,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        3
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                11,
-                27,
-                {
-                    "id": 9,
-                    "external_id": 9,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        3
+                        0
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -264,7 +244,7 @@
                 }
             ]
         ],
-        "0": [
+        "4": [
             [
                 6,
                 0,
@@ -307,7 +287,7 @@
             ],
             [
                 8,
-                15,
+                13,
                 {
                     "id": 2,
                     "external_id": 2,
@@ -346,7 +326,169 @@
                 }
             ],
             [
+                5,
+                22,
+                {
+                    "id": 7,
+                    "external_id": 7,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        1
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ]
+        ],
+        "0": [
+            [
+                10,
                 0,
+                {
+                    "id": 3,
+                    "external_id": 3,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        3
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                11,
+                1,
+                {
+                    "id": 3,
+                    "external_id": 3,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        3
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                0,
+                6,
+                {
+                    "id": 4,
+                    "external_id": 4,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        0
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                10,
+                8,
+                {
+                    "id": 5,
+                    "external_id": 5,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        3
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                11,
+                9,
+                {
+                    "id": 5,
+                    "external_id": 5,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        3
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                3,
+                14,
+                {
+                    "id": 7,
+                    "external_id": 7,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        1
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                4,
+                16,
+                {
+                    "id": 7,
+                    "external_id": 7,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        1
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                1,
                 21,
                 {
                     "id": 8,
@@ -366,28 +508,8 @@
                 }
             ],
             [
-                1,
-                23,
-                {
-                    "id": 8,
-                    "external_id": 8,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        0
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
                 2,
-                28,
+                26,
                 {
                     "id": 8,
                     "external_id": 8,
@@ -408,11 +530,31 @@
         ],
         "2": [
             [
-                10,
+                0,
                 0,
                 {
-                    "id": 5,
-                    "external_id": 5,
+                    "id": 8,
+                    "external_id": 8,
+                    "arrival_time": 0,
+                    "delivery_time": 100,
+                    "latest_acceptable_time": 100,
+                    "resources": [
+                        0
+                    ],
+                    "penalty": 100,
+                    "tardiness_fee": 50,
+                    "divisible": false,
+                    "customer_id": 0,
+                    "optional": false,
+                    "payment_amount": 500
+                }
+            ],
+            [
+                10,
+                4,
+                {
+                    "id": 9,
+                    "external_id": 9,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
@@ -429,157 +571,15 @@
             ],
             [
                 11,
-                2,
+                6,
                 {
-                    "id": 5,
-                    "external_id": 5,
+                    "id": 9,
+                    "external_id": 9,
                     "arrival_time": 0,
                     "delivery_time": 100,
                     "latest_acceptable_time": 100,
                     "resources": [
                         3
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                3,
-                4,
-                {
-                    "id": 7,
-                    "external_id": 7,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        1
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                4,
-                8,
-                {
-                    "id": 7,
-                    "external_id": 7,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        1
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                5,
-                17,
-                {
-                    "id": 7,
-                    "external_id": 7,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        1
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ]
-        ],
-        "4": [
-            [
-                6,
-                0,
-                {
-                    "id": 6,
-                    "external_id": 6,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        2
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                7,
-                9,
-                {
-                    "id": 6,
-                    "external_id": 6,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        2
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                8,
-                13,
-                {
-                    "id": 6,
-                    "external_id": 6,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        2
-                    ],
-                    "penalty": 100,
-                    "tardiness_fee": 50,
-                    "divisible": false,
-                    "customer_id": 0,
-                    "optional": false,
-                    "payment_amount": 500
-                }
-            ],
-            [
-                9,
-                17,
-                {
-                    "id": 6,
-                    "external_id": 6,
-                    "arrival_time": 0,
-                    "delivery_time": 100,
-                    "latest_acceptable_time": 100,
-                    "resources": [
-                        2
                     ],
                     "penalty": 100,
                     "tardiness_fee": 50,
@@ -788,54 +788,54 @@
                 5,
                 1,
                 11,
+                4,
                 0,
-                0,
-                0,
+                4,
                 9,
-                0,
-                15,
-                0,
+                4,
+                13,
+                4,
                 17,
+                0,
+                0,
+                0,
+                1,
+                0,
+                6,
                 1,
                 16,
                 1,
-                21,
+                20,
+                0,
+                8,
+                0,
+                9,
                 3,
                 12,
                 3,
-                13,
+                19,
                 3,
-                20,
+                24,
+                3,
+                26,
+                0,
+                14,
+                0,
+                16,
+                4,
+                22,
                 2,
                 0,
-                2,
-                2,
-                4,
-                0,
-                4,
-                9,
-                4,
-                13,
-                4,
-                17,
-                2,
-                4,
-                2,
-                8,
-                2,
-                17,
                 0,
                 21,
                 0,
-                23,
-                0,
-                28,
-                1,
-                22,
-                1,
-                27
+                26,
+                2,
+                4,
+                2,
+                6
             ],
-            32
+            30
         ]
     },
     "created_in": {
@@ -1633,7 +1633,7 @@
     "evaluation_results": [
         [
             "makespan",
-            32
+            30
         ],
         [
             "tardiness",
@@ -1641,7 +1641,7 @@
         ],
         [
             "deviation",
-            798
+            813
         ],
         [
             "idle_time",

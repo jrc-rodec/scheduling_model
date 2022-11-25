@@ -591,6 +591,10 @@ There are different approaches to the agent-based approach, where either all age
 Additionally, every other approach can be implemented as agent-based solution and be compatible to work with a multi-agent system.
 Reinforcement learning and other machine learning methods can also be applied to the agent-based approach.
 
+\subsubsection{Greedy Agent with timeslot and assignment selection}
+// TODO: describe new agent
+This agent works similarly to the first implemented agent in the sense that it also simulations that the orders are fed into the system in a sequence, rather than all at once, which creates a dependency on the sorting of the orders when the optimization process is started.
+The agent proceeds to use a greedy strategy to schedule each job in sequence. This agent tests all possible slots and checks how the makespan changes by scheduling the job for the time slot. The time slot which causes the smallest changes in the makespan is then selected as correct time slot. The workstation is assigned accordingly. If there are multiple time slots available which would have the same effect on the makespan, a secondary search for is started. For every time slot with the minimal effect on the makespan, the agent tests their effect on the idle time of the schedule. The time slot which leads to the biggest reduction in the idle time of the schedule is chosen as the time slot (and workstation assignment) for the job. Currently, if there are still more than one solutions with the same impact on the schedule, a solution is chosen randomly from the remaining options. Additional cost functions could be added in front of the random selection if needed. Using the current configurations for the different solvers, both the GA solvers and this agent can find the same solutions. While the GA is capable of finding slight improvements to the agent on occasion, the agent can find good solutions more consistently.
 
 \subsubsection{3-Stage Agent-Based Optimization}
 Based on: http://link.springer.com/10.1007/s40092-017-0204-z \\
@@ -601,6 +605,16 @@ The best solution is chosen from the search result of each cluster.
 
 \subsection{CMA-ES}
 The used CMA-ES library can not differ between multiple gene types, so currently, the only comparison can be done with the 2-Stage Optimization. In the first stage, the workstation assignments are done while in the second stage the start times are optimized. 
+
+\subsection{PSO}
+A solver using the Python library "pyswarm" is currently implemented to approach the problem with a particle swarm optimization. Currently, the PSO is not capable of finding a feasible solution (only basic testing). It is using the same encoding as the GA (<start time, machine assignment> for each job that needs to be scheduled). To check whether or not a solution is feasible, the PSO uses multiple constraints. The constraints currently implemented are:
+\begin{itemize}
+	\item Correct Assignment - Checks if the currently assigned workstation for a task is feasible
+	\item Correct Sequence - Checks if the sequence of jobs within the same order/recipe is correct
+	\item No Overlaps - Checks for overlaps on workstations with the scheduled jobs and their durations
+\end{itemize}
+
+The currently used objective function is the same Makespan function used for the other solvers.
 
 \subsection{Comparison}
 
