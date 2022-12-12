@@ -43,7 +43,7 @@ class GASolver(Solver):
         self.average_assignments = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws'):
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only'):
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -52,7 +52,13 @@ class GASolver(Solver):
         self.crossover_type = crossover
         self.parent_selection_type = selection
         #self.mutation_type = GASolver.mutation_function
-        self.mutation_type = GASolver.alternative_mutation_function
+        self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
+        if mutation == 'workstation_only':
+            self.mutation_type = GASolver.alternative_mutation_function
+        elif mutation == 'full_random':
+            self.mutation_type = GASolver.mutation_function
+        elif mutation == 'random_only_feasible':
+            self.mutation_type = GASolver.only_feasible_mutation
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
         self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
@@ -98,6 +104,48 @@ class GASolver(Solver):
                     # mutate start time
                     offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
             index += 1
+        return offsprings
+    
+    def has_overlaps(self, offspring, i, start_time, end_time):
+        instance : GASolver = GASolver.instance
+        for j in range(0, len(offspring), 2):
+                if not i == j:
+                    if offspring[i] == offspring[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = start_time
+                        other_start = offspring[j+1]
+                        other_duration = instance.durations[other_job][offspring[j]]
+                        own_end = end_time
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return True
+                        if own_end > other_start and own_end <= other_end:
+                            return True
+                        if other_start >= own_start and other_start < own_end:
+                            return True
+                        if other_end > own_start and other_end <= own_end:
+                            return True
+        return False
+
+    def only_feasible_mutation(offsprings, ga_instance):
+        instance : GASolver = GASolver.instance
+        for offspring in offsprings:
+            p = 1 / (len(offspring)/2)
+            for i in range(0, len(offspring), 2):
+                if random.random() < p:
+                    workstations = instance.environment.get_all_workstations_for_task(instance.jobs[int((i)/2)])
+                    offspring[i] = random.choice(workstations).id
+                    # choose random start time until fitting spot is found, or amount of tries is up
+                    tries = 10000
+                    start_time = random.randint(instance.earliest_slot, instance.last_slot)
+                    duration = instance.durations[instance.jobs[int(i / 2)]][offspring[i]]
+                    end_time = start_time + duration
+                    current_try = 0
+                    while current_try < tries and instance.has_overlaps(offspring, i, start_time, end_time):
+                        start_time = random.randint(instance.earliest_slot, instance.last_slot)
+                        end_time = start_time + duration
+                        current_try += 1
+                    offspring[i+1] = start_time
         return offsprings
 
     def alternative_mutation_function(offsprings, ga_isntance):
@@ -206,7 +254,7 @@ class GASolver(Solver):
             if order:
                 if not prev_order is None and order.id == prev_order.id: # if current task is not the first job of this order, check if the previous job ends before the current one starts
                     prev_start = solution[i-1]
-                    prev_end = prev_start + instance.durations[instance.jobs[int(i/2) - 1]][solution[i-2]]
+                    prev_end = prev_start + instance.durations[instance.jobs[int((i-2)/2)]][solution[i-2]]
                     if solution[i+1] < prev_end:
                         return False
             else:
