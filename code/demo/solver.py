@@ -43,7 +43,7 @@ class GASolver(Solver):
         self.average_assignments = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only'):
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', objective : str ='makespan'):
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -65,10 +65,15 @@ class GASolver(Solver):
         gene_space_workstations = {'low': 0, 'high': len(self.environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
+        self.objective_function = GASolver.fitness_function
+        if objective == 'makespan':
+            self.objective_function = GASolver.fitness_function
+        elif objective == 'idle_time':
+            pass
         for i in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
             self.gene_space.append(gene_space_starttime)
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=GASolver.fitness_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
         
         self.best_solution = None
 
@@ -217,6 +222,35 @@ class GASolver(Solver):
                 max = solution[i] + GASolver.instance.durations[task][solution[i-1]]
         fitness += abs(max - min)
         return -fitness # NOTE: PyGAD always maximizes
+
+    def fitness_function_idle_time(solution, solution_idx):
+        fitness = 0
+        if not GASolver.is_feasible(solution):
+            return - (2 * GASolver.instance.last_slot)
+        unused_workstations = 0
+        last_timeslot = 0
+        for workstation in GASolver.instance.environment.workstations:
+            used = False
+            for i in range(0, len(solution), 2):
+                slots = []
+                for i in range(0, len(solution), 2):
+                    if solution[i] == workstation.id:
+                        used = True
+                        start = solution[i + 1]
+                        duration = GASolver.instance.environment.durations[GASolver.instance.jobs[int(i/2)]][solution[i]]
+                        end = start + duration
+                        slots.append((start, end))
+                        if end > last_timeslot:
+                            last_timeslot = end
+                sorted_slots = sorted(slots, key=lambda x: x[0])
+                last_end = 0
+                for slot in sorted_slots:
+                    fitness += slot[0] - last_end
+                    last_end = slot[1]
+                if not used:
+                    unused_workstations += 1
+        fitness += unused_workstations * last_timeslot
+        return fitness
 
     def is_feasible(solution):
         order = None
