@@ -16,7 +16,7 @@ class MAS:
         self.solvers = []
         self.translators = dict()
 
-    def add_solver(self, solver : Solver, translator = GAToScheduleTranslator):
+    def add_solver(self, solver : Solver, translator = GAToScheduleTranslator()):
         #NOTE: solvers should be initialized and configured at this point
         self.solvers.append(solver)
         self.translators[solver] = translator
@@ -37,7 +37,7 @@ class MAS:
             # convert to schedules or already receive results as schedule from run methods
             # NOTE: currently run methods already convert results to schedules -> [0] -> actual result, [1] -> result as schedule
             # evaluate with multiple objective functions
-            makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness = calculate_comparison_values(result[1], orders, env)
+            makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness = calculate_comparison_values(result[1], orders, env) # NOTE: should probably return array to make adding objectives easier
             schedules.append((result[1], [makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness]))
         # compare
         # NOTE: for testing: choose min. makespan
@@ -53,7 +53,7 @@ class MAS:
         for solver in self.solvers:
             solver.run()
             result = solver.get_best()
-            schedule = self.translators[solver].translate(result, self.jobs, self.env, self.orders)
+            schedule = self.translators[solver].translate(result=result, jobs=self.jobs, env=self.env, orders=self.orders)
             schedule.created_by = solver
             schedule.created_in = self.env
             schedule.created_for = self.orders
