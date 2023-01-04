@@ -15,6 +15,7 @@ class MAS:
     def __init__(self):
         self.solvers = []
         self.translators = dict()
+        self.all_results = []
 
     def add_solver(self, solver : Solver, translator = GAToScheduleTranslator()):
         #NOTE: solvers should be initialized and configured at this point
@@ -41,12 +42,16 @@ class MAS:
             schedules.append((result[1], [makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness]))
         # compare
         # NOTE: for testing: choose min. makespan
+        self.all_results = schedules
         best = None
         for schedule in schedules:
             if best is None or best[1][0] > schedule[1][0]:
                 best = schedule
         # choose result
         return best # resulting schedule should contain information about orders, used solver and used environment, as well as all fitness values in [1]
+
+    def get_all_results(self):
+        return self.all_results
 
     def _run_sequential(self):
         results = []

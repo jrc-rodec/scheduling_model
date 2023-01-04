@@ -65,11 +65,12 @@ class GASolver(Solver):
         gene_space_workstations = {'low': 0, 'high': len(self.environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
+        self.objective = objective
         self.objective_function = GASolver.fitness_function
         if objective == 'makespan':
             self.objective_function = GASolver.fitness_function
         elif objective == 'idle_time':
-            pass
+            self.objective_function = GASolver.fitness_function_idle_time
         for i in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
             self.gene_space.append(gene_space_starttime)
@@ -231,26 +232,25 @@ class GASolver(Solver):
         last_timeslot = 0
         for workstation in GASolver.instance.environment.workstations:
             used = False
+            slots = []
             for i in range(0, len(solution), 2):
-                slots = []
-                for i in range(0, len(solution), 2):
-                    if solution[i] == workstation.id:
-                        used = True
-                        start = solution[i + 1]
-                        duration = GASolver.instance.environment.durations[GASolver.instance.jobs[int(i/2)]][solution[i]]
-                        end = start + duration
-                        slots.append((start, end))
-                        if end > last_timeslot:
-                            last_timeslot = end
-                sorted_slots = sorted(slots, key=lambda x: x[0])
-                last_end = 0
-                for slot in sorted_slots:
-                    fitness += slot[0] - last_end
-                    last_end = slot[1]
-                if not used:
-                    unused_workstations += 1
+                if solution[i] == workstation.id:
+                    used = True
+                    start = solution[i + 1]
+                    duration = GASolver.instance.durations[GASolver.instance.jobs[int(i/2)]][solution[i]]
+                    end = start + duration
+                    slots.append((start, end))
+                    if end > last_timeslot:
+                        last_timeslot = end
+            sorted_slots = sorted(slots, key=lambda x: x[0])
+            last_end = 0
+            for slot in sorted_slots:
+                fitness += slot[0] - last_end
+                last_end = slot[1]
+            if not used:
+                unused_workstations += 1
         fitness += unused_workstations * last_timeslot
-        return fitness
+        return -fitness
 
     def is_feasible(solution):
         order = None
@@ -309,6 +309,8 @@ class PSOSolver(Solver):
         self.jobs = job_list
         self.environment = environment
         self.orders = orders
+        
+        self.objective = 'makespan'
 
         self.assignments_best = []
         self.average_assignments = []
@@ -331,6 +333,7 @@ class PSOSolver(Solver):
         # Perform optimization
         xopt, fopt = pso(PSOSolver.objective_function, self.lb, self.ub, maxiter=self.max_iter, phip=self.options['c1'], phig=self.options['c2'], omega=self.options['w'], swarmsize=self.swarmsize, ieqcons=[PSOSolver.correct_assignment_con, PSOSolver.correct_sequence_con, PSOSolver.no_overlaps_con]) # maybe needs lb=lb, ub=ub
         self.best_solution = (xopt, fopt)
+        print("Done")
 
     def correct_assignment_con(x):
         instance = PSOSolver.instance
@@ -412,6 +415,7 @@ class GreedyAgentSolver(Solver):
     def __init__(self, encoding, durations, job_list, environment, orders):
         self.name = "GreedyAgentSolver"
         self.encoding = encoding
+        self.objective = 'makespan'
         self.durations = durations
         self.jobs = job_list
         self.environment = environment
@@ -479,6 +483,7 @@ class GreedyAgentSolver(Solver):
             result = copy.deepcopy(random.choice(best_idle))[0] # choose randomly for now
             prev_order = current_order
         self.best_solution = (result, self.makespan(result))
+        print("Done")
         
     def makespan(self, solution):
         min = float('inf')
