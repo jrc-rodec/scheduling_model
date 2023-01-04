@@ -10,6 +10,16 @@ class SolverWrapper:
     def __init__(self, solver : Solver = None):
         self.solver = solver
 
+        
+def solve_parallel(solver : Solver, translator, jobs, env, orders, queue):
+    solver.run()
+    result = solver.get_best()
+    schedule = translator.translators[solver].translate(result, jobs, env, orders)
+    schedule.created_by = solver
+    schedule.created_in = env
+    schedule.created_for = orders
+    queue.put((result, schedule))
+
 class MAS:
 
     def __init__(self):
@@ -71,7 +81,7 @@ class MAS:
         queue = context.Queue()
         processes = []
         for solver in self.solvers:
-            p = context.Process(target=MAS.__solve_parallel, args=(solver, self.translators[solver], self.jobs, self.env, self.orders, queue))
+            p = context.Process(target=solve_parallel, args=(solver, self.translators[solver], self.jobs, self.env, self.orders, queue))
             p.start()
             processes.append(p)
         for process in processes: # one result per process
@@ -80,11 +90,4 @@ class MAS:
             process.join() 
         return results
 
-    def __solve_parallel(solver : Solver, translator, jobs, env, orders, queue):
-        solver.run()
-        result = solver.get_best()
-        schedule = translator.translators[solver].translate(result, jobs, env, orders)
-        schedule.created_by = solver
-        schedule.created_in = env
-        schedule.created_for = orders
-        queue.put((result, schedule))
+
