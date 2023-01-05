@@ -53,12 +53,36 @@ class MAS:
         # compare
         # NOTE: for testing: choose min. makespan
         self.all_results = schedules
+        fronts = []
+        for _ in range(len(schedules[0][1])):
+            fronts.append([])
+        for i in range(len(schedules)):
+            fronts[self.get_dominance(schedules, i)].append(schedules[i])
         best = None
-        for schedule in schedules:
-            if best is None or best[1][0] > schedule[1][0]:
-                best = schedule
+        for i in range(len(fronts)):
+            if len(fronts[i]) > 0:
+                best = fronts[i]
+        #best = None
+        #for schedule in schedules:
+        #    if best is None or best[1][0] > schedule[1][0]:
+        #        best = schedule
         # choose result
-        return best # resulting schedule should contain information about orders, used solver and used environment, as well as all fitness values in [1]
+        return best[0] # resulting schedule should contain information about orders, used solver and used environment, as well as all fitness values in [1]
+
+    def get_dominance(self, solutions, index):
+        # NOTE: assumes all objective functions try to minimize (not true for e.g. profit, but not really used currently so doesn't matter yet)
+        solution = solutions[index]
+        dominance = [True for _ in range(len(solution[1]))]
+        for i in range(len(solutions)):
+            if i != index:
+                for j in range(len(solution[1])):
+                    if solutions[i][1][j] < solution[1][j]:
+                        dominance[j] = False
+        count = 0
+        for i in range(len(dominance)):
+            if dominance[i]:
+                count += 1
+        return count
 
     def get_all_results(self):
         return self.all_results
