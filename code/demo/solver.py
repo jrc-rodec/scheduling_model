@@ -16,7 +16,6 @@ class Solver:
 
     def get_order_index(self, index):
         job_index = int(index/2)
-        #job = instance.jobs[int(index/2)]
         sum = 0
         index = 0
         for order in self.orders:
@@ -31,12 +30,11 @@ class GASolver(Solver):
 
     instance = None
 
-    def __init__(self, encoding, durations, job_list, alternatives, env, orders):
+    def __init__(self, encoding, durations, job_list, env, orders):
         self.name = "GASolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs = job_list
-        #self.alternatives = alternatives
         self.environment = env
         self.orders = orders
         self.assignments_best = []
@@ -51,7 +49,6 @@ class GASolver(Solver):
         self.max_generations = max_generations
         self.crossover_type = crossover
         self.parent_selection_type = selection
-        #self.mutation_type = GASolver.mutation_function
         self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
         if mutation == 'workstation_only':
             self.mutation_type = GASolver.alternative_mutation_function
@@ -101,10 +98,7 @@ class GASolver(Solver):
             p = 1 / (len(offspring)/2) # amount of jobs
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
-                    #alternatives = instance.alternatives[int(i/2)]
                     # mutate workstation assignment
-                    #alternative = random.choice(alternatives)
-                    #instance.jobs[index][int(i/2)] = alternative
                     workstations = instance.environment.get_all_workstations_for_task( instance.jobs[int(i/2)])
                     offspring[i] = random.choice(workstations).id
                     # mutate start time
@@ -210,7 +204,6 @@ class GASolver(Solver):
     def fitness_function(solution, solution_idx):
         fitness = 0
         if not GASolver.is_feasible(solution):
-            #fitness += (2 * GASolver.instance.last_slot)
             return - (2 * GASolver.instance.last_slot)
         # use makespan for now
         min = float('inf')

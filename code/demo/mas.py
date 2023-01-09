@@ -53,7 +53,6 @@ class MAS:
             makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness = calculate_comparison_values(result[1], orders, env) # NOTE: should probably return array to make adding objectives easier
             schedules.append((result[1], [makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness]))
         # compare
-        # NOTE: for testing: choose min. makespan
         self.all_results = schedules
         fronts = []
         for _ in range(len(schedules[0][1])):
@@ -64,11 +63,6 @@ class MAS:
         for i in range(len(fronts)):
             if len(fronts[i]) > 0:
                 best = fronts[i]
-        #best = None
-        #for schedule in schedules:
-        #    if best is None or best[1][0] > schedule[1][0]:
-        #        best = schedule
-        # choose result
         return best[0] # resulting schedule should contain information about orders, used solver and used environment, as well as all fitness values in [1]
 
     def get_dominance(self, solutions, index):
