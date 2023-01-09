@@ -11,14 +11,16 @@ class SolverWrapper:
         self.solver = solver
 
         
-def solve_parallel(solver : Solver, translator, jobs, env, orders, queue):
+#def solve_parallel(solver : Solver, translator, jobs, env, orders, queue):
+def solve_parallel(solver : Solver, translator, jobs, env, orders, pipe):
     solver.run()
     result = solver.get_best()
     schedule = translator.translators[solver].translate(result, jobs, env, orders)
     schedule.created_by = solver
     schedule.created_in = env
     schedule.created_for = orders
-    queue.put((result, schedule))
+    #queue.put([result, schedule])
+    pipe.send([result, schedule])
 
 class MAS:
 
@@ -100,18 +102,26 @@ class MAS:
         return results # returns a list of tuples <result, schedule>
 
     def _run_parallel(self):
-        context = mp.get_context('spawn')
+        context = mp.get_context('spawn') # 'spawn'
         results = []
         queue = context.Queue()
+        parent_pipe, child_pipe = context.Pipe() # try pipe instead of queue
         processes = []
         for solver in self.solvers:
-            p = context.Process(target=solve_parallel, args=(solver, self.translators[solver], self.jobs, self.env, self.orders, queue))
-            p.start()
+            #p = context.Process(target=solve_parallel, args=(solver, self.translators[solver], self.jobs, self.env, self.orders, queue))
+            p = context.Process(target=solve_parallel, args=(solver, self.translators[solver], self.jobs, self.env, self.orders, child_pipe,))
             processes.append(p)
+            print('added process to list')
+            p.start()
         for process in processes: # one result per process
-            results.append(queue.get())
+            print('waiting for queue...')
+            #results.append(queue.get())
+            results.append(parent_pipe.recv())
+            print('received result from queue!')
+        print('joining processes')
         for process in processes: # second loop in case results are not added to the queue in order
             process.join() 
+            print('process joined!')
         return results
 
 
