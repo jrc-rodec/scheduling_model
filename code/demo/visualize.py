@@ -2,6 +2,10 @@ import plotly.figure_factory as ff
 import random
 from solver import GASolver # temporary
 from models import Schedule, SimulationEnvironment
+from distinctipy import distinctipy
+
+def get_colors_distinctipy(n):
+    return distinctipy.get_colors(n)
 
 def get_colors(n): 
     ret = [] 
@@ -54,9 +58,10 @@ def visualize_schedule_demo(schedule : Schedule, environment : SimulationEnviron
             if assignment[0] not in tasks:
                 tasks.append(assignment[0])
     colors = {}
-    rgb_values = get_colors(len(orders))
+    #rgb_values = get_colors(len(orders))
+    rgb_values = get_colors_distinctipy(len(orders))
     for i in range(len(orders)):
-        colors[str(f'Order {i}')] = f'rgb({rgb_values[i][0]}, {rgb_values[i][1]}, {rgb_values[i][2]})'
+        colors[str(f'Order {i}')] = f'rgb({rgb_values[i][0] * 255}, {rgb_values[i][1] * 255}, {rgb_values[i][2] * 255})'
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
                         group_tasks=True)
     fig.update_layout(xaxis_type='linear')
