@@ -1,10 +1,11 @@
 import random
 import pygad
 import copy
+from models import SimulationEnvironment, Order
 
 class Solver:
     
-    def get_order(self, index):
+    def get_order(self, index : int) -> Order:
         job_index = int(index/2)
         sum = 0
         for order in self.orders:
@@ -14,7 +15,7 @@ class Solver:
             sum += len(recipe.tasks)
         return self.orders[len(self.orders)-1]
 
-    def get_order_index(self, index):
+    def get_order_index(self, index : int) -> int:
         job_index = int(index/2)
         sum = 0
         index = 0
@@ -30,7 +31,7 @@ class GASolver(Solver):
 
     instance = None
 
-    def __init__(self, encoding, durations, job_list, env, orders):
+    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], env : SimulationEnvironment, orders : list[Order]):
         self.name = "GASolver"
         self.encoding = encoding
         self.durations = durations
@@ -41,7 +42,7 @@ class GASolver(Solver):
         self.average_assignments = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', objective : str ='makespan'):
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', objective : str ='makespan') -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -68,30 +69,30 @@ class GASolver(Solver):
             self.objective_function = GASolver.fitness_function
         elif objective == 'idle_time':
             self.objective_function = GASolver.fitness_function_idle_time
-        for i in range(0, len(self.encoding), 2):
+        for _ in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
             self.gene_space.append(gene_space_starttime)
         self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
         
         self.best_solution = None
 
-    def run(self):
+    def run(self) -> None:
         self.ga_instance.run()
         solution, solution_fitness, solution_idx = self.ga_instance.best_solution()
         self.solution_index = solution_idx
         self.best_solution = (solution, solution_fitness)
         print("Done")
 
-    def get_best(self):
+    def get_best(self) -> list[int]:
         return self.best_solution[0]
 
-    def get_best_fitness(self):
+    def get_best_fitness(self) -> int:
         return self.best_solution[1]
 
-    def get_result_jobs(self):
+    def get_result_jobs(self) -> list[int]:
         return self.jobs
 
-    def mutation_function(offsprings, ga_instance):
+    def mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
         instance : GASolver = GASolver.instance
         index = 0
         for offspring in offsprings:
@@ -106,7 +107,7 @@ class GASolver(Solver):
             index += 1
         return offsprings
     
-    def has_overlaps(self, offspring, i, start_time, end_time):
+    def has_overlaps(self, offspring : list[int], i : int, start_time : int, end_time : int) -> bool:
         instance : GASolver = GASolver.instance
         for j in range(0, len(offspring), 2):
                 if not i == j:
@@ -127,7 +128,7 @@ class GASolver(Solver):
                             return True
         return False
 
-    def only_feasible_mutation(offsprings, ga_instance):
+    def only_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
         instance : GASolver = GASolver.instance
         for offspring in offsprings:
             p = 1 / (len(offspring)/2)
@@ -148,7 +149,7 @@ class GASolver(Solver):
                     offspring[i+1] = start_time
         return offsprings
 
-    def alternative_mutation_function(offsprings, ga_isntance):
+    def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
         instance = GASolver.instance
         for offspring in offsprings:
             prev_order = -1
@@ -187,7 +188,7 @@ class GASolver(Solver):
                 prev_order = current_order
         return offsprings
 
-    def on_fitness_assignemts(ga_instance, population_fitness):
+    def on_fitness_assignemts(ga_instance, population_fitness) -> None:
         instance = GASolver.instance
         current_best = abs(sorted(population_fitness, reverse=True)[0]) - 1
         if len(instance.assignments_best) == 0:
@@ -201,7 +202,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_assignments.append(sum/len(population_fitness))
 
-    def fitness_function(solution, solution_idx):
+    def fitness_function(solution : list[int], solution_idx) -> int:
         fitness = 0
         if not GASolver.is_feasible(solution):
             return - (2 * GASolver.instance.last_slot)
@@ -217,7 +218,7 @@ class GASolver(Solver):
         fitness += abs(max - min)
         return -fitness # NOTE: PyGAD always maximizes
 
-    def fitness_function_idle_time(solution, solution_idx):
+    def fitness_function_idle_time(solution : list[int], solution_idx) -> int:
         fitness = 0
         if not GASolver.is_feasible(solution):
             return - (2 * GASolver.instance.last_slot)
@@ -245,7 +246,7 @@ class GASolver(Solver):
         fitness += unused_workstations * last_timeslot
         return -fitness
 
-    def is_feasible(solution):
+    def is_feasible(solution : list[int]) -> bool:
         order = None
         instance : GASolver = GASolver.instance
         for i in range(0, len(solution), 2): # go through all workstation assignments

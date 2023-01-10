@@ -44,7 +44,6 @@ class EncodeForGA(DataTranslator):
 
     def translate(self, env : SimulationEnvironment, orders):
         values = []
-        alternative_tasks_per_job = [] # for each index (job), add all possible alternatives eligible for this slot (starting task + all alternatives)
         durations = dict() # durations on each workstation for each indexed task
         all_jobs = [] # gather all jobs
         for order in orders:

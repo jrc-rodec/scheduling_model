@@ -1,6 +1,6 @@
 from solver import Solver
 from models import SimulationEnvironment
-from data_translator import GAToScheduleTranslator
+from data_translator import GAToScheduleTranslator, DataTranslator
 from objective_function import calculate_comparison_values
 
 import multiprocessing as mp
@@ -12,7 +12,7 @@ class SolverWrapper:
 
         
 #def solve_parallel(solver : Solver, translator, jobs, env, orders, queue):
-def solve_parallel(solver : Solver, translator, jobs, env, orders, pipe):
+def solve_parallel(solver : Solver, translator : DataTranslator, jobs : list, env : SimulationEnvironment, orders : list, pipe):
     solver.run()
     result = solver.get_best()
     schedule = translator.translators[solver].translate(result, jobs, env, orders)
@@ -29,12 +29,12 @@ class MAS:
         self.translators = dict()
         self.all_results = []
 
-    def add_solver(self, solver : Solver, translator = GAToScheduleTranslator()):
+    def add_solver(self, solver : Solver, translator : DataTranslator = GAToScheduleTranslator()) -> None:
         #NOTE: solvers should be initialized and configured at this point
         self.solvers.append(solver)
         self.translators[solver] = translator
 
-    def run(self, env : SimulationEnvironment = None, jobs : list = None, orders : list = None, parallel : bool = False):
+    def run(self, env : SimulationEnvironment = None, jobs : list = None, orders : list = None, parallel : bool = False) -> tuple:
         # setup
         results = []
         self.env = env
@@ -65,7 +65,7 @@ class MAS:
                 best = fronts[i]
         return best[0] # resulting schedule should contain information about orders, used solver and used environment, as well as all fitness values in [1]
 
-    def get_dominance(self, solutions, index):
+    def get_dominance(self, solutions : list, index : int) -> int:
         # NOTE: assumes all objective functions try to minimize (not true for e.g. profit, but not really used currently so doesn't matter yet)
         solution = solutions[index]
         dominance = [True for _ in range(len(solution[1]))]
@@ -80,10 +80,10 @@ class MAS:
                 count += 1
         return count
 
-    def get_all_results(self):
+    def get_all_results(self) -> list[tuple]:
         return self.all_results
 
-    def _run_sequential(self):
+    def _run_sequential(self) -> list[tuple]:
         results = []
         for solver in self.solvers:
             solver.run()
@@ -95,7 +95,7 @@ class MAS:
             results.append((result, schedule))
         return results # returns a list of tuples <result, schedule>
 
-    def _run_parallel(self):
+    def _run_parallel(self) -> list[tuple]:
         context = mp.get_context('spawn') # 'spawn'
         results = []
         queue = context.Queue()
