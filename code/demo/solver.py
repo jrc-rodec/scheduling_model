@@ -1,5 +1,6 @@
 import random
 import pygad
+import cma
 import copy
 from models import SimulationEnvironment, Order
 
@@ -423,6 +424,8 @@ class GreedyAgentSolver(Solver):
         pass
 
     def run(self):
+        #result = [-1 for _ in self.encoding] #TODO: refactor
+        #result = len(self.encoding) * [-1]
         result = []
         for _ in range(len(self.encoding)):
             result.append(-1)
@@ -511,3 +514,58 @@ class GreedyAgentSolver(Solver):
 
     def get_best_fitness(self):
         return self.best_solution[1]
+
+class CMAWeightSolver(Solver):
+
+    instance = None
+
+    def __init__(self, encoding, durations, job_list, environment, orders):
+        self.name = "CMAWeightSolver"
+        self.encoding = encoding
+        self.objective = 'makespan'
+        self.durations = durations
+        self.jobs = job_list
+        self.environment = environment
+        self.orders = orders
+        
+        CMAWeightSolver.instance = self
+
+    def initialize(self):
+        pass
+
+    def run(self):
+        x0 = len(self.encoding) * [0.0]
+        xopt, es = cma.fmin2(objective_function=CMAWeightSolver.fitness_function, x0=x0, sigma0=0.5, options={'bounds': [0.0,100.0]})
+        self.best_solution = (xopt, es.result[0]) # TODO: lookup fitness value for 2nd parameter
+        print("Done")
+
+    def _build_schedule(self, weights, workstations, durations, jobs):
+        assignments : list[list[tuple[int, int, int, int]]] = [[] for _ in workstations] # tuples of job_id, start_time, end_time, order_id for each workstation
+        # TODO: build schedule
+        return assignments
+
+    def _is_feasible(self, x):
+        return False
+
+    def fitness_function(x):
+        # makespan
+        # TODO: feasibility
+        fitness = 0
+        if not instance._is_feasible(x):
+            return float('inf') # NOTE: replace float('inf') with sensible value
+        instance : CMAWeightSolver = CMAWeightSolver.instance # get access to all information
+        workstations : list[int] = [w.id for w in instance.environment.workstations]
+        durations : dict[int, list[int]] = instance.durations
+        jobs = instance.jobs
+        assignments : list[list[tuple[int, int, int, int]]] = instance._build_schedule(x, workstations, durations, jobs)
+        last = 0
+        first = float('inf')
+        for i in range(len(assignments)):
+            w_assignment = copy.deepcopy(assignments[i])
+            sorted_assignments = w_assignment.sort(key = lambda y : y[1]) # sort by start times
+            if sorted_assignments[len(sorted_assignments) - 1][2] > last:
+                last = sorted_assignments[len(sorted_assignments) - 1][2]
+            if sorted_assignments[len(sorted_assignments) - 1][1] < first:
+                first = sorted_assignments[len(sorted_assignments) - 1][1]
+        return last - first
+

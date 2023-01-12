@@ -134,7 +134,7 @@ class CMAToScheduleTranslator(DataTranslator):
         return costs # returns cost for each workstation
 
     def get_next(self, costs):
-        current_min = float('max')
+        current_min = float('inf')
         index = 0
         for i in range(len(costs)):
             if any(value < current_min for value in costs[i]):
@@ -182,7 +182,7 @@ class CMAToScheduleTranslator(DataTranslator):
             else:
                 workstation_assignments.append([])
         for i in range(len(jobs)):
-            times = [float('max') for _ in env.workstations]
+            times = [float('inf') for _ in env.workstations]
             min_times = [0 for _ in env.workstations]
             if not scheduled[i]:
                 order = self.get_order(i, env, orders)
@@ -221,7 +221,7 @@ class CMAToScheduleTranslator(DataTranslator):
             next_job = self.get_next(costs)
             # for now, just choose min value
             workstation = costs[next_job].index(min(costs[next_job])) # workstation id
-            values[next_job] = [float('max')] # remove them as possibility without changing the length of the list, should probably be done differently
+            values[next_job] = [float('inf')] # remove them as possibility without changing the length of the list, should probably be done differently
             start_time = start_times[next_job][workstation]
             schedule.add((workstation, start_time), jobs[next_job], self.get_order(next_job, env, orders))
             scheduled[next_job] = True
