@@ -15,8 +15,9 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
         recipies_list = []
         r_id = 0
         tasks =  []
-        for w_id in range(n_workstations):
-            workstations.append(Workstation(w_id, f'w{w_id}', [], [])) # id, name, basic resources, tasks
+        #for w_id in range(n_workstations):
+        #    workstations.append(Workstation(w_id, f'w{w_id}', [], [])) # id, name, basic resources, tasks
+        workstations = [Workstation(w_id, f'w{w_id}', [], []) for w_id in range(n_workstations)]
         t_id = 0
         processing_index = 0
         for recipe in recipies:
@@ -44,9 +45,9 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
 class EncodeForGA(DataTranslator):
 
     def translate(self, env : SimulationEnvironment, orders):
-        values = []
-        durations = dict() # durations on each workstation for each indexed task
-        all_jobs = [] # gather all jobs
+        values : list[int] = []
+        durations : dict[int, list[int]] = dict() # durations on each workstation for each indexed task
+        all_jobs : list[int] = [] # gather all jobs
         for order in orders:
             recipe_id = order.resources[0] # saved recipe in there for now, change later
             recipe : Recipe = env.get_recipe_by_id(recipe_id)
@@ -54,9 +55,7 @@ class EncodeForGA(DataTranslator):
                 values.append(0) # slot for workstation
                 values.append(0) # slot for start time
                 all_jobs.append(task.id) # just add the starting task id for now
-                d = [] # TODO: test after adjusting for new duration table
-                for _ in range(len(env.workstations)):
-                    d.append(0)
+                d :list[int] = len(env.workstations) * [0]
                 possible_workstations = env.get_all_workstations_for_task(task.id)
                 for possible_workstation in possible_workstations:
                     for task_duration in possible_workstation.tasks:
@@ -81,8 +80,8 @@ class EncodeForCMA(DataTranslator):
 
     def translate(self, env : SimulationEnvironment, orders):
         values : list[float] = []
-        durations = dict()
-        jobs = []
+        durations : dict[int, list[int]] = dict()
+        jobs : list[int] = []
         for order in orders:
             recipe_id = order.resources[0]
             recipe : Recipe = env.get_recipe_by_id(recipe_id)
@@ -91,9 +90,8 @@ class EncodeForCMA(DataTranslator):
                 values.append(0.0)
                 jobs.append(task.id)
                 due_dates.append((orders.delivery_time, orders.latest_acceptable_time)) #NOTE: for optimization, aim for delivery time, accept latest acceptable time as feasible
-            d =  []
-            for _ in range(len(env.workstations)):
-                d.append(0)
+            d : list[int] = len(env.workstations) * [0]
+            
             possible_workstations = env.get_all_workstations_for_task(task.id)
             for possible_workstation in possible_workstations:
                 for task_duration in possible_workstation.tasks:

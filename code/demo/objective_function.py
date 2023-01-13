@@ -116,11 +116,7 @@ def calculate_comparison_values(schedule : Schedule, orders, environment : Simul
     makespan_fitness = makespan(schedule, environment)
     tardiness_fitness = min_tardiness(schedule, orders, environment)
     deviation_fitness = min_deviation(schedule, orders, environment)
-    #tardiness_fitness = float('inf')
-    #deviation_fitness = float('inf')
     idle_time_fitness = min_idle_time(schedule, environment)
-    #idle_time_fitness = float('inf')
     profit_fitness = max_profit(schedule, orders, environment)
-    #profit_fitness = float('inf')
     # add additional functions here
-    return makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness
+    return [makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness]

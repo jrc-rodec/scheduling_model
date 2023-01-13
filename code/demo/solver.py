@@ -424,11 +424,7 @@ class GreedyAgentSolver(Solver):
         pass
 
     def run(self):
-        #result = [-1 for _ in self.encoding] #TODO: refactor
-        #result = len(self.encoding) * [-1]
-        result = []
-        for _ in range(len(self.encoding)):
-            result.append(-1)
+        result = len(self.encoding) * [-1]
         prev_order = -1
         for i in range(0, len(result), 2):
             current_order = self.get_order_index(i)

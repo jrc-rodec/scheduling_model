@@ -50,8 +50,8 @@ class MAS:
             # convert to schedules or already receive results as schedule from run methods
             # NOTE: currently run methods already convert results to schedules -> [0] -> actual result, [1] -> result as schedule
             # evaluate with multiple objective functions
-            makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness = calculate_comparison_values(result[1], orders, env) # NOTE: should probably return array to make adding objectives easier
-            schedules.append((result[1], [makespan_fitness, tardiness_fitness, deviation_fitness, idle_time_fitness, profit_fitness]))
+            fitness_values = calculate_comparison_values(result[1], orders, env) # NOTE: should probably return array to make adding objectives easier
+            schedules.append((result[1], fitness_values))
         # compare
         self.all_results = schedules
         fronts = []
