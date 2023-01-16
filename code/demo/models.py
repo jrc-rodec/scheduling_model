@@ -90,6 +90,12 @@ class SimulationEnvironment:
                 return workstation
         return None
 
+    def get_task(self, task_id : int) -> Task:
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        return None
+
 class Schedule:
     
     def __init__(self):
@@ -112,7 +118,7 @@ class Schedule:
     def assignments_for(self, workstation_id : int) -> list:
         if workstation_id in self.assignments:
             return self.assignments[workstation_id]
-        return None
+        return None # TODO: should return empty array [] instead
 
     def add(self, assignment : tuple, task_id : int, order_id : int):
         if assignment[0] not in self.assignments: #workstation id

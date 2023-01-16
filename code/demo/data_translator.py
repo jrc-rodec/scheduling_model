@@ -15,9 +15,9 @@ class TestTranslator(DataTranslator): # no resources used for this dataset
         recipies_list = []
         r_id = 0
         tasks =  []
-        #for w_id in range(n_workstations):
-        #    workstations.append(Workstation(w_id, f'w{w_id}', [], [])) # id, name, basic resources, tasks
-        workstations = [Workstation(w_id, f'w{w_id}', [], []) for w_id in range(n_workstations)]
+        for w_id in range(n_workstations):
+            workstations.append(Workstation(w_id, f'w{w_id}', [], [])) # id, name, basic resources, tasks
+        #workstations = [Workstation(w_id, f'w{w_id}', [], []) for w_id in range(n_workstations)] # could be a problem
         t_id = 0
         processing_index = 0
         for recipe in recipies:
@@ -82,22 +82,23 @@ class EncodeForCMA(DataTranslator):
         values : list[float] = []
         durations : dict[int, list[int]] = dict()
         jobs : list[int] = []
+        due_dates = []
         for order in orders:
             recipe_id = order.resources[0]
             recipe : Recipe = env.get_recipe_by_id(recipe_id)
-            due_dates = []
             for task in recipe.tasks:
                 values.append(0.0)
                 jobs.append(task.id)
-                due_dates.append((orders.delivery_time, orders.latest_acceptable_time)) #NOTE: for optimization, aim for delivery time, accept latest acceptable time as feasible
-            d : list[int] = len(env.workstations) * [0]
-            
-            possible_workstations = env.get_all_workstations_for_task(task.id)
-            for possible_workstation in possible_workstations:
-                for task_duration in possible_workstation.tasks:
-                    if task_duration[0] == task.id:
-                        d[possible_workstation.id] = task_duration[1]
-            durations[task.id] = d
+                due_dates.append((order.delivery_time, order.latest_acceptable_time)) #NOTE: for optimization, aim for delivery time, accept latest acceptable time as feasible
+                d : list[int] = len(env.workstations) * [0]
+                
+                possible_workstations = env.get_all_workstations_for_task(task.id)
+                for possible_workstation in possible_workstations:
+                    for task_duration in possible_workstation.tasks:
+                        if task_duration[0] == task.id:
+                            d[possible_workstation.id] = task_duration[1]
+                            break
+                durations[task.id] = d
         return values, durations, jobs, due_dates
 
 """
@@ -124,10 +125,16 @@ class GAToScheduleTranslator(DataTranslator):
     
 class CMAToScheduleTranslator(DataTranslator):
 
-    def cost_function(self, weight, p_all, due_date, start_times, env : SimulationEnvironment): # calculate priority of each job to be scheduled next, big weight = low priority score (min priority score is next)
+    def cost_function(self, weight, p_all, due_date, start_times): # calculate priority of each job to be scheduled next, big weight = low priority score (min priority score is next)
         d = due_date[0] # just consider deliver time, not latest acceptable
         costs = []
         for i in range(len(p_all)):
+            if start_times[i] == 0: # TODO: change
+                start_times[i] = 1
+            if weight == 0: # TODO: change
+                weight = 0.00000000001
+            if weight is None or start_times[i] is None:
+                print('hello')
             costs.append((p_all[i] * (d / start_times[i])) / weight) # if cost = 0, not possible on workstation
         return costs # returns cost for each workstation
 
@@ -152,8 +159,8 @@ class CMAToScheduleTranslator(DataTranslator):
     def is_first(self, index, env, orders):
         sum = 0
         for i in range(len(orders)):
-            if sum + len(env.get_recipe_by_id(orders[i].resources[0])) >= index:
-                return index - sum + len(env.get_recipe_by_id(orders[i].resources[0])) == 0
+            if sum + len(env.get_recipe_by_id(orders[i].resources[0]).tasks) >= index:
+                return index - sum + len(env.get_recipe_by_id(orders[i].resources[0]).tasks) == 0
         return False
 
     def find_suitable_slots(self, sorted_assignments, job, durations, workstation):
@@ -161,10 +168,13 @@ class CMAToScheduleTranslator(DataTranslator):
         prev_end_time = 0
         slots = []
         for assignment in sorted_assignments:
-            if assignment[1] - prev_end_time > duration:
+            if assignment[1] - prev_end_time >= duration:
                 slots.append(prev_end_time)
             prev_end_time = assignment[1] + durations[assignment[0]][workstation]
-        last_assignment = sorted_assignments[len(sorted_assignments-1)]
+        if len(sorted_assignments) == 0:
+            last_assignment = (0,0,0,0)
+        else:
+            last_assignment = sorted_assignments[len(sorted_assignments)-1]
         if last_assignment[1] + durations[last_assignment[0]][workstation] not in slots:
             slots.append(last_assignment[1] + durations[last_assignment[0]][workstation]) # add last used time slot on workstation to the list
         return slots
@@ -180,7 +190,8 @@ class CMAToScheduleTranslator(DataTranslator):
             else:
                 workstation_assignments.append([])
         for i in range(len(jobs)):
-            times = [float('inf') for _ in env.workstations]
+            order = self.get_order(i, env, orders)
+            times = [order.latest_acceptable_time for _ in env.workstations]
             min_times = [0 for _ in env.workstations]
             if not scheduled[i]:
                 order = self.get_order(i, env, orders)
@@ -195,31 +206,32 @@ class CMAToScheduleTranslator(DataTranslator):
                                 min_times[workstation.id] = end_time #NOTE: this does not mean the timeslot is available, the task is just not allowed to start before this time
                 
                 for workstation in env.workstations:
-                    sorted_assignments = schedule.assignments_for(workstation.id).sort(key = lambda x : x[1])
+                    sorted_assignments = copy.deepcopy(schedule.assignments_for(workstation.id))
+                    if not sorted_assignments:
+                        sorted_assignments = []
+                    sorted_assignments.sort(key = lambda x : x[1])
                     possible_start_times = self.find_suitable_slots(sorted_assignments, jobs[i], durations, workstation.id)
                     for start_time in possible_start_times:
                         if start_time >= max(min_times) and start_time < times[workstation.id]:
                             times[workstation.id] = start_time
-            else:
-                times = [0]
             start_times.append(times)
         return start_times # returns earliest possible start time on each workstation for each job
 
-    def translate(self, result, jobs, durations, due_dates, env : SimulationEnvironment, orders):
+    def translate(self, result, jobs, due_dates, durations, env : SimulationEnvironment, orders):
         schedule = Schedule()
         values = copy.deepcopy(result)
         start_times : list[list[int]] = []
         scheduled = [False for _ in jobs]
         for _ in range(len(values)):
             costs = []
-            # TODO: start_times - earliest possible start times on each workstation for each job according to their duration on the workstation
+            # start_times - earliest possible start times on each workstation for each job according to their duration on the workstation
             start_times = self.find_earliest_start_times(schedule, jobs, durations, env, orders, scheduled)
             for i in range(len(values)):
                 costs.append(self.cost_function(values[i], durations[jobs[i]], due_dates[i], start_times[i]))
             next_job = self.get_next(costs)
             # for now, just choose min value
             workstation = costs[next_job].index(min(costs[next_job])) # workstation id
-            values[next_job] = [float('inf')] # remove them as possibility without changing the length of the list, should probably be done differently
+            values[next_job] = float('inf') # remove them as possibility without changing the length of the list, should probably be done differently
             start_time = start_times[next_job][workstation]
             schedule.add((workstation, start_time), jobs[next_job], self.get_order(next_job, env, orders))
             scheduled[next_job] = True

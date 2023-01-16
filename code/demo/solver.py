@@ -3,6 +3,7 @@ import pygad
 import cma
 import copy
 from models import SimulationEnvironment, Order
+import sys
 
 class Solver:
     
@@ -532,36 +533,144 @@ class CMAWeightSolver(Solver):
     def run(self):
         x0 = len(self.encoding) * [0.0]
         xopt, es = cma.fmin2(objective_function=CMAWeightSolver.fitness_function, x0=x0, sigma0=0.5, options={'bounds': [0.0,100.0]})
-        self.best_solution = (xopt, es.result[0]) # TODO: lookup fitness value for 2nd parameter
+        self.best_solution = (xopt, es) # TODO: lookup fitness value for 2nd parameter
         print("Done")
+
+    def _get_assignments_for_workstation(self, assignments, workstation):
+        return assignments[workstation]
+
+    def _get_order(self, index):
+        sum = 0
+        for order in self.orders:
+            recipe = self.environment.get_recipe_by_id(order.resources[0])
+            if index < sum + len(recipe.tasks):
+                return order
+            sum += len(recipe.tasks)
+        return self.orders[len(self.orders)-1]
+
+    def _is_first(self, index):
+        sum = 0
+        for i in range(len(self.orders)):
+            if sum + (len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks)):
+                return index - sum + len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks) == 0
+        return False
+
+    def _find_suitable_slots(self, assignments, job, durations, workstation):
+        duration = durations[job][workstation]
+        prev_end_time = 0
+        slots = []
+        for assignment in assignments:
+            if assignment[1] - prev_end_time >= duration:
+                slots.append(prev_end_time)
+            prev_end_time = assignment[2]
+        if len(assignments) == 0:
+            last_assignment = (0,0,0,0)
+        else:
+            last_assignment = assignments[len(assignments)-1]
+        if last_assignment[2] not in slots:
+            slots.append(last_assignment[2])
+        return slots
+
+    def _get_start_times(self, assignments, jobs, durations, scheduled):
+        start_times = []
+        workstation_assignments = []
+        for workstation in self.environment.workstations:
+            w_assignments = self._get_assignments_for_workstation(assignments, workstation.id)
+            if not w_assignments:
+                w_assignments : list[tuple[int, int, int, int]] = []
+            workstation_assignments.append(w_assignments)
+        for i in range(len(jobs)):
+            order = self._get_order(i)
+            times = [order.latest_acceptable_time for _ in self.environment.workstations]
+            min_times = [0 for _ in self.environment.workstations]
+            if not scheduled[i]:
+                # get order id
+                order : Order = self._get_order(i)
+                # check if job is first of order
+                first : bool = self._is_first(i)
+                if not first:
+                    # find previous scheduled tasks of same order
+                    for workstation in self.environment.workstations:
+                        for assignment in workstation_assignments[workstation.id]: # assignment = <task_id, start_time, end_time, order_id>
+                            if assignment[3].id == order.id:
+                                min_times[workstation.id] = assignment[2]
+                for workstation in self.environment.workstations:
+                    sorted_assignments = copy.deepcopy(assignments[workstation.id])
+                    sorted_assignments.sort(key = lambda x : x[1])
+                    possible_start_times = self._find_suitable_slots(sorted_assignments, jobs[i], durations, workstation.id)
+                    for start_time in possible_start_times:
+                        if start_time >= max(min_times) and start_time < times[workstation.id]:
+                            times[workstation.id] = start_time
+            start_times.append(times)
+        return start_times
+
+    def _get_next(self, costs):
+        current_min = float('inf')
+        index = 0
+        for i in range(len(costs)):
+            if any(value < current_min for value in costs[i]):
+                index = i
+                current_min = min(costs[i])
+        return index
+
+    def _cost_function(self, weight, p_all, due_date, start_times): # calculate priority of each job to be scheduled next, big weight = low priority score (min priority score is next)
+        d = due_date # just consider deliver time, not latest acceptable
+        costs = []
+        for i in range(len(p_all)):
+            if start_times[i] == 0:
+                start_times[i] = 1 # TODO: change
+            if weight == 0:
+                weight = 0.00000000001 # TODO: change
+            costs.append((p_all[i] * (d / start_times[i])) / weight) # if cost = 0, not possible on workstation
+        return costs # returns cost for each workstation
 
     def _build_schedule(self, weights, workstations, durations, jobs):
         assignments : list[list[tuple[int, int, int, int]]] = [[] for _ in workstations] # tuples of job_id, start_time, end_time, order_id for each workstation
-        # TODO: build schedule
+        scheduled = [False for _ in jobs]
+        values = copy.deepcopy(weights)
+        for _ in range(len(values)):
+            # find start times
+            start_times = self._get_start_times(assignments, jobs, durations, scheduled)
+            # find cost
+            costs = []
+            for i in range(len(values)):
+                due_date = self._get_order(i).delivery_time # TODO: double check
+                costs.append(self._cost_function(values[i], durations[jobs[i]], due_date, start_times[i]))
+            # choose next job to schedule
+            next_job = self._get_next(costs)
+            # schedule next job
+            workstation = costs[next_job].index(min(costs[next_job])) # TODO: double check
+            values[next_job] = float('inf')
+            start_time = start_times[next_job][workstation]
+            end_time = start_time + durations[jobs[next_job]][workstation]
+            assignments[workstation].append((next_job, start_time, end_time, self._get_order(next_job))) # TODO: double check next_order use for _get_order
+            scheduled[next_job] = True
         return assignments
 
     def _is_feasible(self, x):
-        return False
+        return True
 
+    
     def fitness_function(x):
         # makespan
-        # TODO: feasibility
-        fitness = 0
-        if not instance._is_feasible(x):
-            return float('inf') # NOTE: replace float('inf') with sensible value
         instance : CMAWeightSolver = CMAWeightSolver.instance # get access to all information
         workstations : list[int] = [w.id for w in instance.environment.workstations]
         durations : dict[int, list[int]] = instance.durations
         jobs = instance.jobs
         assignments : list[list[tuple[int, int, int, int]]] = instance._build_schedule(x, workstations, durations, jobs)
+        # TODO: feasibility
+        if not instance._is_feasible(x):
+            return sys.maxsize # NOTE: replace float('inf') with sensible value
         last = 0
         first = float('inf')
         for i in range(len(assignments)):
             w_assignment = copy.deepcopy(assignments[i])
-            sorted_assignments = w_assignment.sort(key = lambda y : y[1]) # sort by start times
-            if sorted_assignments[len(sorted_assignments) - 1][2] > last:
-                last = sorted_assignments[len(sorted_assignments) - 1][2]
-            if sorted_assignments[len(sorted_assignments) - 1][1] < first:
-                first = sorted_assignments[len(sorted_assignments) - 1][1]
+            w_assignment.sort(key = lambda y : y[1]) # sort by start times
+            if len(w_assignment) == 0:
+                w_assignment.append((0,0,0,0))
+            if w_assignment[len(w_assignment) - 1][2] > last:
+                last = w_assignment[len(w_assignment) - 1][2]
+            if w_assignment[len(w_assignment) - 1][1] < first:
+                first = w_assignment[len(w_assignment) - 1][1]
         return last - first
 
