@@ -133,8 +133,6 @@ class CMAToScheduleTranslator(DataTranslator):
                 start_times[i] = 1
             if weight == 0: # TODO: change
                 weight = 0.00000000001
-            if weight is None or start_times[i] is None:
-                print('hello')
             costs.append((p_all[i] * (d / start_times[i])) / weight) # if cost = 0, not possible on workstation
         return costs # returns cost for each workstation
 
@@ -159,24 +157,25 @@ class CMAToScheduleTranslator(DataTranslator):
     def is_first(self, index, env, orders):
         sum = 0
         for i in range(len(orders)):
-            if sum + len(env.get_recipe_by_id(orders[i].resources[0]).tasks) >= index:
-                return index - sum + len(env.get_recipe_by_id(orders[i].resources[0]).tasks) == 0
+            if index < sum + len(env.get_recipe_by_id(orders[i].resources[0]).tasks):
+                return index - sum == 0
+            sum += len(env.get_recipe_by_id(orders[i].resources[0]).tasks)
         return False
 
     def find_suitable_slots(self, sorted_assignments, job, durations, workstation):
         duration = durations[job][workstation]
         prev_end_time = 0
         slots = []
-        for assignment in sorted_assignments:
-            if assignment[1] - prev_end_time >= duration:
-                slots.append(prev_end_time)
-            prev_end_time = assignment[1] + durations[assignment[0]][workstation]
         if len(sorted_assignments) == 0:
-            last_assignment = (0,0,0,0)
+            slots.append(0)
         else:
+            for assignment in sorted_assignments:
+                if assignment[1] - prev_end_time >= duration:
+                    slots.append(prev_end_time)
+                prev_end_time = assignment[1] + durations[assignment[0]][workstation]
             last_assignment = sorted_assignments[len(sorted_assignments)-1]
-        if last_assignment[1] + durations[last_assignment[0]][workstation] not in slots:
-            slots.append(last_assignment[1] + durations[last_assignment[0]][workstation]) # add last used time slot on workstation to the list
+            if last_assignment[1] + durations[last_assignment[0]][workstation] not in slots:
+                slots.append(last_assignment[1] + durations[last_assignment[0]][workstation]) # add last used time slot on workstation to the list
         return slots
 
     def find_earliest_start_times(self, schedule : Schedule, jobs : list[int], durations, env : SimulationEnvironment, orders, scheduled : list[bool]) -> list[list[int]]:
@@ -232,7 +231,7 @@ class CMAToScheduleTranslator(DataTranslator):
             # for now, just choose min value
             workstation = costs[next_job].index(min(costs[next_job])) # workstation id
             values[next_job] = float('inf') # remove them as possibility without changing the length of the list, should probably be done differently
-            start_time = start_times[next_job][workstation]
+            start_time = start_times[jobs[next_job]][workstation]
             schedule.add((workstation, start_time), jobs[next_job], self.get_order(next_job, env, orders))
             scheduled[next_job] = True
         return schedule

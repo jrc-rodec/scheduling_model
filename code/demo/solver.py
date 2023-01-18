@@ -424,7 +424,7 @@ class GreedyAgentSolver(Solver):
     def initialize(self):
         pass
 
-    def run(self):
+    def run(self, output : bool = True):
         result = len(self.encoding) * [-1]
         prev_order = -1
         for i in range(0, len(result), 2):
@@ -477,7 +477,8 @@ class GreedyAgentSolver(Solver):
             result = copy.deepcopy(random.choice(best_idle))[0] # choose randomly for now
             prev_order = current_order
         self.best_solution = (result, self.makespan(result))
-        print("Done")
+        if output:
+            print("Done")
         
     def makespan(self, solution):
         min = float('inf')
@@ -512,6 +513,64 @@ class GreedyAgentSolver(Solver):
     def get_best_fitness(self):
         return self.best_solution[1]
 
+class HybridGreedyAgentSolver(Solver):
+    instance = None
+
+    def __init__(self, inner_encoding, durations, job_list, environment, orders):
+        self.agent = GreedyAgentSolver(inner_encoding, durations, job_list, environment, orders)
+        self.encoding = []
+        for i in range(len(job_list)):
+            self.encoding.append(i)
+        self.durations = durations
+        self.inner_encoding = inner_encoding
+        self.jobs = job_list
+        self.environment = environment
+        self.orders = orders
+
+    def initialize(self, mutation : str = 'swap', crossover : str = 'two_points', selection : str = 'rws', max_generations : int = 1000, population_size : int = 100):
+        self.mutation = mutation
+        self.crossover = crossover
+        self.selection = selection
+
+        self.max_generations = max_generations
+        self.population_size = population_size
+        self.mutation_percentage_genes = 10 # not used, but necessary parameter
+        self.gene_type = int
+        self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
+
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=HybridGreedyAgentSolver.objective_function, sol_per_pop=population_size, num_genes=len(self.encoding), parent_selection_type=self.selection, keep_parents=self.keep_parents, crossover_type=self.crossover, mutation_type=self.mutation, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type)
+        
+        HybridGreedyAgentSolver.instance = self
+
+    def objective_function(solution : list[int], solution_idx) -> int:
+        instance = HybridGreedyAgentSolver.instance
+        job_list = []
+        for entry in solution:
+            job_list.append(instance.jobs[entry])
+        instance.agent.jobs = job_list
+        HybridGreedyAgentSolver.instance.agent.run(False)
+        fitness = HybridGreedyAgentSolver.instance.agent.get_best_fitness()
+        return -fitness
+
+    def run(self):
+        self.ga_instance.run()
+        solution, solution_fitness, solution_idx = self.ga_instance.best_solution()
+        self.solution_index = solution_idx
+        self.best_solution = (solution, solution_fitness)
+        self.agent.run()
+        self.agent_best_solution = self.agent.best_solution
+        print("Done")
+
+    def re_run_agent(self):
+        self.agent.run()
+        return self.agent.best_solution
+
+    def get_best(self):
+        return self.agent_best_solution[0]
+    
+    def get_best_fitness(self):
+        return self.agent_best_solution[1]
+
 class CMAWeightSolver(Solver):
 
     instance = None
@@ -530,9 +589,17 @@ class CMAWeightSolver(Solver):
     def initialize(self):
         pass
 
+    def constraints(x):
+        return [0]
+
     def run(self):
         x0 = len(self.encoding) * [0.0]
-        xopt, es = cma.fmin2(objective_function=CMAWeightSolver.fitness_function, x0=x0, sigma0=0.5, options={'bounds': [0.0,100.0]})
+        xopt, es = cma.fmin2(objective_function=CMAWeightSolver.fitness_function, x0=x0, sigma0=0.5, options={'bounds': [0.0,100.0], 'is_feasible': CMAWeightSolver._is_feasible})
+        #xopt, es = cma.fmin_con2(objective_function=CMAWeightSolver.fitness_function, x0=x0, sigma0=0.5, find_feasible_first=True, find_feasible_final=False, options={'bounds': [0.0, 100.0], 'is_feasible': CMAWeightSolver._is_feasible})
+        #cfun = cma.ConstrainedFitnessAL(CMAWeightSolver.fitness_function, CMAWeightSolver.constraints, find_feasible_first=True)
+        #es = cma.CMAEvolutionStrategy(x0, 0.5, inopts={'tolstagnation': 0})
+        #es = es.optimize(cfun, callback=cfun.update)
+        #xopt = es.result.xfavorite
         self.best_solution = (xopt, es) # TODO: lookup fitness value for 2nd parameter
         print("Done")
 
@@ -551,24 +618,25 @@ class CMAWeightSolver(Solver):
     def _is_first(self, index):
         sum = 0
         for i in range(len(self.orders)):
-            if sum + (len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks)):
-                return index - sum + len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks) == 0
+            if i < sum + (len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks)):
+                return index - sum == 0 #?
+            sum += len(self.environment.get_recipe_by_id(self.orders[i].resources[0]).tasks)
         return False
 
     def _find_suitable_slots(self, assignments, job, durations, workstation):
         duration = durations[job][workstation]
         prev_end_time = 0
         slots = []
-        for assignment in assignments:
-            if assignment[1] - prev_end_time >= duration:
-                slots.append(prev_end_time)
-            prev_end_time = assignment[2]
         if len(assignments) == 0:
-            last_assignment = (0,0,0,0)
+            slots.append(0)
         else:
+            for assignment in assignments:
+                if assignment[1] - prev_end_time >= duration:
+                    slots.append(prev_end_time)
+                prev_end_time = assignment[2]
             last_assignment = assignments[len(assignments)-1]
-        if last_assignment[2] not in slots:
-            slots.append(last_assignment[2])
+            if last_assignment[1] + durations[last_assignment[0]][workstation] not in slots:
+                slots.append(last_assignment[1] + durations[last_assignment[0]][workstation])
         return slots
 
     def _get_start_times(self, assignments, jobs, durations, scheduled):
@@ -641,16 +709,15 @@ class CMAWeightSolver(Solver):
             # schedule next job
             workstation = costs[next_job].index(min(costs[next_job])) # TODO: double check
             values[next_job] = float('inf')
-            start_time = start_times[next_job][workstation]
+            start_time = start_times[jobs[next_job]][workstation]
             end_time = start_time + durations[jobs[next_job]][workstation]
-            assignments[workstation].append((next_job, start_time, end_time, self._get_order(next_job))) # TODO: double check next_order use for _get_order
+            assignments[workstation].append((jobs[next_job], start_time, end_time, self._get_order(next_job))) # TODO: double check next_job use for _get_order
             scheduled[next_job] = True
         return assignments
 
-    def _is_feasible(self, x):
+    def _is_feasible(x, f):
         return True
 
-    
     def fitness_function(x):
         # makespan
         instance : CMAWeightSolver = CMAWeightSolver.instance # get access to all information
@@ -658,9 +725,6 @@ class CMAWeightSolver(Solver):
         durations : dict[int, list[int]] = instance.durations
         jobs = instance.jobs
         assignments : list[list[tuple[int, int, int, int]]] = instance._build_schedule(x, workstations, durations, jobs)
-        # TODO: feasibility
-        if not instance._is_feasible(x):
-            return sys.maxsize # NOTE: replace float('inf') with sensible value
         last = 0
         first = float('inf')
         for i in range(len(assignments)):
