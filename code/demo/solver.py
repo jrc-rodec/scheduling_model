@@ -527,7 +527,9 @@ class HybridGreedyAgentSolver(Solver):
         self.environment = environment
         self.orders = orders
 
-    def initialize(self, mutation : str = 'swap', crossover : str = 'two_points', selection : str = 'rws', max_generations : int = 1000, population_size : int = 100):
+    def initialize(self, mutation : str = 'swap', crossover : str = 'two_points', selection : str = 'rws', max_generations : int = 1000, population_size : int = 100, earliest_slot : int = 0, last_slot : int = 1000):
+        self.last_slot = last_slot
+        self.earliest_slot = earliest_slot
         self.mutation = mutation
         self.crossover = crossover
         self.selection = selection
@@ -548,9 +550,56 @@ class HybridGreedyAgentSolver(Solver):
         for entry in solution:
             job_list.append(instance.jobs[entry])
         instance.agent.jobs = job_list
-        HybridGreedyAgentSolver.instance.agent.run(False)
-        fitness = HybridGreedyAgentSolver.instance.agent.get_best_fitness()
+        instance.agent.run(False)
+        result = instance.agent.get_best()
+        if not HybridGreedyAgentSolver.is_feasible(result):
+            return -1000 #TODO: replace value
+        fitness = instance.agent.get_best_fitness()
         return -fitness
+
+    def is_feasible(solution : list[int]) -> bool:
+        order = None
+        instance = HybridGreedyAgentSolver.instance
+        for i in range(0, len(solution), 2): # go through all workstation assignments
+            job = instance.jobs[int(i/2)]
+            # check for last time slot
+            if solution[i+1] + instance.durations[job][solution[i]] > instance.last_slot:
+                return False
+            # check for earliest time slot
+            if solution[i+1] < instance.earliest_slot:
+                return False
+            # check for overlaps
+            for j in range(0, len(solution), 2):
+                if not i == j:
+                    if solution[i] == solution[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = solution[i+1]
+                        other_start = solution[j+1]
+                        own_duration = instance.durations[job][solution[i]]
+                        other_duration = instance.durations[other_job][solution[j]]
+                        own_end = own_start + own_duration
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return False
+                        if own_end > other_start and own_end <= other_end:
+                            return False
+                        if other_start >= own_start and other_start < own_end:
+                            return False
+                        if other_end > own_start and other_end <= own_end:
+                            return False
+            # check for correct sequence
+            prev_order = order
+            order = instance.get_order(i) # find order corresponding to task
+            if order:
+                if not prev_order is None and order.id == prev_order.id: # if current task is not the first job of this order, check if the previous job ends before the current one starts
+                    prev_start = solution[i-1]
+                    prev_end = prev_start + instance.durations[instance.jobs[int((i-2)/2)]][solution[i-2]]
+                    if solution[i+1] < prev_end:
+                        return False
+            else:
+                print("Something went completely wrong!") # TODO: should probably throw exception
+        return True
+
 
     def run(self):
         self.ga_instance.run()
