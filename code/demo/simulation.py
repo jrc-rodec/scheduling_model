@@ -8,10 +8,10 @@ class Event:
     def __init__(self, time_interval : int = 1):
         self.time_interval = time_interval
     #TODO: add schedule as parameter to both is_triggered and process
-    def is_triggered(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
+    def is_triggered(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
         pass
 
-    def process(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
+    def process(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
         pass
 
 
@@ -23,10 +23,10 @@ class NewOrderEvent(Event):
         self.earliest_possible_timeslot = earliest_possible_timeslot
         self.last_possible_timeslot = last_possible_timeslot
 
-    def is_triggered(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
+    def is_triggered(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
         return timestamp % self.time_interval == 0 and random.uniform(0.0, 1.0) < self.trigger_probability
 
-    def process(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
+    def process(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
         order = random.choice(available_orders)
         # TODO: maybe modify delivery date, etc., or even change available orders to available recipes and randomize other parameters
         new_order : Order = copy.deepcopy(order)
@@ -37,7 +37,7 @@ class NewOrderEvent(Event):
 
 class DeactivateWorkstationEvent(Event):
 
-    def __init__(self, time_interval : int = 1, trigger_probability : float = 0.1, earliest_possible_timeslot : int = 0, last_possible_timeslot : int = 1000) -> None:
+    def __init__(self, schedule : dict[int, tuple[int, int, int]], time_interval : int = 1, trigger_probability : float = 0.1, earliest_possible_timeslot : int = 0, last_possible_timeslot : int = 1000) -> None:
         super().__init__(time_interval)
         self.trigger_probability = trigger_probability
         self.earliest_possible_timeslot = earliest_possible_timeslot
@@ -55,16 +55,16 @@ class DeactivateWorkstationEvent(Event):
         for reactivated_workstation in reactivated_workstations:
             self.deactivated_workstations.remove(reactivated_workstation)
 
-    def is_triggered(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
+    def is_triggered(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order]) -> bool:
         # check if any previously deactivated workstation can be reactivated
         self.reactivate_workstations(timestamp, simulation_environment)
         return timestamp % self.time_interval == 0 and random.uniform(0,0, 1.0) < self.trigger_probability
 
-    def process(self, timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
+    def process(self, schedule : dict[int, tuple[int, int, int]], timestamp : int, simulation_environment : SimulationEnvironment, available_orders : list[Order], new_orders : list[Order]) -> None:
         deactivate_until_timestamp : int = random.randint(int(timestamp * 1.2), self.last_possible_timeslot)
         deactivated_workstation = random.choice(simulation_environment.workstations)
         self.deactivated_workstations.append((deactivated_workstation, deactivate_until_timestamp))
-        simulation_environment.workstations.remove(deactivated_workstation) # TODO: removing workstations from the environment is not ideal
+        simulation_environment.workstations.remove(deactivated_workstation) # TODO: removing workstations from the environment is not ideal - add blocking dummy order to the schedule for the time instead
         # TODO: re-add all orders currently scheduled (not finished) for the workstation as new orders to be redistributed to the other workstations
 
 class Simulation:
@@ -74,7 +74,7 @@ class Simulation:
         self.environment : SimulationEnvironment = simulation_environment
         self.available_orders : list[Order] = available_orders
         self.solver = solver
-        self.schedule = None
+        self.schedule : dict[int, tuple[int, int, int]] = None # dict -> <workstation, (task_id, start_time, order_id)
         self.possible_events : list[Event] = list()
 
     def configure(self, end_time : int, step_size : int = 1) -> None:
