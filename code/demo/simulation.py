@@ -66,6 +66,9 @@ class DeactivateWorkstationEvent(Event):
         self.deactivated_workstations.append((deactivated_workstation, deactivate_until_timestamp))
         simulation_environment.workstations.remove(deactivated_workstation) # TODO: removing workstations from the environment is not ideal - add blocking dummy order to the schedule for the time instead
         # TODO: re-add all orders currently scheduled (not finished) for the workstation as new orders to be redistributed to the other workstations
+        # find scheduled orders
+        # check for already finished tasks
+        # add missing tasks to unscheduled orders
 
 class Simulation:
 
