@@ -17,6 +17,9 @@ class Event(Entitiy):
         self.event_type_id = event_type_id
         self.parameters = parameters
 
+    def get_parameter(self, key):
+        return self.parameters.get(key)
+
 
 class Task(Entitiy):
     
@@ -54,6 +57,24 @@ class Recipe(Entitiy):
             self.name = f'r{self.id}'
         self.tasks = tasks
 
+    def get_sequence_value_for_task(self, id : str) -> int:
+        for task in self.tasks:
+            if task[0].id == id:
+                return task[1]
+        return None
+    
+    def get_finish_before_value_for_task(self, id : str) -> int:
+        for task in self.tasks:
+            if task[0].id == id:
+                return task[2]
+        return None
+    
+    def get_task(self, id : str) -> Task:
+        for task in self.tasks:
+            if task[0].id == id:
+                return task[0]
+        return None
+
 
 class Vendor(Entitiy):
     
@@ -63,15 +84,44 @@ class Vendor(Entitiy):
         self.__init__(Vendor.next_id, name, resources, event_log)
         Vendor.next_id += 1
 
-    def __init__(self, id : str, name : str = None, resources : list = [], event_log : list[Event] = []) -> None:
+    def __init__(self, id : str, name : str = None, resources : list[tuple] = [], event_log : list[Event] = []) -> None:
         super().__init__(id)
         if name:
             self.name = name
         else:
             self.name = f'v{self.id}'
-        self.resources = resources
+        self.resources = resources # resource, price (per unit), min, max, expected delivery time
         self.event_log = event_log
 
+    def get_expected_delivery_time_for_resource(self, id : str) -> int:
+        for resource in self.resources:
+            if resource[0].id == id:
+                return resource[4]
+        return None
+            
+    def get_min_amount_for_resource(self, id : str) -> int:
+        for resource in self.resources:
+            if resource[0].id == id:
+                return resource[2]
+        return None
+            
+    def get_max_amount_for_resource(self, id : str) -> int:
+        for resource in self.resources:
+            if resource[0].id == id:
+                return resource[3]
+        return None
+    
+    def get_price_per_unit_for_resource(self, id : str) -> float:
+        for resource in self.resources:
+            if resource[0].id == id:
+                return resource[1]
+        return None
+    
+    def get_available_resources(self) -> list:
+        resources = []
+        for resource in self.resources:
+            resources.append(resource[0])
+        return resources
 
 class Resource(Entitiy):
 
@@ -196,6 +246,100 @@ class Schedule(Entitiy):
         self.objective_values = objective_values
         self.solver_id = solver_id
 
+    def _get_workstation(self, id : str) -> Workstation:
+        for workstation in self.assignments.keys():
+            if workstation.id == id:
+                return workstation
+        return None
+    
+    def get_assignments_before(self, time : int) -> list[tuple[Workstation, Assignment]]:
+        assignments : list[tuple[Workstation, Assignment]] = []
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.start_time < time:
+                    assignments.append((workstation, assignment))
+        return assignments
+    
+    def get_assignments_after(self, time : int) -> list[tuple[Workstation, Assignment]]:
+        assignments : list[tuple[Workstation, Assignment]] = []
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.start_time > time:
+                    assignments.append((workstation, assignment))
+        return assignments
+    
+    def get_completed_assignments(self, time : int) -> list[tuple[Workstation, Assignment]]:
+        assignments : list[tuple[Workstation, Assignment]] = []
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.end_time < time:
+                    assignments.append((workstation, assignment))
+        return assignments
+    
+    def get_uncompleted_assignments(self, time : int) -> list[tuple[Workstation, Assignment]]:
+        assignments : list[tuple[Workstation, Assignment]] = []
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.end_time > time:
+                    assignments.append((workstation, assignment))
+        return assignments
+    
+    def get_active_assignments(self, time : int) -> list[tuple[Workstation, Assignment]]:
+        assignments : list[tuple[Workstation, Assignment]] = []
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.start_time <= time and assignment.end_time > time:
+                    assignments.append((workstation, assignment))
+        return assignments
+    
+    def get_active_assignemnts_on_workstation(self, id : str, time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignemnts[workstation]:
+                if assignment.start_time <= time and assignment.end_time > time:
+                    assignments.append(assignment)
+        return assignments
+
+    def get_assignments_on_workstation_before(self, id : str, time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignments[workstation]:
+                if assignment.start_time < time:
+                    assignments.append(assignment)
+        return assignments
+    
+    def get_assignemnts_on_workstation_after(self, id : str, time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignments[workstation]:
+                if assignment.start_time > time:
+                    assignments.append(assignment)
+        return assignments
+    
+    def get_completed_assignments_on_workstation(self, id : str, time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignments[workstation]:
+                if assignment.end_time < time:
+                    assignments.append(assignment)
+        return assignments
+    
+    def get_uncompleted_assignments_on_workstation(self, id : str, time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignments[workstation]:
+                if assignment.end_time > time:
+                    assignments.append(assignment)
+        return assignments
+    
+    def get_assignments_on_workstation(self, id : str) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        return self.assignments.get(workstation)
 
 class Solver(Entitiy):
     
@@ -212,6 +356,9 @@ class Solver(Entitiy):
         else:
             self.name = f's{self.id}'
         self.parameters = parameters
+
+    def get_parameter(self, key):
+        return self.parameters.get(key)
 
 
 class Customer(Entitiy):
