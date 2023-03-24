@@ -1,7 +1,3 @@
-class ProductionEnvironment:
-    pass
-
-
 class Entitiy:
 
     def __init__(self, id : int) -> None:
@@ -234,3 +230,86 @@ class Customer(Entitiy):
             self.name = f'c{self.id}'
         self.priority_level = priority_level
         self.event_log = event_log
+
+class ProductionEnvironment:
+
+    def __init__(self) -> None:
+        self.event_table : dict[int, str] = dict()
+        self.workstation_table : dict[int, str] = dict()
+
+        self.event_log : dict[str, Event] = [] # list of all events
+        self.workstations : dict[str, Workstation] = []
+        self.recipes : dict[str, Recipe] = []
+        self.tasks : dict[str, Task] = []
+        self.customers : dict[str, Customer] = []
+        self.schedules : dict[str, Schedule] = [] # past schedules
+        self.orders : dict[str, Order] = []
+        self.setup_groups : dict[str, SetupGroup] = []
+        self.vendors : dict[str, Vendor] = []
+        self.resources : dict[str, tuple[Resource, int]] = []
+
+    def get_resource(self, id : str) -> Resource:
+        return self.resources.get(id)[0]
+    
+    def get_stock(self, id : str) -> int:
+        return self.resources.get(id)[1]
+    
+    def get_customer(self, id : str) -> Customer:
+        return self.customers.get(id)
+    
+    def get_recipe(self, id : str) -> Recipe:
+        return self.recipes.get(id)
+    
+    def get_workstation(self, id : str) -> Workstation:
+        return self.workstations.get(id)
+    
+    def get_task(self, id : str) -> Task:
+        return self.tasks.get(id)
+    
+    def get_event(self, id : str) -> Event:
+        return self.event_log.get(id)
+    
+    def get_schedule(self, id : str) -> Schedule:
+        return self.schedules.get(id)
+    
+    def get_order(self, id : str) -> Order:
+        return self.orders.get(id)
+    
+    def get_setup_group(self, id : str) -> SetupGroup:
+        return self.setup_groups.get(id)
+    
+    def get_vendor(self, id : str) -> Vendor:
+        return self.vendors.get(id)
+    
+    def get_workstation_list(self) -> list[Workstation]:
+        return self.workstations.values()
+    
+    def get_event_list(self) -> list[Event]:
+        return self.event_log.values()
+    
+    def get_recipe_list(self) -> list[Recipe]:
+        return self.recipes.values()
+    
+    def get_task_list(self) -> list[Task]:
+        return self.tasks.values()
+    
+    def get_customer_list(self) -> list[Customer]:
+        return self.customers.values()
+    
+    def get_schedule_list(self) -> list[Schedule]:
+        return self.schedules.values()
+    
+    def get_setup_group_list(self) -> list[SetupGroup]:
+        return self.setup_groups.values()
+    
+    def get_vendor_list(self) -> list[Vendor]:
+        return self.vendors.values()
+    
+    def get_resource_list(self) -> list[Resource]:
+        resources : list[Resource] = []
+        for resource in self.resources.values():
+            resources.append(resource[0])
+        return resources
+    
+    def get_inventory_list(self) -> list[tuple[Resource, int]]:
+        return self.resources.values()
