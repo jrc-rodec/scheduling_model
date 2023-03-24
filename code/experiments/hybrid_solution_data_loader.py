@@ -7,9 +7,9 @@ def get_data(id):
         n_workstations = 5
         recipes = [3, 3, 4, 2]  # contains amount of tasks per recipe
         operation_times = [
-            [2, 5, 4, 1, 2], # recipe 0, task 0 processing times
-            [5, 4, 5, 7, 5], # recipe 0, task 1 processing times
-            [4, 5, 5, 4, 5], # recipe 0, task 2 processing times
+            [2, 5, 4, 1, 2], # recipe 0, task 0 processing times on workstations 0, 1, 2, 3, 4
+            [5, 4, 5, 7, 5], # recipe 0, task 1 processing times on workstations 0, 1, 2, 3, 4
+            [4, 5, 5, 4, 5], # recipe 0, task 2 processing times ...
             [2, 5, 4, 7, 8], # recipe 1, task 0 processing times
             [5, 6, 9, 8, 5], # recipe 1, task 1 processing times
             [4, 5, 4, 54, 5], # . . .
