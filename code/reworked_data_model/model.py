@@ -1,3 +1,5 @@
+from enum import Enum
+
 class Entitiy:
 
     def __init__(self, id : int) -> None:
@@ -341,6 +343,11 @@ class Schedule(Entitiy):
         workstation : Workstation = self._get_workstation(id)
         return self.assignments.get(workstation)
 
+class SolverMode(Enum):
+
+    TIME_WINDOW = 1
+    EXACT = 2
+
 class Solver(Entitiy):
     
     next_id : int = 0
@@ -349,13 +356,14 @@ class Solver(Entitiy):
         self.__init__(Solver.next_id, name, parameters)
         Solver.next_id += 1
 
-    def __init__(self, id : str, name : str = None, parameters : dict = dict()) -> None:
+    def __init__(self, id : str, name : str = None, parameters : dict = dict(), solver_mode : SolverMode = SolverMode.TIME_WINDOW) -> None:
         super().__init__(id)
         if name:
             self.name = name
         else:
             self.name = f's{self.id}'
         self.parameters = parameters
+        self.solver_mode = solver_mode # use either TIME_WINDOW or EXACT
 
     def get_parameter(self, key):
         return self.parameters.get(key)
