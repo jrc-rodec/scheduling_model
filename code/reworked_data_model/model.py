@@ -51,7 +51,7 @@ class Recipe(Entitiy):
         self.__init__(Recipe.next_id, name, tasks)
         Recipe.next_id += 1
 
-    def __init__(self, id : str, name : str = None, tasks : list[tuple[Task, int, int]] = []) -> None:
+    def __init__(self, id : str, name : str = None, tasks : list[tuple[list[Task], int, int]] = []) -> None:
         super().__init__(id)
         if name:
             self.name = name
@@ -61,21 +61,30 @@ class Recipe(Entitiy):
 
     def get_sequence_value_for_task(self, id : str) -> int:
         for task in self.tasks:
-            if task[0].id == id:
-                return task[1]
+            for alternative in task[0]:
+                if alternative.id == id:
+                    return task[1]
         return None
     
     def get_finish_before_value_for_task(self, id : str) -> int:
         for task in self.tasks:
-            if task[0].id == id:
-                return task[2]
+            for alternative in task[0]:
+                if alternative.id == id:
+                    return task[2]
         return None
     
     def get_task(self, id : str) -> Task:
         for task in self.tasks:
-            if task[0].id == id:
-                return task[0]
+            for alternative in task[0]:
+                if alternative.id == id:
+                    return alternative
         return None
+    
+    def get_alternatives(self, id : str) -> list[Task]:
+        for task in self.tasks:
+            for alternative in task[0]:
+                if alternative.id == id:
+                    return task[0]
 
 
 class Vendor(Entitiy):
@@ -124,6 +133,7 @@ class Vendor(Entitiy):
         for resource in self.resources:
             resources.append(resource[0])
         return resources
+
 
 class Resource(Entitiy):
 
@@ -343,6 +353,7 @@ class Schedule(Entitiy):
         workstation : Workstation = self._get_workstation(id)
         return self.assignments.get(workstation)
 
+
 class SolverMode(Enum):
 
     TIME_WINDOW = 1
@@ -402,6 +413,46 @@ class ProductionEnvironment:
         self.setup_groups : dict[str, SetupGroup] = []
         self.vendors : dict[str, Vendor] = []
         self.resources : dict[str, tuple[Resource, int]] = []
+
+    def add_workstation(self, workstation : Workstation) -> None:
+        if workstation.id not in self.workstations:
+            self.workstations[workstation.id] = workstation
+
+    def add_event(self, event : Event) -> None:
+        if event.id not in self.event_log:
+            self.event_log[event.id] = event
+
+    def add_recipe(self, recipe : Recipe) -> None:
+        if recipe.id not in self.recipes:
+            self.recipes[recipe.id] = recipe
+    
+    def add_task(self, task : Task) -> None:
+        if task.id not in self.tasks:
+            self.tasks[task.id] = task
+    
+    def add_customer(self, customer : Customer) -> None:
+        if customer.id not in self.customers:
+            self.customers[customer.id] = customer
+    
+    def add_schedule(self, schedule : Schedule) -> None:
+        if schedule.id not in self.schedules:
+            self.schedules[schedule.id] = schedule
+    
+    def add_order(self, order : Order) -> None:
+        if order.id not in self.orders:
+            self.orders[order.id] = order
+    
+    def add_setup_group(self, setup_group : SetupGroup) -> None:
+        if setup_group.id not in self.setup_groups:
+            self.setup_groups[setup_group.id] = setup_group
+    
+    def add_vendor(self, vendor : Vendor) -> None:
+        if vendor.id not in self.vendors:
+            self.vendors[vendor.id] = vendor
+    
+    def add_resource(self, resource : Resource) -> None:
+        if resource.id not in self.resources:
+            self.resources[resource.id] = resource
 
     def get_resource(self, id : str) -> Resource:
         return self.resources.get(id)[0]
