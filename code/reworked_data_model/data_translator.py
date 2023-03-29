@@ -1,6 +1,6 @@
 import os 
 import inspect
-from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule
+from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule, Order, Job, Solver
 
 class DataTranslator:
     
@@ -44,9 +44,9 @@ class BenchmarkTranslator(DataTranslator):
         production_environment : ProductionEnvironment = ProductionEnvironment()
         system_information = file_content[0].split(' ') # [amount tasks, amount workstations, amount workers]
         for i in range(int(system_information[2])):
-            production_environment.add_resource(Resource(id=i, name=f'worker_{i}', stock=1, reusable=True, recipes=[], vendors=[], events=[]))
+            production_environment.add_resource(Resource(name=f'worker_{i}', stock=1, reusable=True, recipes=[], vendors=[], events=[]))
         for i in range(int(system_information[1])):
-            production_environment.add_workstation(Workstation(id=i, name=f'workstation_{i}', basic_resources=[], tasks=[], workstation_type_id=i, event_log=[]))
+            production_environment.add_workstation(Workstation(name=f'workstation_{i}', basic_resources=[], tasks=[], workstation_type_id=i, event_log=[]))
             production_environment.add_workstation_type(i, f'w_type_{i}')
         for i in range(int(system_information[0])):
             tasks = []
@@ -76,7 +76,9 @@ class BenchmarkTranslator(DataTranslator):
                             production_environment.add_task(task)
                             production_environment.add_setup_group(setup_group)
                     tasks.append((alternative_tasks, k))
-            production_environment.add_recipe(Recipe(id=i, name=f'recipe_{i}', tasks=tasks))
+            recipe = Recipe(name=f'recipe_{i}', tasks=tasks)
+            production_environment.add_resource(Resource(name=f'resource_{j}', recipes=[recipe]))
+            production_environment.add_recipe(recipe)
         return production_environment
 
 """
@@ -85,8 +87,9 @@ class BenchmarkTranslator(DataTranslator):
 
 class Encoder:
     
-    def encode(self, production_environment : ProductionEnvironment):
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
         pass
+                
 
     def decode(self) -> Schedule:
         pass
@@ -94,3 +97,36 @@ class Encoder:
 """
     Add additional encoders here (Model -> Solver, Solver -> Schedule)
 """
+
+class TimeWindowGAEncoder(Encoder):
+    # GA without resource constraints
+
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
+        # format: <workstation, worker, start_time, end_time>
+        values : list[int] = []
+        jobs : list[Job] = []
+        for order in orders:
+            ro_id = 0
+            for resource in order.resources:
+                if len(resource[0].recipes) > 0:
+                    use_recipe : Recipe = resource[0].recipes[0] # assume only 1 recipe for each resource for now
+                    for task in use_recipe.tasks:
+                        jobs.append(Job(order_id=order.id, recipe_id=use_recipe.id, task_id=task.id, ro_id=ro_id))
+                        ro_id += 1
+                        values.extend([0, 0, 0, 0]) # NOTE: should maybe be initialised here already
+        return values, jobs
+    
+    def decode(self, values : list[int], jobs : list[Job], production_environment : ProductionEnvironment, objective_values : list[float] = [], solver : Solver = None) -> Schedule:
+        schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
+        job_idx : int = 0
+        for i in range(0, len(values), 4):
+            workstation_id : int = values[i]
+            worker_id : int = values[i+1]
+            start_time : int = values[i+2]
+            end_time : int = values[i+3]
+            workstation : Workstation = production_environment.get_workstation(workstation_id)
+            worker : Resource = production_environment.get_resource(worker_id)
+            job : Job = jobs[job_idx]
+            schedule.add_assignment(workstation, job, start_time, end_time, [(worker, 1)])
+            job_idx += 1
+        return schedule

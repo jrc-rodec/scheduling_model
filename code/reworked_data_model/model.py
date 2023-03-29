@@ -47,11 +47,14 @@ class Recipe(Entitiy):
     
     next_id : int = 0
     
-    def __init__(self, name : str = None, tasks : list[tuple[Task, int, int]] = []) -> None:
+    """def __init__(self, name : str = None, tasks : list[tuple[Task, int, int]] = []) -> None:
         self.__init__(Recipe.next_id, name, tasks)
-        Recipe.next_id += 1
+        Recipe.next_id += 1"""
 
-    def __init__(self, id : str, name : str = None, tasks : list[tuple[list[Task], int, int]] = []) -> None:
+    def __init__(self, id : str = None, name : str = None, tasks : list[tuple[list[Task], int, int]] = []) -> None:
+        if not id:
+            id = Recipe.next_id
+            Recipe.next_id += 1
         super().__init__(id)
         if name:
             self.name = name
@@ -138,11 +141,14 @@ class Vendor(Entitiy):
 class Resource(Entitiy):
 
     next_id : int = 0
-    def __init__(self, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
+    """def __init__(self, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
         self.__init__(Resource.next_id, name, stock, reusable, recipes, vendors, events)
-        Resource.next_id += 1
+        Resource.next_id += 1"""
 
-    def __init__(self, id : str, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
+    def __init__(self, id : str = None, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
+        if not id:
+            id = Resource.next_id
+            Resource.next_id += 1
         super().__init__(id)
         if name:
             self.name = name
@@ -159,11 +165,14 @@ class Workstation(Entitiy):
     
     next_id : int = 0
     
-    def __init__(self, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
+    """def __init__(self, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
         self.__init__(Workstation.next_id, name, basic_resources, tasks, workstation_type_id, event_log)
-        Workstation.next_id += 1
+        Workstation.next_id += 1"""
 
-    def __init__(self, id : str, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
+    def __init__(self, id : str = None, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
+        if not id:
+            id = Workstation.next_id
+            Workstation.next_id += 1
         super().__init__(id)
         if name:
             self.name = name
@@ -215,11 +224,14 @@ class Job(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
+    """def __init__(self, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
         self.__init__(Job.next_id, order_id, recipe_id, task_id, ro_id)
-        Job.next_id += 1
+        Job.next_id += 1"""
 
-    def __init__(self, id : str, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
+    def __init__(self, id : str = None, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
+        if not id:
+            id = Job.next_id
+            Job.next_id += 1
         super().__init__(id)
         self.order_id = order_id
         self.recipe_id = recipe_id
@@ -231,13 +243,16 @@ class Assignment(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, job_id : str = 0, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
+    """def __init__(self, job_id : str = 0, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
         self.__init__(Assignment.next_id, job_id, start_time, end_time, resources)
-        Assignment.next_id += 1
+        Assignment.next_id += 1"""
 
-    def __init__(self, id : str, job_id : str = 0, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
+    def __init__(self, id : str = None, job : Job = None, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
+        if not id:
+            id = Assignment.next_id
+            Assignment.next_id += 1
         super().__init__(id)
-        self.job_id = job_id
+        self.job = job
         self.start_time = start_time
         self.end_time = end_time
         self.resources = resources
@@ -247,16 +262,19 @@ class Schedule(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver_id : str = 0) -> None:
+    """def __init__(self, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver_id : str = 0) -> None:
         self.__init__(Schedule.next_id, start_time, assignments, objective_values, solver_id)
-        Schedule.next_id += 1
+        Schedule.next_id += 1"""
 
-    def __init__(self, id : str, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver_id : str = 0) -> None:
+    def __init__(self, id : str = None, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver = None) -> None:
+        if not id:
+            id = Schedule.next_id
+            Schedule.next_id += 1
         super().__init__(id)
         self.start_time = start_time
         self.assignments = assignments
         self.objective_values = objective_values
-        self.solver_id = solver_id
+        self.solver = solver
 
     def _get_workstation(self, id : str) -> Workstation:
         for workstation in self.assignments.keys():
@@ -264,6 +282,12 @@ class Schedule(Entitiy):
                 return workstation
         return None
     
+    def add_assignment(self, workstation : Workstation, job : Job, start_time : int, end_time : int, resources : list[tuple]) -> None:
+        if workstation not in self.assignments:
+            self.assignments[workstation] = []
+        self.assignments[workstation].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
+        pass
+
     def get_assignments_before(self, time : int) -> list[tuple[Workstation, Assignment]]:
         assignments : list[tuple[Workstation, Assignment]] = []
         for workstation in self.assignments.keys():
