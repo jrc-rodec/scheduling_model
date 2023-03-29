@@ -1,9 +1,11 @@
 import os 
 import inspect
-from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup
+from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule
 
 class DataTranslator:
-    pass
+    
+    def translate(self) -> ProductionEnvironment:
+        pass
 
 class BenchmarkTranslator(DataTranslator):
 
@@ -45,6 +47,7 @@ class BenchmarkTranslator(DataTranslator):
             production_environment.add_resource(Resource(id=i, name=f'worker_{i}', stock=1, reusable=True, recipes=[], vendors=[], events=[]))
         for i in range(int(system_information[1])):
             production_environment.add_workstation(Workstation(id=i, name=f'workstation_{i}', basic_resources=[], tasks=[], workstation_type_id=i, event_log=[]))
+            production_environment.add_workstation_type(i, f'w_type_{i}')
         for i in range(int(system_information[0])):
             tasks = []
             # create tasks
@@ -59,16 +62,35 @@ class BenchmarkTranslator(DataTranslator):
                     # for each workstation available for task[k] of recipe[j]
                     for l in range(int(row[idx])):
                         idx += 1
-                        workstation = production_environment.get_workstation(row[idx])
+                        workstation = production_environment.get_workstation(int(row[idx]) - 1) # NOTE: workstations in the benchmark are 1 indexed
                         idx += 1
                         for m in range(int(row[idx])):
                             idx += 1
-                            worker = production_environment.get_resource(row[idx])
+                            worker = production_environment.get_resource(int(row[idx]) - 1) # NOTE: workers in the benchmark are 1 indexed
                             idx += 1
                             duration = row[idx]
-                            task = Task(name=f'r{j}t{j}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[SetupGroup(workstation_id=workstation.id)])
+                            setup_group = SetupGroup(id=f'r{j}w{l}t{m}', workstation_id=workstation.id)
+                            task = Task(id=f'r{j}w{l}t{m}', name=f'r{j}w{l}t{m}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[setup_group])
                             alternative_tasks.append(task)
                             workstation.tasks.append((task, duration))
+                            production_environment.add_task(task)
+                            production_environment.add_setup_group(setup_group)
                     tasks.append((alternative_tasks, k))
             production_environment.add_recipe(Recipe(id=i, name=f'recipe_{i}', tasks=tasks))
         return production_environment
+
+"""
+    Add additional dataset translator here (Data Source -> Model)
+"""
+
+class Encoder:
+    
+    def encode(self, production_environment : ProductionEnvironment):
+        pass
+
+    def decode(self) -> Schedule:
+        pass
+
+"""
+    Add additional encoders here (Model -> Solver, Solver -> Schedule)
+"""

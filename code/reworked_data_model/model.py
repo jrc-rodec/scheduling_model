@@ -403,89 +403,93 @@ class ProductionEnvironment:
         self.event_table : dict[int, str] = dict()
         self.workstation_table : dict[int, str] = dict()
 
-        self.event_log : dict[str, Event] = [] # list of all events
-        self.workstations : dict[str, Workstation] = []
-        self.recipes : dict[str, Recipe] = []
-        self.tasks : dict[str, Task] = []
-        self.customers : dict[str, Customer] = []
-        self.schedules : dict[str, Schedule] = [] # past schedules
-        self.orders : dict[str, Order] = []
-        self.setup_groups : dict[str, SetupGroup] = []
-        self.vendors : dict[str, Vendor] = []
-        self.resources : dict[str, tuple[Resource, int]] = []
+        self.event_log : dict[str, Event] = dict() # list of all events
+        self.workstations : dict[str, Workstation] = dict()
+        self.recipes : dict[str, Recipe] = dict()
+        self.tasks : dict[str, Task] = dict()
+        self.customers : dict[str, Customer] = dict()
+        self.schedules : dict[str, Schedule] = dict() # past schedules
+        self.orders : dict[str, Order] = dict()
+        self.setup_groups : dict[str, SetupGroup] = dict()
+        self.vendors : dict[str, Vendor] = dict()
+        self.resources : dict[str, tuple[Resource, int]] = dict()
+
+    def add_workstation_type(self, id : str, name : str) -> None:
+        if str(id) not in self.workstation_table:
+            self.workstation_table[str(id)] = name
 
     def add_workstation(self, workstation : Workstation) -> None:
-        if workstation.id not in self.workstations:
-            self.workstations[workstation.id] = workstation
+        if str(workstation.id) not in self.workstations:
+            self.workstations[str(workstation.id)] = workstation
 
     def add_event(self, event : Event) -> None:
-        if event.id not in self.event_log:
-            self.event_log[event.id] = event
+        if str(event.id) not in self.event_log:
+            self.event_log[str(event.id)] = event
 
     def add_recipe(self, recipe : Recipe) -> None:
-        if recipe.id not in self.recipes:
-            self.recipes[recipe.id] = recipe
+        if str(recipe.id) not in self.recipes:
+            self.recipes[str(recipe.id)] = recipe
     
     def add_task(self, task : Task) -> None:
-        if task.id not in self.tasks:
-            self.tasks[task.id] = task
+        if str(task.id) not in self.tasks:
+            self.tasks[str(task.id)] = task
     
     def add_customer(self, customer : Customer) -> None:
-        if customer.id not in self.customers:
-            self.customers[customer.id] = customer
+        if str(customer.id) not in self.customers:
+            self.customers[str(customer.id)] = customer
     
     def add_schedule(self, schedule : Schedule) -> None:
-        if schedule.id not in self.schedules:
-            self.schedules[schedule.id] = schedule
+        if str(schedule.id) not in self.schedules:
+            self.schedules[str(schedule.id)] = schedule
     
     def add_order(self, order : Order) -> None:
-        if order.id not in self.orders:
-            self.orders[order.id] = order
+        if str(order.id) not in self.orders:
+            self.orders[str(order.id)] = order
     
     def add_setup_group(self, setup_group : SetupGroup) -> None:
-        if setup_group.id not in self.setup_groups:
-            self.setup_groups[setup_group.id] = setup_group
+        if str(setup_group.id) not in self.setup_groups:
+            self.setup_groups[str(setup_group.id)] = setup_group
     
     def add_vendor(self, vendor : Vendor) -> None:
-        if vendor.id not in self.vendors:
-            self.vendors[vendor.id] = vendor
+        if str(vendor.id) not in self.vendors:
+            self.vendors[str(vendor.id)] = vendor
     
     def add_resource(self, resource : Resource) -> None:
-        if resource.id not in self.resources:
-            self.resources[resource.id] = resource
+        if str(resource.id) not in self.resources:
+            self.resources[str(resource.id)] = (resource, resource.stock)
 
     def get_resource(self, id : str) -> Resource:
-        return self.resources.get(id)[0]
+        return self.resources.get(str(id))[0]
     
     def get_stock(self, id : str) -> int:
-        return self.resources.get(id)[1]
+        return self.resources.get(str(id))[1]
     
     def get_customer(self, id : str) -> Customer:
-        return self.customers.get(id)
+        return self.customers.get(str(id))
     
     def get_recipe(self, id : str) -> Recipe:
-        return self.recipes.get(id)
+        return self.recipes.get(str(id))
     
     def get_workstation(self, id : str) -> Workstation:
-        return self.workstations.get(id)
+        return self.workstations.get(str(id))
     
     def get_task(self, id : str) -> Task:
-        return self.tasks.get(id)
+        return self.tasks.get(str(id))
     
     def get_event(self, id : str) -> Event:
-        return self.event_log.get(id)
+        return self.event_log.get(str(id))
     
     def get_schedule(self, id : str) -> Schedule:
-        return self.schedules.get(id)
+        return self.schedules.get(str(id))
     
     def get_order(self, id : str) -> Order:
-        return self.orders.get(id)
+        return self.orders.get(str(id))
     
     def get_setup_group(self, id : str) -> SetupGroup:
-        return self.setup_groups.get(id)
+        return self.setup_groups.get(str(id))
     
     def get_vendor(self, id : str) -> Vendor:
-        return self.vendors.get(id)
+        return self.vendors.get(str(id))
     
     def get_workstation_list(self) -> list[Workstation]:
         return self.workstations.values()
