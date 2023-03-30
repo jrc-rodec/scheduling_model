@@ -95,12 +95,11 @@ class Encoder:
         pass
 
 """
-    Add additional encoders here (Model -> Solver, Solver -> Schedule)
+    Add additional encoders here (Model -> Solver (encode), Solver -> Schedule (decode))
 """
 
 class TimeWindowGAEncoder(Encoder):
-    # GA without resource constraints
-
+    
     def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
         # format: <workstation, worker, start_time, end_time>
         values : list[int] = []
