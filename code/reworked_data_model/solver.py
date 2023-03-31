@@ -27,9 +27,12 @@ class TimeWindowGASolver(Solver):
         pass
 
     def _is_feasible(self, individual : list[int]) -> bool: # TODO
+        return True
         pass
 
     def _evaluate(self, individual : list[int]) -> list[float]: # TODO
+        if not self._is_feasible(individual):
+            return 2 * self.last_time_slot
         pass
 
     def _evaluate_population(self, population : list[list[int]]) -> list[list[float]]:
@@ -40,6 +43,7 @@ class TimeWindowGASolver(Solver):
         return population_fitness
 
     def _get_weighted_probabilities(self, population : list[list[int]], population_fitness : list[list[float]]) -> list[float]:
+        #TODO: invert probabilities, currently higher values get higher weights
         probabilities : list[float] = []
         sum = 0
         for fitness in population_fitness:
@@ -68,7 +72,7 @@ class TimeWindowGASolver(Solver):
             parent_b = self._roulette_wheel_selection(population, population_fitness)
         return parent_a, parent_b
 
-    def _mutate(self, individual : list[int]) -> list[int]: # TODO
+    def _mutate(self, individual : list[int]) -> list[int]:
         job_index = 0
         for i in range(len(individual)):
             if i != 0 and i % 4 == 0:

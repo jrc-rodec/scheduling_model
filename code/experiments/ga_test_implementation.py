@@ -86,7 +86,7 @@ class GeneticAlgorithm:
     def _mutate(self, individual : list[int]) -> None:
         for i in range(len(individual)):
             if random.random() < self.mutation_probability:
-                individual[i] = random.randint(max(self.lower_bounds[i], individual[i] - self.max_mutation), min(self.upper_bounds[i]+1, individual[i] + self.max_mutation))
+                individual[i] = random.randint(max(self.lower_bounds[i], individual[i] - self.max_mutation), min(self.upper_bounds[i], individual[i] + self.max_mutation))
 
     def _recombine(self, parent_a : list[int], parent_b : list[int]) -> tuple[list[int], list[int]]:
         crossover_point_a = random.randint(0, len(parent_a)-1)
@@ -128,7 +128,7 @@ class GeneticAlgorithm:
             # evaluate offsprings
             offspring_fitness = self._evaluate_population(offsprings)
             for i in range(len(offspring_fitness)):
-                if offspring_fitness[i] < best[1]:
+                if offspring_fitness[i] > best[1]:
                     best = (offsprings[i], offspring_fitness[i])
             # select next generation
             if self.elitism:
