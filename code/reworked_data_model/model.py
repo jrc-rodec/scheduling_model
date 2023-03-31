@@ -46,10 +46,6 @@ class Task(Entitiy):
 class Recipe(Entitiy):
     
     next_id : int = 0
-    
-    """def __init__(self, name : str = None, tasks : list[tuple[Task, int, int]] = []) -> None:
-        self.__init__(Recipe.next_id, name, tasks)
-        Recipe.next_id += 1"""
 
     def __init__(self, id : str = None, name : str = None, tasks : list[tuple[list[Task], int, int]] = []) -> None:
         if not id:
@@ -141,9 +137,6 @@ class Vendor(Entitiy):
 class Resource(Entitiy):
 
     next_id : int = 0
-    """def __init__(self, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
-        self.__init__(Resource.next_id, name, stock, reusable, recipes, vendors, events)
-        Resource.next_id += 1"""
 
     def __init__(self, id : str = None, name : str = None, stock : int = 0, reusable : bool = False, recipes : list[Recipe] = [], vendors : list[Vendor] = [], events : list[Event] = []) -> None:
         if not id:
@@ -164,10 +157,6 @@ class Resource(Entitiy):
 class Workstation(Entitiy):
     
     next_id : int = 0
-    
-    """def __init__(self, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
-        self.__init__(Workstation.next_id, name, basic_resources, tasks, workstation_type_id, event_log)
-        Workstation.next_id += 1"""
 
     def __init__(self, id : str = None, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
         if not id:
@@ -182,6 +171,12 @@ class Workstation(Entitiy):
         self.tasks = tasks
         self.workstation_type_id = workstation_type_id
         self.event_log = event_log
+
+    def get_duration(self, task_id : str) -> int:
+        for task in self.tasks:
+            if str(task[0].id) == str(task_id):
+                return task[1]
+        return None
 
 
 class SetupGroup(Entitiy):
@@ -224,10 +219,6 @@ class Job(Entitiy):
     
     next_id : int = 0
 
-    """def __init__(self, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
-        self.__init__(Job.next_id, order_id, recipe_id, task_id, ro_id)
-        Job.next_id += 1"""
-
     def __init__(self, id : str = None, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
         if not id:
             id = Job.next_id
@@ -243,10 +234,6 @@ class Assignment(Entitiy):
     
     next_id : int = 0
 
-    """def __init__(self, job_id : str = 0, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
-        self.__init__(Assignment.next_id, job_id, start_time, end_time, resources)
-        Assignment.next_id += 1"""
-
     def __init__(self, id : str = None, job : Job = None, start_time : int = 0, end_time : int = 0, resources : list[tuple] = []) -> None:
         if not id:
             id = Assignment.next_id
@@ -261,10 +248,6 @@ class Assignment(Entitiy):
 class Schedule(Entitiy):
     
     next_id : int = 0
-
-    """def __init__(self, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver_id : str = 0) -> None:
-        self.__init__(Schedule.next_id, start_time, assignments, objective_values, solver_id)
-        Schedule.next_id += 1"""
 
     def __init__(self, id : str = None, start_time : int = 0, assignments : dict[Workstation, list[Assignment]] = dict(), objective_values : list = [], solver = None) -> None:
         if not id:
@@ -517,6 +500,15 @@ class ProductionEnvironment:
     
     def get_workstation_list(self) -> list[Workstation]:
         return self.workstations.values()
+
+    def get_available_workstations_for_task(self, task_id : str) -> list[Workstation]:
+        workstations : list[Workstation] = []
+        for workstation in self.workstations:
+            for task in workstation.tasks:
+                if str(task[0].id) == str(task_id):
+                    workstations.append(workstation)
+                    break
+        return workstation
     
     def get_event_list(self) -> list[Event]:
         return self.event_log.values()

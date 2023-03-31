@@ -1,4 +1,4 @@
-from model import ProductionEnvironment, Job, Order
+from model import ProductionEnvironment, Job, Order, Recipe, Workstation, Task, Resource
 from copy import deepcopy
 import random
 
@@ -69,7 +69,48 @@ class TimeWindowGASolver(Solver):
         return parent_a, parent_b
 
     def _mutate(self, individual : list[int]) -> list[int]: # TODO
-        pass
+        job_index = 0
+        for i in range(len(individual)):
+            if i != 0 and i % 4 == 0:
+                job_index += 1
+            if random.random() < self.mutation_probability:
+                job = self.jobs[job_index]
+                if i % 4 == 0:
+                    # mutate workstation
+                    workstations : list[Workstation] = self.production_environment.get_available_workstations_for_task(job.task_id)
+                    individual[i] = int(random.choice(workstations).id)
+                elif i % 4 == 1:
+                    # mutate worker
+                    recipe : Recipe = self.production_environment.get_recipe(job.recipe_id)
+                    alternatives : list[Task] = None
+                    for alternative_list in recipe.tasks:
+                        for task in alternative_list:
+                            if task.id == job.task_id:
+                                alternatives = alternative_list # NOTE: probably needs to be changed
+                                break
+                    alternative : Task = random.choice(alternatives)
+                    worker : Resource = alternative.required_resources[0][0] # <resource, quantity> # NOTE: only works for examples with exactly one resource
+                    individual[i] = int(worker.id)
+                    job.task_id = alternative.id # adapt job to make sure the selected alternative is known to the solver
+                elif i % 4 == 2:
+                    # mutate start time
+                    workstation = self.production_environment.get_workstation(individual[i-2])
+                    duration = workstation.get_duration(job.task_id)
+                    if duration:
+                        individual[i] = random.randint(self.first_time_slot, self.last_time_slot - duration) # NOTE: upper bound should probably be limited
+                    else:
+                        # should probably throw an exception here
+                        pass
+                elif i % 4 == 3:
+                    # mutate end time
+                    workstation = self.production_environment.get_workstation(individual[i-3])
+                    duration = workstation.get_duration(job.task_id)
+                    if duration:
+                        individual[i] = random.randint(self.first_time_slot + duration, self.last_time_slot)
+                    else:
+                        # should probably throw an exception here
+                        pass
+        
 
     def _recombine(self, parent_a : list[int], parent_b : list[int]) -> tuple[list[int], list[int]]:
         crossover_point_a = random.randint(0, len(parent_a) - 2)
@@ -94,6 +135,18 @@ class TimeWindowGASolver(Solver):
                 best = (population[i], population_fitness[i])
         return deepcopy(best)
 
+
+    def _select_next_generation(self, pool : list[list[int]], pool_fitness : list[list[float]]) -> tuple[list[list[int]], list[list[float]]]:
+        population : list[list[int]] = []
+        population_fitness : list[list[float]] = []
+        while len(population) < self.population_size:
+            individual : list[int] = self._roulette_wheel_selection(pool, pool_fitness)
+            idx = pool.index(individual)
+            population.append(individual)
+            population_fitness.append(pool_fitness[idx])
+            pool.pop(idx)
+            pool_fitness.pop(idx)
+        return population, population_fitness
 
     def solve(self, jobs : list[Job]):
         self.jobs = jobs
@@ -133,11 +186,6 @@ class TimeWindowGASolver(Solver):
             population.clear()
             population_fitness.clear()
 
-            while len(population) < self.population_size:
-                individual : list[int] = self._roulette_wheel_selection(offsprings, offspring_fitness)
-                idx = offsprings.index(individual)
-                population.append(individual)
-                population_fitness.append(offspring_fitness[idx])
-                offsprings.pop(idx)
-                offspring_fitness.pop(idx)
+            population, population_fitness = self._select_next_generation(offsprings, offspring_fitness)
+
         return best

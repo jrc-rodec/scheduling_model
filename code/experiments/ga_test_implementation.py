@@ -14,6 +14,7 @@ class GeneticAlgorithm:
         self.mutation_probability = mutation_probability
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
+        self.max_mutation = 50
 
     def initialize_population(self) -> list[list[int]]:
         population : list[list[int]] = []
@@ -52,6 +53,7 @@ class GeneticAlgorithm:
         for f in fitness:
             sum += f
         population = []
+        population_fitness = []
         previous_probability = 0.0
         while len(population) < self.population_size:
             for i in range(len(pool)):
@@ -62,11 +64,12 @@ class GeneticAlgorithm:
             probabilities.clear()
             population.append(selection)
             idx = pool.index(selection)
+            population_fitness.append(fitness[idx])
             pool.pop(idx)
             fitness.pop(idx)
             """del pool[idx]
             del fitness[idx]"""
-        return deepcopy(population), deepcopy(fitness)
+        return deepcopy(population), deepcopy(population_fitness)
 
     def _select_parents(self, population : list[list[int]], population_fitness : list[list[float]]) -> tuple[list[int], list[int]]:
         sum = 0
@@ -83,7 +86,7 @@ class GeneticAlgorithm:
     def _mutate(self, individual : list[int]) -> None:
         for i in range(len(individual)):
             if random.random() < self.mutation_probability:
-                individual[i] = random.randint(self.lower_bounds[i], self.upper_bounds[i]+1)
+                individual[i] = random.randint(max(self.lower_bounds[i], individual[i] - self.max_mutation), min(self.upper_bounds[i]+1, individual[i] + self.max_mutation))
 
     def _recombine(self, parent_a : list[int], parent_b : list[int]) -> tuple[list[int], list[int]]:
         crossover_point_a = random.randint(0, len(parent_a)-1)
@@ -137,8 +140,9 @@ class GeneticAlgorithm:
             population, population_fitness = self._select_next_generation(offsprings, offspring_fitness)
             
         return best, best_fitness_history, average_fitness_history
-    
-ga = GeneticAlgorithm(10, [0] * 10, [5] * 10, 50, 100, False, 1/10, 500)
+
+dimensions = 10   
+ga = GeneticAlgorithm(dimensions, [0] * dimensions, [10] * dimensions, 50, 100, False, 1/10, 1000)
 result, best_fitness_history, average_fitness_history = ga.solve()
 print(result)
 
