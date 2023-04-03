@@ -12,12 +12,11 @@ class Entitiy:
 class Event(Entitiy):
     
     next_id : int = 0
-    
-    def __init__(self, event_type_id : int = 0, parameters : dict = dict()) -> None:
-        self.__init__(Event.next_id, event_type_id, parameters)
-        Event.next_id += 1
         
-    def __init__(self, id : str, event_type_id : int = 0, parameters : dict = dict()) -> None:
+    def __init__(self, id : str = None, event_type_id : int = 0, parameters : dict = dict()) -> None:
+        if not id:
+            id = Event.next_id
+            Event.next_id += 1
         super().__init__(id)
         self.event_type_id = event_type_id
         self.parameters = parameters
@@ -29,12 +28,11 @@ class Event(Entitiy):
 class Task(Entitiy):
     
     next_id : int = 0
-    
-    def __init__(self, name : str = None, required_resources : list[tuple] = [], products : list[tuple] = [], independent : bool = False, setup_groups : list = []) -> None:
-        self.__init__(Task.next_id, name, required_resources, products, independent, setup_groups)
-        Task.next_id += 1
 
-    def __init__(self, id : str, name : str = None, required_resources : list[tuple] = [], products : list[tuple] = [], independent : bool = False, setup_groups : list = []) -> None:
+    def __init__(self, id : str = None, name : str = None, required_resources : list[tuple] = [], products : list[tuple] = [], independent : bool = False, setup_groups : list = []) -> None:
+        if not id:
+            id = Task.next_id
+            Task.next_id += 1
         super().__init__(id)
         if name:
             self.name = name
@@ -185,12 +183,11 @@ class Workstation(Entitiy):
 class SetupGroup(Entitiy):
     
     next_id : int = 0
-    
-    def __init__(self, setup_time : int = 0, disassemble_time : int = 0, workstation_id : str = 0) -> None:
-        self.__init__(SetupGroup.next_id, setup_time, disassemble_time, workstation_id)
-        SetupGroup.next_id += 1
 
-    def __init__(self, id : str, setup_time : int = 0, disassemble_time : int = 0, workstation_id : str = 0) -> None:
+    def __init__(self, id : str = None, setup_time : int = 0, disassemble_time : int = 0, workstation_id : str = 0) -> None:
+        if not id:
+            id = SetupGroup.next_id
+            SetupGroup.next_id += 1
         super().__init__(id)
         self.setup_time = setup_time
         self.disassemble_time = disassemble_time
@@ -200,12 +197,11 @@ class SetupGroup(Entitiy):
 class Order(Entitiy):
     
     next_id : int = 0
-    
-    def __init__(self, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0, profit : float = 0) -> None:
-        self.__init__(Order.next_id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, priority_level, profit)
-        Order.next_id += 1
 
-    def __init__(self, id : str, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0, profit : float = 0) -> None:
+    def __init__(self, id : str = None, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0, profit : float = 0) -> None:
+        if not id:
+            id = Order.next_id
+            Order.next_id += 1
         super().__init__(id)
         self.arrival_time = arrival_time
         self.delivery_time = delivery_time
