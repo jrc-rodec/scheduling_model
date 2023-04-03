@@ -17,6 +17,7 @@ class Solver:
     def remove_objective(self, objective : Objective) -> None:
         self.evaluator.remove_objective(objective)
 
+
 class TimeWindowGASolver(Solver):
 
     def __init__(self, production_environment : ProductionEnvironment, orders : list[Order]) -> None:
@@ -61,7 +62,7 @@ class TimeWindowGASolver(Solver):
         return population_fitness
 
     def _get_weighted_probabilities(self, population : list[list[int]], population_fitness : list[list[float]]) -> list[float]:
-        #TODO: invert probabilities, currently higher values get higher weights (needs testing)
+        #TODO: invert probabilities, currently higher values get higher weights NOTE: (needs testing)
         probabilities : list[float] = []
         sum = 0
         max_fitness = 0

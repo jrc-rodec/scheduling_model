@@ -8,11 +8,13 @@ class Entitiy:
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__ and str(self.id) == str(other.id)
     
+    def __ne__(self, other) -> bool:
+        return not self == other
 
 class Event(Entitiy):
     
     next_id : int = 0
-        
+    
     def __init__(self, id : str = None, event_type_id : int = 0, parameters : dict = dict()) -> None:
         if not id:
             id = Event.next_id
@@ -59,32 +61,33 @@ class Recipe(Entitiy):
             self.name = f'r{self.id}'
         self.tasks = tasks
 
-    def get_sequence_value_for_task(self, task : Task) -> int: #id : str) -> int:
+    def get_sequence_value_for_task(self, task : Task) -> int | None:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
                     return task[1]
         return None
     
-    def get_finish_before_value_for_task(self, task : Task) -> int:# id : str) -> int:
+    def get_finish_before_value_for_task(self, task : Task) -> int | None:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
                     return task[2]
         return None
     
-    def get_task(self, id : str) -> Task:
+    def get_task(self, id : str) -> Task | None:
         for task in self.tasks:
             for alternative in task[0]:
                 if str(alternative.id) == str(id):
                     return alternative
         return None
     
-    def get_alternatives(self, task : Task) -> list[Task]:#id : str) -> list[Task]:
+    def get_alternatives(self, task : Task) -> list[Task] | None:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
                     return task[0]
+        return None
 
 
 class Vendor(Entitiy):
@@ -104,25 +107,25 @@ class Vendor(Entitiy):
         self.resources = resources # resource, price (per unit), min, max, expected delivery time
         self.event_log = event_log
 
-    def get_expected_delivery_time_for_resource(self, resource) -> int:#id : str) -> int:
+    def get_expected_delivery_time_for_resource(self, resource) -> int | None:
         for r in self.resources:
             if r[0] == resource:
                 return r[4]
         return None
             
-    def get_min_amount_for_resource(self, resource) -> int:# id : str) -> int:
+    def get_min_amount_for_resource(self, resource) -> int | None:
         for r in self.resources:
             if r[0] == resource:
                 return r[2]
         return None
             
-    def get_max_amount_for_resource(self, resource) -> int:# id : str) -> int:
+    def get_max_amount_for_resource(self, resource) -> int | None:
         for r in self.resources:
             if r[0] == resource:
                 return r[3]
         return None
     
-    def get_price_per_unit_for_resource(self, resource) -> float:# id : str) -> float:
+    def get_price_per_unit_for_resource(self, resource) -> float | None:
         for r in self.resources:
             if r[0] == resource:
                 return r[1]
@@ -173,7 +176,7 @@ class Workstation(Entitiy):
         self.workstation_type_id = workstation_type_id
         self.event_log = event_log
 
-    def get_duration(self, task : Task) -> int:
+    def get_duration(self, task : Task) -> int | None:
         for t in self.tasks:
             if task == t[0]:# str(task[0].id) == str(task_id):
                 return task[1]
@@ -219,7 +222,7 @@ class Job(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, id : str = None, order : Order = None, recipe : Recipe = None, task : Task = None, ro_id : str = 0) -> None: # TODO: change ids to objects
+    def __init__(self, id : str = None, order : Order = None, recipe : Recipe = None, task : Task = None, ro_id : str = 0) -> None:
         if not id:
             id = Job.next_id
             Job.next_id += 1
@@ -259,7 +262,78 @@ class Schedule(Entitiy):
         self.objective_values = objective_values
         self.solver = solver
 
-    def _get_workstation(self, id : str) -> Workstation:
+    def _get_assignment_for_job(self, job : Job) -> Assignment | None:
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.job == job:
+                    return assignment
+        return None
+    
+    def _get_workstation_for_job(self, job : Job) -> Workstation | None:
+        for workstation in self.assignments.keys():
+            for assignment in self.assignments[workstation]:
+                if assignment.job == job:
+                    return workstation
+        return None
+
+    def is_feasible(self, production_environment, jobs : list[Job]) -> bool:
+        recipe = jobs[0].recipe
+        order = jobs[0].order
+        task = jobs[0].task
+        recipe_sequence = 0
+        for job in jobs:
+            # check sequence for each order
+            if job.order == order and job.recipe == recipe:
+                sequence_value = recipe.get_sequence_value_for_task()
+                finish_before_value = recipe.get_finish_before_value_for_task()
+                
+                """if sequence_value < recipe_sequence:
+                    return False # sequence violation"""
+
+                assignment = self._get_assignment_for_job(job)
+                finished = self.get_completed_assignments(assignment.start_time) # check for assignments that are finished when this assignment starts
+                for workstation, finished_assignment in finished:
+                    if finished_assignment.job.order == job.order and finished_assignment.job.recipe == job.recipe:
+                        if finished_assignment.job.recipe.get_finish_before_value_for_task(finished_assignment.job.task) >= sequence_value: # NOTE: maybe just >, not necessarily >=, but probably >=
+                            return False # sequence violation, current assignment should be finished already
+                        if finished_assignment.job.recipe.get_sequence_value_for_task(finished_assignment.job.task) >= sequence_value:
+                            return False # sequence violation, finished assignment should not have started before the current assignment
+                
+                # check if previous tasks belonging to the recipe are completed
+                active = self.get_active_assignments(assignment.end_time) # check for assignments that are still active when the current one finishes
+                for workstation, active_assignment in active:
+                    if active_assignment.job.order == job.order and active_assignment.job.recipe == job.recipe:
+                        if finish_before_value >= active_assignment.job.recipe.get_sequence_value_for_task(active_assignment.job.task):
+                            return False # sequence violation, current assignment should have finished before the active assignment started
+                        if sequence_value >= active_assignment.job.recipe.get_finish_before_value_for_task(active_assignment.job.task):
+                            return False # sequence violation, active assignment should have been finished before the current assignment started
+                        
+                planned = self.get_assignments_after(assignment.start_time) # check for assignments that start after the current one
+                for workstation, planned_assignment in planned:
+                    if planned_assignment.job.order == job.order and planned_assignment.job.recipe == job.recipe:
+                        if planned_assignment.job.recipe.get_sequence_value_for_task(planned_assignment.job.task) < sequence_value:
+                            return False # sequence violation, should have already started
+                        if planned_assignment.job.recipe.get_finish_before_value_for_task(planned_assignment.job.task) < sequence_value:
+                            return False # sequence violation, should have already been finished
+                # NOTE: there are probably more sequence violations
+                recipe_sequence = sequence_value
+            else:
+                recipe_sequence = 0
+            recipe = job.recipe
+            order = job.order
+            task = job.task # probably unnecessary
+            
+        for workstation in self.assignments.keys():
+            # check order on workstations and resource availability
+            for i in range(1, len(self.assignments[workstation])):
+                latest_start_time = self.assignments[workstation][i].end_time - workstation.get_duration(self.assignments[workstation][i].job.task)
+                if self.assignments[workstation][i-1].end_time > latest_start_time:
+                    return False # too much time window overlap, should cover everything, NOTE: order sequence check may need to be changed for the same reasons
+                """if self.assignments[workstation][i].start_time < self.assignments[workstation][i-1].end_time:
+                    return False # overlap, NOTE: different rules are necessary for time window optimization, restrict overlap size instead"""
+        return True
+
+    def _get_workstation(self, id : str) -> Workstation | None:
         for workstation in self.assignments.keys():
             if str(workstation.id) == str(id):
                 return workstation
@@ -270,6 +344,15 @@ class Schedule(Entitiy):
             self.assignments[workstation] = []
         self.assignments[workstation].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
         pass
+
+    def get_assignments_for_order_recipe(self, job : Job) -> list[Assignment]:
+        assignments = []
+        # TODO: Switch to this method in feasibility check
+        for workstation in self.assignments:
+            for assignment in self.assignments[workstation]:
+                if assignment.job != job and assignment.job.order == job.order and assignment.job.recipe == job.recipe:
+                    assignments.append(assignment)
+        return assignments
 
     def get_assignments_before(self, time : int) -> list[tuple[Workstation, Assignment]]:
         assignments : list[tuple[Workstation, Assignment]] = []
@@ -403,6 +486,7 @@ class Customer(Entitiy):
             self.name = f'c{self.id}'
         self.priority_level = priority_level
         self.event_log = event_log
+
 
 class ProductionEnvironment:
 
