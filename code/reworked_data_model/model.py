@@ -5,6 +5,9 @@ class Entitiy:
     def __init__(self, id : int) -> None:
         self.id = id
 
+    def __eq__(self, other) -> bool:
+        return self.__class__ == other.__class__ and str(self.id) == str(other.id)
+    
 
 class Event(Entitiy):
     
@@ -58,31 +61,31 @@ class Recipe(Entitiy):
             self.name = f'r{self.id}'
         self.tasks = tasks
 
-    def get_sequence_value_for_task(self, id : str) -> int:
+    def get_sequence_value_for_task(self, task : Task) -> int: #id : str) -> int:
         for task in self.tasks:
             for alternative in task[0]:
-                if alternative.id == id:
+                if alternative == task:
                     return task[1]
         return None
     
-    def get_finish_before_value_for_task(self, id : str) -> int:
+    def get_finish_before_value_for_task(self, task : Task) -> int:# id : str) -> int:
         for task in self.tasks:
             for alternative in task[0]:
-                if alternative.id == id:
+                if alternative == task:
                     return task[2]
         return None
     
     def get_task(self, id : str) -> Task:
         for task in self.tasks:
             for alternative in task[0]:
-                if alternative.id == id:
+                if str(alternative.id) == str(id):
                     return alternative
         return None
     
-    def get_alternatives(self, id : str) -> list[Task]:
+    def get_alternatives(self, task : Task) -> list[Task]:#id : str) -> list[Task]:
         for task in self.tasks:
             for alternative in task[0]:
-                if alternative.id == id:
+                if alternative == task:
                     return task[0]
 
 
@@ -103,28 +106,28 @@ class Vendor(Entitiy):
         self.resources = resources # resource, price (per unit), min, max, expected delivery time
         self.event_log = event_log
 
-    def get_expected_delivery_time_for_resource(self, id : str) -> int:
-        for resource in self.resources:
-            if resource[0].id == id:
-                return resource[4]
+    def get_expected_delivery_time_for_resource(self, resource) -> int:#id : str) -> int:
+        for r in self.resources:
+            if r[0] == resource:
+                return r[4]
         return None
             
-    def get_min_amount_for_resource(self, id : str) -> int:
-        for resource in self.resources:
-            if resource[0].id == id:
-                return resource[2]
+    def get_min_amount_for_resource(self, resource) -> int:# id : str) -> int:
+        for r in self.resources:
+            if r[0] == resource:
+                return r[2]
         return None
             
-    def get_max_amount_for_resource(self, id : str) -> int:
-        for resource in self.resources:
-            if resource[0].id == id:
-                return resource[3]
+    def get_max_amount_for_resource(self, resource) -> int:# id : str) -> int:
+        for r in self.resources:
+            if r[0] == resource:
+                return r[3]
         return None
     
-    def get_price_per_unit_for_resource(self, id : str) -> float:
-        for resource in self.resources:
-            if resource[0].id == id:
-                return resource[1]
+    def get_price_per_unit_for_resource(self, resource) -> float:# id : str) -> float:
+        for r in self.resources:
+            if r[0] == resource:
+                return r[1]
         return None
     
     def get_available_resources(self) -> list:
@@ -172,9 +175,9 @@ class Workstation(Entitiy):
         self.workstation_type_id = workstation_type_id
         self.event_log = event_log
 
-    def get_duration(self, task_id : str) -> int:
-        for task in self.tasks:
-            if str(task[0].id) == str(task_id):
+    def get_duration(self, task : Task) -> int:
+        for t in self.tasks:
+            if task == t[0]:# str(task[0].id) == str(task_id):
                 return task[1]
         return None
 
@@ -220,14 +223,14 @@ class Job(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, id : str = None, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None: # TODO: change ids to objects
+    def __init__(self, id : str = None, order : Order = None, recipe : Recipe = None, task : Task = None, ro_id : str = 0) -> None: # TODO: change ids to objects
         if not id:
             id = Job.next_id
             Job.next_id += 1
         super().__init__(id)
-        self.order_id = order_id
-        self.recipe_id = recipe_id
-        self.task_id = task_id
+        self.order = order
+        self.recipe = recipe
+        self.task = task
         self.ro_id = ro_id
 
 
@@ -262,7 +265,7 @@ class Schedule(Entitiy):
 
     def _get_workstation(self, id : str) -> Workstation:
         for workstation in self.assignments.keys():
-            if workstation.id == id:
+            if str(workstation.id) == str(id):
                 return workstation
         return None
     
@@ -502,11 +505,11 @@ class ProductionEnvironment:
     def get_workstation_list(self) -> list[Workstation]:
         return self.workstations.values()
 
-    def get_available_workstations_for_task(self, task_id : str) -> list[Workstation]:
+    def get_available_workstations_for_task(self, task : Task) -> list[Workstation]:
         workstations : list[Workstation] = []
         for workstation in self.workstations:
-            for task in workstation.tasks:
-                if str(task[0].id) == str(task_id):
+            for t in workstation.tasks:
+                if task == t[0]:# str(task[0].id) == str(task_id):
                     workstations.append(workstation)
                     break
         return workstation

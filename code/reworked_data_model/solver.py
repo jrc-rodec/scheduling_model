@@ -103,25 +103,25 @@ class TimeWindowGASolver(Solver):
                 job = self.jobs[job_index]
                 if i % 4 == 0:
                     # mutate workstation
-                    workstations : list[Workstation] = self.production_environment.get_available_workstations_for_task(job.task_id)
+                    workstations : list[Workstation] = self.production_environment.get_available_workstations_for_task(job.task)
                     individual[i] = int(random.choice(workstations).id)
                 elif i % 4 == 1:
                     # mutate worker
-                    recipe : Recipe = self.production_environment.get_recipe(job.recipe_id)
+                    recipe : Recipe = job.recipe #self.production_environment.get_recipe(job.recipe_id)
                     alternatives : list[Task] = None
                     for alternative_list in recipe.tasks:
                         for task in alternative_list:
-                            if task.id == job.task_id:
+                            if task == job.task: #str(task.id) == str(job.task.id):#job.task_id:
                                 alternatives = alternative_list # NOTE: probably needs to be changed
                                 break
                     alternative : Task = random.choice(alternatives)
                     worker : Resource = alternative.required_resources[0][0] # <resource, quantity> # NOTE: only works for examples with exactly one resource
                     individual[i] = int(worker.id)
-                    job.task_id = alternative.id # adapt job to make sure the selected alternative is known to the solver
+                    job.task = alternative # adapt job to make sure the selected alternative is known to the solver
                 elif i % 4 == 2:
                     # mutate start time
                     workstation = self.production_environment.get_workstation(individual[i-2])
-                    duration = workstation.get_duration(job.task_id)
+                    duration = workstation.get_duration(job.task)
                     if duration:
                         individual[i] = random.randint(self.first_time_slot, self.last_time_slot - duration) # NOTE: upper bound should probably be limited
                     else:
@@ -130,7 +130,7 @@ class TimeWindowGASolver(Solver):
                 elif i % 4 == 3:
                     # mutate end time
                     workstation = self.production_environment.get_workstation(individual[i-3])
-                    duration = workstation.get_duration(job.task_id)
+                    duration = workstation.get_duration(job.task)
                     if duration:
                         individual[i] = random.randint(self.first_time_slot + duration, self.last_time_slot)
                     else:

@@ -11,8 +11,7 @@ class Objective:
         self.name : str = name
         self.parameters : dict[str,] = dict()
 
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job], oders : list[Order]) -> float:
-        # TODO: after job changes to objects instead of ids, job and order list can be removed as parameters
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         pass
 
     def add_parameter(self, name : str, value) -> None:
@@ -28,17 +27,16 @@ class Objective:
 
 class Evaluator:
 
-    def __init__(self, production_environment : ProductionEnvironment, orders : list[Order]) -> None:
+    def __init__(self, production_environment : ProductionEnvironment) -> None:
         self.objectives : list[Objective] = []
         self.scenario_generator : ScenarioGenerator = ScenarioGenerator()
         self.production_environment : ProductionEnvironment = production_environment
-        self.orders = orders
 
     def evaluate(self, schedule : Schedule, jobs : list[Job]) -> list[float]:
         objective_values : list[float] = []
         # TODO: scenario generation
         for objective in self.objectives:
-            objective_values.append(objective.evaluate(schedule, self.production_environment, jobs, self.orders))
+            objective_values.append(objective.evaluate(schedule, self.production_environment, jobs))
 
     def add_objective(self, objective : Objective) -> None:
         self.objectives.append(objective)
@@ -52,7 +50,7 @@ class Evaluator:
 
 class Makespan(Objective):
 
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = []) -> float:
         min = float('inf')
         max = 0
         for workstation in schedule.assignments.keys():
@@ -65,7 +63,7 @@ class Makespan(Objective):
 
 class IdleTime(Objective):
     
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = []) -> float:
         idle_time = 0
         for workstation in schedule.assignemnts.keys():
             sorted_assignments = sorted(schedule.assignments[workstation], key=lambda x: x.start_time)
@@ -77,58 +75,40 @@ class IdleTime(Objective):
                 
 
 class Tardiness(Objective):
-    
-    def _get_order(self, orders : list[Order], id : str) -> Order:
-        for order in orders:
-            if str(order.id) == str(id):
-                return order
-        return None
 
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         tardiness = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
             #TODO: change after job is changed to objects
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or jobs.index(job) == len(jobs)-1:
+            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
                 # check prev job end_time
-                order = self._get_order(prev_job.order_id)
+                order = prev_job.order
                 if prev_job.end_time > order.delivery_time:
                     tardiness += prev_job.end_time - order.delivery_time
             prev_job = job
         return tardiness
 
 class TimeDeviation(Objective):
-    
-    def _get_order(self, orders : list[Order], id : str) -> Order:
-        for order in orders:
-            if str(order.id) == str(id):
-                return order
-        return None
 
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         deviation = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or jobs.index(job) == len(jobs)-1:
-                order = self._get_order(prev_job.order_id)
+            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+                order = prev_job.order
                 deviation += abs(prev_job.end_time - order.delivery_time)
             prev_job = job
         return deviation
 
 class Profit(Objective):
     
-    def _get_order(self, orders : list[Order], id : str) -> Order:
-        for order in orders:
-            if str(order.id) == str(id):
-                return order
-        return None
-
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         profit = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or jobs.index(job) == len(jobs)-1:
-                order : Order = self._get_order(prev_job.order_id)
+            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+                order : Order = prev_job.order
                 if prev_job.end_time > order.delivery_time:
                     if prev_job.end_time > order.latest_acceptable_time:
                         profit -= order.penalty
@@ -139,13 +119,13 @@ class Profit(Objective):
 
 class UnfulfilledOrders(Objective):
 
-    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = [], orders : list[Order] = []) -> float:
+    def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         unfulfilled_order_count = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or jobs.index(job) == len(jobs)-1:
+            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
                 # check prev job end_time
-                order : Order = self._get_order(prev_job.order_id)
+                order : Order = prev_job.order
                 if prev_job.end_time > order.latest_acceptable_time:
                     unfulfilled_order_count += 1
         return unfulfilled_order_count

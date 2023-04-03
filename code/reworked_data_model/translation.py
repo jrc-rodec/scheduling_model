@@ -110,7 +110,7 @@ class TimeWindowGAEncoder(Encoder):
                 if len(resource[0].recipes) > 0:
                     use_recipe : Recipe = resource[0].recipes[0] # assume only 1 recipe for each resource for now
                     for task in use_recipe.tasks:
-                        jobs.append(Job(order_id=order.id, recipe_id=use_recipe.id, task_id=task.id, ro_id=ro_id))
+                        jobs.append(Job(order=order, recipe=use_recipe, task=task, ro_id=ro_id))
                         ro_id += 1
                         values.extend([0, 0, 0, 0]) # NOTE: should maybe be initialised here already
         return values, jobs
