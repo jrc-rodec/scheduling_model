@@ -198,11 +198,11 @@ class Order(Entitiy):
     
     next_id : int = 0
     
-    def __init__(self, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0) -> None:
-        self.__init__(Order.next_id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, priority_level)
+    def __init__(self, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0, profit : float = 0) -> None:
+        self.__init__(Order.next_id, arrival_time, delivery_time, latest_acceptable_time, resources, penalty, tardiness_fee, divisible, customer_id, priority_level, profit)
         Order.next_id += 1
 
-    def __init__(self, id : str, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0) -> None:
+    def __init__(self, id : str, arrival_time : int = 0, delivery_time : int = 0, latest_acceptable_time : int = 0, resources : list[tuple] = [], penalty : float = 0.0, tardiness_fee : float = 0.0, divisible : bool = False, customer_id : str = 0, priority_level : int = 0, profit : float = 0) -> None:
         super().__init__(id)
         self.arrival_time = arrival_time
         self.delivery_time = delivery_time
@@ -213,13 +213,14 @@ class Order(Entitiy):
         self.divisible = divisible
         self.customer_id = customer_id
         self.priority_level = priority_level
+        self.profit = profit
 
 
 class Job(Entitiy):
     
     next_id : int = 0
 
-    def __init__(self, id : str = None, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None:
+    def __init__(self, id : str = None, order_id : str = 0, recipe_id : str = 0, task_id : str = 0, ro_id : str = 0) -> None: # TODO: change ids to objects
         if not id:
             id = Job.next_id
             Job.next_id += 1

@@ -1,16 +1,29 @@
-from model import ProductionEnvironment, Job, Order, Recipe, Workstation, Task, Resource
+from model import ProductionEnvironment, Job, Order, Recipe, Workstation, Task, Resource, Schedule
 from copy import deepcopy
+from translation import TimeWindowGAEncoder
+from evaluation import Evaluator, Objective
 import random
 
 class Solver:
-    pass
+    
+    def __init__(self, name : str, production_environment : ProductionEnvironment) -> None:
+        self.name = name
+        self.production_environment = production_environment
+        self.evaluator = Evaluator(self.production_environment)
+
+    def add_objective(self, objective : Objective) -> None:
+        self.evaluator.add_objective(objective)
+
+    def remove_objective(self, objective : Objective) -> None:
+        self.evaluator.remove_objective(objective)
 
 class TimeWindowGASolver(Solver):
 
     def __init__(self, production_environment : ProductionEnvironment, orders : list[Order]) -> None:
+        # TODO: after job change to objects, probably don't need list of orders anymore
+        super().__init__('Time Window GA', production_environment)
         self.production_environment = production_environment
         self.orders = orders
-        self.name = 'Time Window GA'
 
     def configure(self, encoding : list[int], population_size : int = 25, offspring_amount : int = 50, elitism : bool = False, mutation_probability : float = None, max_generations : int = 100, first_time_slot : int = 0, last_time_slot : int = 1000) -> None:
         self.max_generations = max_generations
@@ -28,12 +41,17 @@ class TimeWindowGASolver(Solver):
 
     def _is_feasible(self, individual : list[int]) -> bool: # TODO
         return True
-        pass
 
-    def _evaluate(self, individual : list[int]) -> list[float]: # TODO
+    def _evaluate(self, individual : list[int]) -> list[float]:
         if not self._is_feasible(individual):
             return 2 * self.last_time_slot
-        pass
+        encoder = TimeWindowGAEncoder()
+        schedule : Schedule = encoder.decode(individual, self.jobs, self.production_environment, [], self)
+        # use evaluation module
+        objective_values = self.evaluator.evaluate(schedule, self.jobs, self.orders)
+        schedule.objective_values = objective_values
+        # maybe keep schedule ? 
+        return objective_values
 
     def _evaluate_population(self, population : list[list[int]]) -> list[list[float]]:
         population_fitness : list[list[float]] = []
@@ -43,16 +61,20 @@ class TimeWindowGASolver(Solver):
         return population_fitness
 
     def _get_weighted_probabilities(self, population : list[list[int]], population_fitness : list[list[float]]) -> list[float]:
-        #TODO: invert probabilities, currently higher values get higher weights
+        #TODO: invert probabilities, currently higher values get higher weights (needs testing)
         probabilities : list[float] = []
         sum = 0
+        max_fitness = 0
         for fitness in population_fitness:
+            if fitness[0] > max_fitness:
+                max_fitness = fitness[0]
             sum += fitness[0] #NOTE/TODO: only one objective value for now
         population = []
         previous_probability = 0.0
         while len(population) < self.population_size:
             for i in range(len(population)):
-                probability = previous_probability + (fitness[i] / sum)
+                #probability = previous_probability + (fitness[i] / sum)
+                probability = previous_probability + ((max_fitness - fitness[i]) / sum)
                 probabilities.append(probability)
                 previous_probability = probability
         return probabilities
