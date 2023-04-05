@@ -390,7 +390,7 @@ class Schedule(Entitiy):
                     assignments.append((workstation, assignment))
         return assignments
     
-    def get_active_assignemnts_on_workstation(self, id : str, time : int) -> list[Assignment]:
+    def get_active_assignments_on_workstation(self, id : str, time : int) -> list[Assignment]:
         workstation : Workstation = self._get_workstation(id)
         assignments : list[Assignment] = []
         if workstation:
@@ -408,7 +408,7 @@ class Schedule(Entitiy):
                     assignments.append(assignment)
         return assignments
     
-    def get_assignemnts_on_workstation_after(self, id : str, time : int) -> list[Assignment]:
+    def get_assignments_on_workstation_after(self, id : str, time : int) -> list[Assignment]:
         workstation : Workstation = self._get_workstation(id)
         assignments : list[Assignment] = []
         if workstation:

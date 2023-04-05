@@ -43,7 +43,8 @@ class ScenarioGenerator:
             for uncertainty in self.uncertainties:
                 # check for each time step 
                 pass
-    
+
+
     def measure_robustness(self, amount : int, schedule : Schedule, production_environment : ProductionEnvironment):
         for i in range(amount):
             # generate scenario
@@ -65,11 +66,11 @@ class ScenarioGenerator:
                     if len(immediately_affected_assignments) > 0:
                         # all assignments on the same workstation after the start time (and during)
                         assignments.extend(immediately_affected_assignments) # NOTE: might have some overlap with active
-                        active_assignments : list[Assignment] = simulated_schedule.get_active_assignemnts_on_workstation(workstation.id, start)
+                        active_assignments : list[Assignment] = simulated_schedule.get_active_assignments_on_workstation(workstation.id, start)
                         for assignment in active_assignments:
                             if assignment not in assignments:
                                 assignments.append(assignment)
-                        planned_assignments : list[Assignment] = simulated_schedule.get_assignemnts_on_workstation_after(workstation.id, start)
+                        planned_assignments : list[Assignment] = simulated_schedule.get_assignments_on_workstation_after(workstation.id, start)
                         for assignment in planned_assignments:
                             if assignment not in assignments:
                                 assignments.append(assignment)
