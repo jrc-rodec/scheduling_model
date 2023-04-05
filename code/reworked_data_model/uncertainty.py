@@ -1,4 +1,5 @@
-from model import ProductionEnvironment, Event, Schedule
+from model import ProductionEnvironment, Event, Schedule, Assignment
+import copy 
 
 class Uncertainty:
 
@@ -37,3 +38,52 @@ class ScenarioGenerator:
             events.extend(uncertainty.generate(start_time, end_time, schedule, production_environment))
         return events
     
+    def generate_scenario_for_schedule(self, end_time : int):
+        for i in range(end_time):
+            for uncertainty in self.uncertainties:
+                # check for each time step 
+                pass
+    
+    def measure_robustness(self, amount : int, schedule : Schedule, production_environment : ProductionEnvironment):
+        for i in range(amount):
+            # generate scenario
+            events : list[Event] = self.generate_scenario()
+            events.sort(key=lambda x: x.get_parameter('start_time')) # apply the events in order
+            # apply scenario
+            simulated_schedule = copy.deepcopy(schedule)
+            for event in events:
+                start = event.get_parameter('start_time')
+                end = event.get_parameter('end_time')
+                duration = end - start
+                event_type = production_environment.get_event(event.get_parameter('event_type'))
+                if event_type == 'workstation breakdown':
+                    workstation = production_environment.get_workstation(event.get_parameter('workstation'))
+                    assignments : list[Assignment] = []
+                    # find and shift all affected assignments
+                    # check if the breakdown affects anything
+                    immediately_affected_assignments : list[Assignment] = simulated_schedule.get_assignments_on_workstation_between(workstation.id, start, start+duration)
+                    if len(immediately_affected_assignments) > 0:
+                        # all assignments on the same workstation after the start time (and during)
+                        assignments.extend(immediately_affected_assignments) # NOTE: might have some overlap with active
+                        active_assignments : list[Assignment] = simulated_schedule.get_active_assignemnts_on_workstation(workstation.id, start)
+                        for assignment in active_assignments:
+                            if assignment not in assignments:
+                                assignments.append(assignment)
+                        planned_assignments : list[Assignment] = simulated_schedule.get_assignemnts_on_workstation_after(workstation.id, start)
+                        for assignment in planned_assignments:
+                            if assignment not in assignments:
+                                assignments.append(assignment)
+                        # all assignments on other workstations which need to be in sequence with the affected assignments on the workstations, and all assignments on the workstations of these assignments after them
+                        
+                        # apply the right shift TODO: take idle times into account, remove idle times from necessary delay
+                        for assignment in assignments:
+                            assignment.start_time += duration
+                            assignment.end_time += duration
+                    # ...
+                elif event_type == 'resource unavailable':
+                    resource = production_environment.get_resource(event.get_parameter('resource'))
+                    # find and shift all affected assignments
+                    # ...
+                    
+                # ... TODO: handle other cases
+            # evaluate schedule

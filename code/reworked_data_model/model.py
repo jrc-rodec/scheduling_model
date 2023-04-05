@@ -276,19 +276,16 @@ class Schedule(Entitiy):
                     return workstation
         return None
 
-    def is_feasible(self, production_environment, jobs : list[Job]) -> bool:
+    def is_feasible(self, jobs : list[Job]) -> bool:
         recipe = jobs[0].recipe
         order = jobs[0].order
         task = jobs[0].task
-        recipe_sequence = 0
+
         for job in jobs:
             # check sequence for each order
             if job.order == order and job.recipe == recipe:
                 sequence_value = recipe.get_sequence_value_for_task()
                 finish_before_value = recipe.get_finish_before_value_for_task()
-                
-                """if sequence_value < recipe_sequence:
-                    return False # sequence violation"""
 
                 assignment = self._get_assignment_for_job(job)
                 finished = self.get_completed_assignments(assignment.start_time) # check for assignments that are finished when this assignment starts
@@ -316,9 +313,7 @@ class Schedule(Entitiy):
                         if planned_assignment.job.recipe.get_finish_before_value_for_task(planned_assignment.job.task) < sequence_value:
                             return False # sequence violation, should have already been finished
                 # NOTE: there are probably more sequence violations
-                recipe_sequence = sequence_value
-            else:
-                recipe_sequence = 0
+
             recipe = job.recipe
             order = job.order
             task = job.task # probably unnecessary
@@ -327,10 +322,11 @@ class Schedule(Entitiy):
             # check order on workstations and resource availability
             for i in range(1, len(self.assignments[workstation])):
                 latest_start_time = self.assignments[workstation][i].end_time - workstation.get_duration(self.assignments[workstation][i].job.task)
-                if self.assignments[workstation][i-1].end_time > latest_start_time:
+                if self.solver.solver_mode == SolverMode.TIME_WINDOW and self.assignments[workstation][i-1].end_time > latest_start_time:
                     return False # too much time window overlap, should cover everything, NOTE: order sequence check may need to be changed for the same reasons
-                """if self.assignments[workstation][i].start_time < self.assignments[workstation][i-1].end_time:
-                    return False # overlap, NOTE: different rules are necessary for time window optimization, restrict overlap size instead"""
+                elif self.assignments[workstation][i].start_time < self.assignments[workstation][i-1].end_time:
+                    return False # overlap, NOTE: different rules are necessary for time window optimization, restrict overlap size instead
+                # TODO: check resources
         return True
 
     def _get_workstation(self, id : str) -> Workstation | None:
@@ -439,6 +435,15 @@ class Schedule(Entitiy):
                     assignments.append(assignment)
         return assignments
     
+    def get_assignments_on_workstation_between(self, id : str, start_time : int, end_time : int) -> list[Assignment]:
+        workstation : Workstation = self._get_workstation(id)
+        assignments : list[Assignment] = []
+        if workstation:
+            for assignment in self.assignments[workstation]:
+                if (assignment.start_time >= start_time and assignment.start_time <= end_time) or (assignment.end_time >= start_time and assignment.end_time <= end_time):
+                    assignments.append(assignment)
+        return assignments
+
     def get_assignments_on_workstation(self, id : str) -> list[Assignment]:
         workstation : Workstation = self._get_workstation(id)
         return self.assignments.get(workstation)

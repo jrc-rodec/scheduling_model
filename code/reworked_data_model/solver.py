@@ -38,16 +38,32 @@ class TimeWindowGASolver(Solver):
         self.mutation_probability = mutation_probability
 
     def initialize_population(self) -> list[list[int]]: # TODO
-        pass
-
-    def _is_feasible(self, individual : list[int]) -> bool: # TODO
-        return True
+        population : list[list[int]] = []
+        for i in range(self.population_size): 
+            individual : list[int] = []
+            for j in range(len(self.jobs)):
+                #<workstation, worker, start_time, end_time>
+                tasks : list[Task] = self.jobs[j].recipe.get_alternatives(self.jobs[j].task)
+                task : Task = random.choice(tasks) # choose random starting task (chooses worker)
+                self.jobs[j].task = task
+                workstations : list[Workstation] = self.production_environment.get_available_workstations_for_task(task)
+                workstation : Workstation = random.choice(workstations)
+                worker : Resource = task.required_resources[0][0]
+                duration = workstation.get_duration(task)
+                start_time = random.randint(self.first_time_slot, self.last_time_slot - duration)
+                end_time = random.randint(start_time, self.last_time_slot)
+                individual.append(int(workstation.id))
+                individual.append(int(worker.id))
+                individual.append(start_time)
+                individual.append(end_time)
+            population.append(individual)
+        return population
 
     def _evaluate(self, individual : list[int]) -> list[float]:
-        if not self._is_feasible(individual):
-            return 2 * self.last_time_slot
         encoder = TimeWindowGAEncoder()
         schedule : Schedule = encoder.decode(individual, self.jobs, self.production_environment, [], self)
+        if not schedule.is_feasible(self.jobs):
+            return 2 * self.last_time_slot
         # use evaluation module
         objective_values = self.evaluator.evaluate(schedule, self.jobs, self.orders)
         schedule.objective_values = objective_values
@@ -216,3 +232,60 @@ class TimeWindowGASolver(Solver):
             population, population_fitness = self._select_next_generation(offsprings, offspring_fitness)
 
         return best
+
+class HarmonySearch(Solver):
+#NOTE: this is just the base algorithm, several improvements to the HS-Algorithm have been suggested
+    def __init__(self, production_environment : ProductionEnvironment):
+        super().__init__('Harmony Search Solver', production_environment)
+
+    def evaluate(self, harmony):
+        pass
+
+    def solve(self):
+        #step 1: parameters
+        harmony_search_memory_size = 10
+        harmony_memory : list[list[int]] = []
+        lower_bounds : list[int] = []
+        upper_bounds : list[int] = []
+        harmony_considering_rate = 0.1
+        pitch_adjusting_rate = 0.1 # mutation probability
+        individual_size = 20
+        bandwith = 2
+        max_improvisations = 1000
+        # for improved harmony search
+        #max_pitch_adjusting_rate = 0.5
+        #min_pitch_adjusting_rate = 0.1
+        #max_bandwith = 4 NOTE: bandwidths should be a list for combinatorial problems
+        #min_bandwith = 2
+        #step 2: initialize the harmony memory
+        for i in range(harmony_search_memory_size):
+            harmony = []
+            for j in range(individual_size):
+                harmony.append(lower_bounds[j] + random.random() * (upper_bounds[j] - lower_bounds[j]))
+            fitness = self.evaluate(harmony)
+            harmony_memory.append((harmony, fitness))
+        for i in range(max_improvisations):
+            #step 3: improvise a new harmony
+            harmony = []
+            for j in range(individual_size):
+                if random.random() <= harmony_considering_rate:
+                    harmony.append(random.choice(harmony_memory)[0][j])
+                    # for improved harmony search
+                    # NI number of solution vector generations (=individual_size?)
+                    # pitch_adjusting_rate = min_pitch_adjusting_rate + ((max_pitch_adjusting_rate - min_pitch_adjusting_rate) / individual_size) * j
+                    if random.random() <= pitch_adjusting_rate:
+                        # for improved harmony search
+                        # c = math.log(max_bandwith / min_bandwith) / individual_size
+                        # bandwidth = max_bandwith * math.exp(c * j)
+                        harmony[-1] += random.random() * bandwith
+                else:
+                    harmony.append(lower_bounds[j] + random.random() * (upper_bounds[j] - lower_bounds[j]))
+            #step 4: update harmony memory: replace worst harmony in memory with the new harmony, if the new harmony is better
+            fitness = self.evaluate(harmony)
+            worst = None # NOTE: worst individual could just be tracked
+            for harmony in harmony_memory:
+                if worst is None or harmony[1] > worst[1]:
+                    worst = (harmony)
+            if fitness < worst[1]:
+                harmony.remove(worst)
+                harmony.append((harmony, fitness))
