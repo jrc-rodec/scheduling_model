@@ -1,6 +1,7 @@
 import os 
 import inspect
 from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule, Order, Job, Solver
+from get_data import get_data
 
 class DataTranslator:
     
@@ -57,7 +58,7 @@ class BenchmarkTranslator(DataTranslator):
                 idx = 0
                 for k in range(int(row[0])):
                     # NOTE: alternative tasks are grouped as a list for a step in a recipe
-                    alternative_tasks :list[Task] = []
+                    alternative_tasks : list[Task] = []
                     idx += 1
                     # for each workstation available for task[k] of recipe[j]
                     for l in range(int(row[idx])):
@@ -70,20 +71,47 @@ class BenchmarkTranslator(DataTranslator):
                             idx += 1
                             duration = row[idx]
                             setup_group = SetupGroup(id=f'r{j}w{l}t{m}', workstation_id=workstation.id)
-                            task = Task(id=f'r{j}w{l}t{m}', name=f'r{j}w{l}t{m}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[setup_group])
+                            task = Task(id=f'r{j}w{l}t{m}', name=f'r{j}w{l}t{m}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[setup_group]) # TODO: remove id, switch to int ids only
                             alternative_tasks.append(task)
                             workstation.tasks.append((task, duration))
                             production_environment.add_task(task)
                             production_environment.add_setup_group(setup_group)
                     tasks.append((alternative_tasks, k))
             recipe = Recipe(name=f'recipe_{i}', tasks=tasks)
-            production_environment.add_resource(Resource(name=f'resource_{j}', recipes=[recipe]))
+            production_environment.add_resource(Resource(name=f'resource_{i}', recipes=[recipe]))
             production_environment.add_recipe(recipe)
         return production_environment
 
 """
     Add additional dataset translator here (Data Source -> Model)
 """
+
+class BasicBenchmarkTranslator(DataTranslator):
+
+    def translate(self, id : int) -> ProductionEnvironment:
+        n_workstations, recipes, operation_times = get_data(id)
+        production_environment : ProductionEnvironment = ProductionEnvironment()
+        for n in range(n_workstations):
+            production_environment.add_workstation(Workstation(name=f'workstation_{n}', workstation_type_id=n))
+            production_environment.add_workstation_type(n, f'w_type_{n}')
+        operation_time_index = 0
+        for recipe_index in range(len(recipes)):
+            recipe_tasks : list[Task] = []
+            for task_index in recipes[recipe_index]:
+                setup_group = SetupGroup()
+                task = Task(name=f'task_{operation_time_index}', setup_groups=[setup_group] ) # setup group is not really needed here
+                for operation_index in range(len(operation_times[operation_time_index])):
+                    workstation : Workstation = production_environment.get_workstation(operation_index)
+                    workstation.tasks.append((task, operation_times[operation_time_index][operation_index]))
+                recipe_tasks.append((task, task_index, task_index+1)) # task, sequence number, finish before number
+                production_environment.add_task(task)
+                production_environment.add_setup_group(setup_group)
+                operation_time_index += 1
+            recipe : Recipe = Recipe(name=f'recipe_{recipe_index}', tasks=recipe_tasks)
+            production_environment.add_resource(Resource(name=f'resource_{recipe_index}', recipes=[recipe]))
+            production_environment.add_recipe(recipe)
+        return production_environment
+
 
 class Encoder:
     
@@ -99,8 +127,8 @@ class Encoder:
 """
 
 class TimeWindowGAEncoder(Encoder):
-    
-    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
+    # NOTE: for the GA that includes workers
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]) -> tuple[list[int], list[Job]]:
         # format: <workstation, worker, start_time, end_time>
         values : list[int] = []
         jobs : list[Job] = []
@@ -127,5 +155,34 @@ class TimeWindowGAEncoder(Encoder):
             worker : Resource = production_environment.get_resource(worker_id)
             job : Job = jobs[job_idx]
             schedule.add_assignment(workstation, job, start_time, end_time, [(worker, 1)])
+            job_idx += 1
+        return schedule
+    
+class SimpleGAEncoder(Encoder):
+
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]) -> tuple[list[int], list[Job]]:
+        # format: <workstation, start_time>
+        values : list[int] = []
+        jobs : list[Job] = []
+        for order in orders:
+            ro_id = 0
+            for resource in order.resources:
+                if len(resource[0].recipes) > 0:
+                    use_recipe : Recipe = resource[0].recipes[0] # assume only 1 recipe for each resource for now
+                    for task in use_recipe.tasks:
+                        jobs.append(Job(order=order, recipe=use_recipe, task=task, ro_id=ro_id))
+                        ro_id += 1
+                        values.extend([0, 0])
+        return values, jobs
+
+    def decode(self, values : list[int], jobs : list[Job], production_environment : ProductionEnvironment, objective_values : list[float] = [], solver : Solver = None) -> Schedule:
+        schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
+        job_idx : int = 0
+        for i in range(0, len(values), 2):
+            workstation_id : int = values[i]
+            workstation : Workstation = production_environment.get_workstation(workstation_id)
+            start_time : int = values[i+1]
+            end_time : int = start_time + workstation.get_duration(jobs[job_idx].task)
+            schedule.add_assignment(workstation=workstation, job=jobs[job_idx], start_time=start_time, end_time=end_time, resources=[])
             job_idx += 1
         return schedule

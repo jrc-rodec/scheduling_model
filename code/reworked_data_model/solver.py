@@ -234,6 +234,7 @@ class TimeWindowGASolver(Solver):
         return best
 
 class HarmonySearch(Solver):
+
 #NOTE: this is just the base algorithm, several improvements to the HS-Algorithm have been suggested
     def __init__(self, production_environment : ProductionEnvironment):
         super().__init__('Harmony Search Solver', production_environment)
@@ -289,3 +290,289 @@ class HarmonySearch(Solver):
             if fitness < worst[1]:
                 harmony.remove(worst)
                 harmony.append((harmony, fitness))
+
+import pygad
+
+class GASolver(Solver):
+
+    instance = None
+
+    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], env : ProductionEnvironment, orders : list[Order]):
+        self.name = "GASolver"
+        self.encoding = encoding
+        self.durations = durations
+        self.jobs : list[Job] = job_list
+        self.environment = env
+        self.orders = orders
+        self.assignments_best = []
+        self.average_assignments = []
+        GASolver.instance = self
+
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 0, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', objective : str ='makespan') -> None:
+        self.earliest_slot = earliest_slot
+        self.last_slot = last_slot
+        self.population_size = population_size
+        self.offspring_amount = offspring_amount
+        self.max_generations = max_generations
+        self.crossover_type = crossover
+        self.parent_selection_type = selection
+        self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
+        if mutation == 'workstation_only':
+            self.mutation_type = GASolver.alternative_mutation_function
+        elif mutation == 'full_random':
+            self.mutation_type = GASolver.mutation_function
+        elif mutation == 'random_only_feasible':
+            self.mutation_type = GASolver.only_feasible_mutation
+        self.mutation_percentage_genes = 10 # not used, but necessary parameter
+        self.gene_type = int
+        self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
+        gene_space_workstations = {'low': 0, 'high': len(self.environment.workstations)}
+        gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
+        self.gene_space = []
+        self.objective = objective
+        self.objective_function = GASolver.fitness_function
+        if objective == 'makespan':
+            self.objective_function = GASolver.fitness_function
+        elif objective == 'idle_time':
+            self.objective_function = GASolver.fitness_function_idle_time
+        for _ in range(0, len(self.encoding), 2):
+            self.gene_space.append(gene_space_workstations)
+            self.gene_space.append(gene_space_starttime)
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
+        
+        self.best_solution = None
+
+    def run(self) -> None:
+        self.ga_instance.run()
+        solution, solution_fitness, solution_idx = self.ga_instance.best_solution()
+        self.solution_index = solution_idx
+        self.best_solution = (solution, solution_fitness)
+        print("Done")
+
+    def get_best(self) -> list[int]:
+        return self.best_solution[0]
+
+    def get_best_fitness(self) -> int:
+        return self.best_solution[1]
+
+    def get_result_jobs(self) -> list[int]:
+        return self.jobs
+
+    def mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
+        instance : GASolver = GASolver.instance
+        index = 0
+        for offspring in offsprings:
+            p = 1 / (len(offspring)/2) # amount of jobs
+            for i in range(0, len(offspring), 2):
+                if random.random() < p:
+                    # mutate workstation assignment
+                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    offspring[i] = random.choice(workstations).id
+                    # mutate start time
+                    offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
+            index += 1
+        return offsprings
+    
+    def has_overlaps(self, offspring : list[int], i : int, start_time : int, end_time : int) -> bool:
+        instance : GASolver = GASolver.instance
+        for j in range(0, len(offspring), 2):
+                if not i == j:
+                    if offspring[i] == offspring[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = start_time
+                        other_start = offspring[j+1]
+                        other_duration = instance.durations[other_job][offspring[j]]
+                        own_end = end_time
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return True
+                        if own_end > other_start and own_end <= other_end:
+                            return True
+                        if other_start >= own_start and other_start < own_end:
+                            return True
+                        if other_end > own_start and other_end <= own_end:
+                            return True
+        return False
+
+    def only_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
+        instance : GASolver = GASolver.instance
+        for offspring in offsprings:
+            p = 1 / (len(offspring)/2)
+            for i in range(0, len(offspring), 2):
+                if random.random() < p:
+                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    offspring[i] = random.choice(workstations).id
+                    # choose random start time until fitting spot is found, or amount of tries is up
+                    tries = 10000
+                    start_time = random.randint(instance.earliest_slot, instance.last_slot)
+                    duration = instance.durations[instance.jobs[int(i / 2)]][offspring[i]]
+                    end_time = start_time + duration
+                    current_try = 0
+                    while current_try < tries and instance.has_overlaps(offspring, i, start_time, end_time):
+                        start_time = random.randint(instance.earliest_slot, instance.last_slot)
+                        end_time = start_time + duration
+                        current_try += 1
+                    offspring[i+1] = start_time
+        return offsprings
+
+    def get_order_index(self, index : int) -> int: # NOTE: should probably be replaces
+        job_index = int(index/2)
+        sum = 0
+        index = 0
+        for order in self.orders:
+            recipe = self.environment.get_recipe(order.resources[0].recipes[0]) # TODO: probably needs to be changed in the future
+            if job_index < sum + len(recipe.tasks):
+                return index
+            sum += len(recipe.tasks)
+            index += 1
+        return len(self.orders) -1
+
+    def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
+        instance = GASolver.instance
+        for offspring in offsprings:
+            prev_order = -1
+            current_order = 0
+            p = 1 / (len(offspring)/2)
+            for i in range(0, len(offspring), 2):
+                current_order = instance.get_order_index(i)
+                if random.random() < p:
+                    # adjust workstation
+                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    offspring[i] = random.choice(workstations).id
+                # adjust start time for all, independent of workstation assignment mutation
+                min_time_previous_job = 0
+                if prev_order == current_order:
+                    min_time_previous_job = offspring[i-1] + instance.durations[instance.jobs[int((i-2)/2)]][offspring[i-2]] # end of previous task in the same order
+                min_time_workstation = -1
+                current_duration = instance.durations[instance.jobs[int((i-1)/2)]][offspring[i]]
+                # gather all jobs currently assigned to the same workstation
+                assignments = []
+                for j in range(0, i, 2): # NOTE: maybe needs to consider ALL jobs <start time, end time>
+                    if offspring[j] == offspring[i]:
+                        assignments.append([offspring[j+1], offspring[j+1] + instance.durations[instance.jobs[int(j/2)]][offspring[j]]])
+                # find first slot big enough to fit the job
+                if len(assignments) > 1: # if more than one job is on the same workstation, find first fitting slot
+                    for j in range(1, len(assignments)):
+                        if assignments[j][0] - assignments[j-1][1] >= current_duration and assignments[j-1][1] >= min_time_previous_job:
+                            min_time_workstation = assignments[j-1][1]
+                            break
+                    if min_time_workstation == -1: # this should only be the case if there is no free slot in between, so put it at the end
+                        min_time_workstation = assignments[len(assignments)-1][1] # set to end of the last assigned job
+                elif len(assignments) == 1: # if only only one other job is on the same workstation, set to end of that job
+                    min_time_workstation = assignments[0][1]
+                else:
+                    min_time_workstation = 0 # no other jobs on the same workstation, can start at 0
+                offspring[i+1] = max(min_time_previous_job, min_time_workstation) # max between the two is the first feasible slot for the job
+                prev_order = current_order
+        return offsprings
+
+    def on_fitness_assignemts(ga_instance, population_fitness) -> None:
+        instance = GASolver.instance
+        current_best = abs(sorted(population_fitness, reverse=True)[0]) - 1
+        if len(instance.assignments_best) == 0:
+            instance.assignments_best.append(current_best)
+        elif current_best < instance.assignments_best[len(instance.assignments_best)-1]:
+            instance.assignments_best.append(current_best)
+        else:
+            instance.assignments_best.append(instance.assignments_best[len(instance.assignments_best)-1])
+        sum = 0
+        for individual_fitness in population_fitness:
+            sum += abs(individual_fitness)-1
+        instance.average_assignments.append(sum/len(population_fitness))
+
+    def fitness_function(solution : list[int], solution_idx) -> int:
+        fitness = 0
+        if not GASolver.is_feasible(solution):
+            return - (2 * GASolver.instance.last_slot)
+        # use makespan for now
+        min = float('inf')
+        max = -float('inf')
+        for i in range(1, len(solution), 2): # go through all start times
+            if solution[i] < min:
+                min = solution[i]
+            task = GASolver.instance.jobs[int((i-1) / 2)]
+            if solution[i] + GASolver.instance.durations[task][solution[i-1]] > max:
+                max = solution[i] + GASolver.instance.durations[task][solution[i-1]]
+        fitness += abs(max - min)
+        return -fitness # NOTE: PyGAD always maximizes
+
+    def fitness_function_idle_time(solution : list[int], solution_idx) -> int:
+        fitness = 0
+        if not GASolver.is_feasible(solution):
+            return - (2 * GASolver.instance.last_slot)
+        unused_workstations = 0
+        last_timeslot = 0
+        for workstation in GASolver.instance.environment.workstations:
+            used = False
+            slots = []
+            for i in range(0, len(solution), 2):
+                if solution[i] == workstation.id:
+                    used = True
+                    start = solution[i + 1]
+                    duration = GASolver.instance.durations[GASolver.instance.jobs[int(i/2)]][solution[i]]
+                    end = start + duration
+                    slots.append((start, end))
+                    if end > last_timeslot:
+                        last_timeslot = end
+            sorted_slots = sorted(slots, key=lambda x: x[0])
+            last_end = 0
+            for slot in sorted_slots:
+                fitness += slot[0] - last_end
+                last_end = slot[1]
+            if not used:
+                unused_workstations += 1
+        fitness += unused_workstations * last_timeslot
+        return -fitness
+
+    def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
+        job_index = int(index/2)
+        sum = 0
+        for order in self.orders:
+            recipe = self.environment.get_recipe(order.resources[0].recipes[0]) # TODO: probably needs to be changed in the future
+            if job_index < sum + len(recipe.tasks):
+                return order
+            sum += len(recipe.tasks)
+        return self.orders[len(self.orders)-1]
+
+    def is_feasible(solution : list[int]) -> bool:
+        order = None
+        instance : GASolver = GASolver.instance
+        for i in range(0, len(solution), 2): # go through all workstation assignments
+            job = instance.jobs[int(i/2)]
+            # check for last time slot
+            if solution[i+1] + instance.durations[job][solution[i]] > instance.last_slot:
+                return False
+            # check for earliest time slot
+            if solution[i+1] < instance.earliest_slot:
+                return False
+            # check for overlaps
+            for j in range(0, len(solution), 2):
+                if not i == j:
+                    if solution[i] == solution[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = solution[i+1]
+                        other_start = solution[j+1]
+                        own_duration = instance.durations[job][solution[i]]
+                        other_duration = instance.durations[other_job][solution[j]]
+                        own_end = own_start + own_duration
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return False
+                        if own_end > other_start and own_end <= other_end:
+                            return False
+                        if other_start >= own_start and other_start < own_end:
+                            return False
+                        if other_end > own_start and other_end <= own_end:
+                            return False
+            # check for correct sequence
+            prev_order = order
+            order = instance.get_order(i) # find order corresponding to task
+            if order:
+                if not prev_order is None and order == prev_order: # if current task is not the first job of this order, check if the previous job ends before the current one starts
+                    prev_start = solution[i-1]
+                    prev_end = prev_start + instance.durations[instance.jobs[int((i-2)/2)]][solution[i-2]]
+                    if solution[i+1] < prev_end:
+                        return False
+            else:
+                print("Something went completely wrong!") # TODO: should probably throw exception
+        return True
