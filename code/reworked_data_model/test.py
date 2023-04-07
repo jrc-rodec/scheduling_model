@@ -1,6 +1,7 @@
 from translation import BenchmarkTranslator, TimeWindowGAEncoder, BasicBenchmarkTranslator, SimpleGAEncoder
 from model import Order
 from solver import GASolver
+from visualization import visualize_schedule
 """benchmark_translator = BenchmarkTranslator()
 production_environment = benchmark_translator.translate(7)
 encoder = TimeWindowGAEncoder()
@@ -17,8 +18,11 @@ values, durations, jobs = encoder.encode(production_environment, orders) # NOTE:
 print(values)
 
 solver = GASolver(values, durations, jobs, production_environment, orders)
-print('just for testing')
-solver.initialize(selection='sss') # just use default options
+solver.initialize(selection='sss',max_generations=1000) # just use default options NOTE: something about rws has changed in the library
 solver.run()
 print(solver.get_best())
 print(solver.get_best_fitness())
+
+schedule = encoder.decode(solver.get_best(), jobs, production_environment, solver=solver)
+
+visualize_schedule(schedule, production_environment, orders)

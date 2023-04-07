@@ -332,14 +332,14 @@ class Schedule(Entitiy):
 
     def _get_workstation(self, id : str) -> Workstation:
         for workstation in self.assignments.keys():
-            if str(workstation.id) == str(id):
+            if str(workstation) == str(id):
                 return workstation
         return None
     
     def add_assignment(self, workstation : Workstation, job : Job, start_time : int, end_time : int, resources : list[tuple]) -> None:
-        if workstation not in self.assignments:
-            self.assignments[workstation] = []
-        self.assignments[workstation].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
+        if str(workstation.id) not in self.assignments:
+            self.assignments[str(workstation.id)] = []
+        self.assignments[str(workstation.id)].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
         pass
 
     def get_assignments_for_order_recipe(self, job : Job) -> list[Assignment]:
