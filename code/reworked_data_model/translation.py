@@ -176,10 +176,10 @@ class SimpleGAEncoder(Encoder):
                         values.extend([0, 0])
                         d : list[int] = len(production_environment.workstations) * [0] # TODO: something wrong with the parsing of this
                         possible_workstations = production_environment.get_available_workstations_for_task(task[0])
-                        for workstation in production_environment.get_workstation_list():
-                            d[workstation.id] = workstation.get_duration(task[0])
-                        """for possible_workstation in possible_workstations:
-                            d[possible_workstation.id] = possible_workstation.get_duration(task[0])"""
+                        """for workstation in production_environment.get_workstation_list():
+                            d[workstation.id] = workstation.get_duration(task[0])"""
+                        for possible_workstation in possible_workstations:
+                            d[possible_workstation.id] = possible_workstation.get_duration(task[0])
                         """for task_duration in possible_workstation.tasks:
                             if task_duration[0] == task[0]:
                                 d[possible_workstation.id] = task_duration[1]"""

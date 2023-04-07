@@ -61,28 +61,28 @@ class Recipe(Entitiy):
             self.name = f'r{self.id}'
         self.tasks = tasks
 
-    def get_sequence_value_for_task(self, task : Task) -> int | None:
+    def get_sequence_value_for_task(self, task : Task) -> int:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
                     return task[1]
         return None
     
-    def get_finish_before_value_for_task(self, task : Task) -> int | None:
+    def get_finish_before_value_for_task(self, task : Task) -> int:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
                     return task[2]
         return None
     
-    def get_task(self, id : str) -> Task | None:
+    def get_task(self, id : str) -> Task:
         for task in self.tasks:
             for alternative in task[0]:
                 if str(alternative.id) == str(id):
                     return alternative
         return None
     
-    def get_alternatives(self, task : Task) -> list[Task] | None:
+    def get_alternatives(self, task : Task) -> list[Task]:
         for task in self.tasks:
             for alternative in task[0]:
                 if alternative == task:
@@ -107,25 +107,25 @@ class Vendor(Entitiy):
         self.resources = resources # resource, price (per unit), min, max, expected delivery time
         self.event_log = event_log
 
-    def get_expected_delivery_time_for_resource(self, resource) -> int | None:
+    def get_expected_delivery_time_for_resource(self, resource) -> int:
         for r in self.resources:
             if r[0] == resource:
                 return r[4]
         return None
             
-    def get_min_amount_for_resource(self, resource) -> int | None:
+    def get_min_amount_for_resource(self, resource) -> int:
         for r in self.resources:
             if r[0] == resource:
                 return r[2]
         return None
             
-    def get_max_amount_for_resource(self, resource) -> int | None:
+    def get_max_amount_for_resource(self, resource) -> int:
         for r in self.resources:
             if r[0] == resource:
                 return r[3]
         return None
     
-    def get_price_per_unit_for_resource(self, resource) -> float | None:
+    def get_price_per_unit_for_resource(self, resource) -> float:
         for r in self.resources:
             if r[0] == resource:
                 return r[1]
@@ -157,11 +157,12 @@ class Resource(Entitiy):
         self.vendors = vendors
         self.events = events
 
-
+import copy
 class Workstation(Entitiy):
     
     next_id : int = 0
 
+    #NOTE: apparently, when objects (lists in this case) are used as default, there's only one list, and every object has a reference to the same list
     def __init__(self, id : str = None, name : str = None, basic_resources : list[tuple[Resource, int]] = [], tasks : list = [], workstation_type_id : int = 0, event_log : list[Event] = []) -> None:
         if not id:
             id = Workstation.next_id
@@ -172,11 +173,11 @@ class Workstation(Entitiy):
         else:
             self.name = f'w{self.id}'
         self.basic_resources = basic_resources
-        self.tasks = tasks
+        self.tasks = copy.deepcopy(tasks)
         self.workstation_type_id = workstation_type_id
         self.event_log = event_log
 
-    def get_duration(self, task : Task) -> int | None:
+    def get_duration(self, task : Task) -> int:
         for t in self.tasks:
             if task == t[0]:# str(task[0].id) == str(task_id):
                 return t[1]
@@ -262,14 +263,14 @@ class Schedule(Entitiy):
         self.objective_values = objective_values
         self.solver = solver
 
-    def _get_assignment_for_job(self, job : Job) -> Assignment | None:
+    def _get_assignment_for_job(self, job : Job) -> Assignment:
         for workstation in self.assignments.keys():
             for assignment in self.assignments[workstation]:
                 if assignment.job == job:
                     return assignment
         return None
     
-    def _get_workstation_for_job(self, job : Job) -> Workstation | None:
+    def _get_workstation_for_job(self, job : Job) -> Workstation:
         for workstation in self.assignments.keys():
             for assignment in self.assignments[workstation]:
                 if assignment.job == job:
@@ -329,7 +330,7 @@ class Schedule(Entitiy):
                 # TODO: check resources
         return True
 
-    def _get_workstation(self, id : str) -> Workstation | None:
+    def _get_workstation(self, id : str) -> Workstation:
         for workstation in self.assignments.keys():
             if str(workstation.id) == str(id):
                 return workstation

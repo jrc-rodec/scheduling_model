@@ -420,7 +420,7 @@ class GASolver(Solver):
         sum = 0
         index = 0
         for order in self.orders:
-            recipe = self.environment.get_recipe(order.resources[0].recipes[0]) # TODO: probably needs to be changed in the future
+            recipe = self.environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
             if job_index < sum + len(recipe.tasks):
                 return index
             sum += len(recipe.tasks)
@@ -442,14 +442,14 @@ class GASolver(Solver):
                 # adjust start time for all, independent of workstation assignment mutation
                 min_time_previous_job = 0
                 if prev_order == current_order:
-                    min_time_previous_job = offspring[i-1] + instance.durations[instance.jobs[int((i-2)/2)]][offspring[i-2]] # end of previous task in the same order
+                    min_time_previous_job = offspring[i-1] + instance.durations[int(instance.jobs[int((i-2)/2)].id)][offspring[i-2]] # end of previous task in the same order
                 min_time_workstation = -1
-                current_duration = instance.durations[instance.jobs[int((i-1)/2)]][offspring[i]]
+                current_duration = instance.durations[int(instance.jobs[int((i-1)/2)].id)][offspring[i]]
                 # gather all jobs currently assigned to the same workstation
                 assignments = []
                 for j in range(0, i, 2): # NOTE: maybe needs to consider ALL jobs <start time, end time>
                     if offspring[j] == offspring[i]:
-                        assignments.append([offspring[j+1], offspring[j+1] + instance.durations[instance.jobs[int(j/2)]][offspring[j]]])
+                        assignments.append([offspring[j+1], offspring[j+1] + instance.durations[int(instance.jobs[int(j/2)].id)][offspring[j]]])
                 # find first slot big enough to fit the job
                 if len(assignments) > 1: # if more than one job is on the same workstation, find first fitting slot
                     for j in range(1, len(assignments)):
@@ -540,7 +540,7 @@ class GASolver(Solver):
         for i in range(0, len(solution), 2): # go through all workstation assignments
             job = instance.jobs[int(i/2)]
             # check for last time slot
-            if solution[i+1] + instance.durations[job][solution[i]] > instance.last_slot:
+            if solution[i+1] + instance.durations[int(job.id)][solution[i]] > instance.last_slot:
                 return False
             # check for earliest time slot
             if solution[i+1] < instance.earliest_slot:

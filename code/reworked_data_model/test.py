@@ -18,3 +18,7 @@ print(values)
 
 solver = GASolver(values, durations, jobs, production_environment, orders)
 print('just for testing')
+solver.initialize(selection='sss') # just use default options
+solver.run()
+print(solver.get_best())
+print(solver.get_best_fitness())
