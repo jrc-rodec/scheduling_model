@@ -179,8 +179,8 @@ class Workstation(Entitiy):
     def get_duration(self, task : Task) -> int | None:
         for t in self.tasks:
             if task == t[0]:# str(task[0].id) == str(task_id):
-                return task[1]
-        return None
+                return t[1]
+        return 0
 
 
 class SetupGroup(Entitiy):
@@ -592,12 +592,12 @@ class ProductionEnvironment:
 
     def get_available_workstations_for_task(self, task : Task) -> list[Workstation]:
         workstations : list[Workstation] = []
-        for workstation in self.workstations:
+        for workstation in self.workstations.values():
             for t in workstation.tasks:
                 if task == t[0]:# str(task[0].id) == str(task_id):
                     workstations.append(workstation)
                     break
-        return workstation
+        return workstations
     
     def get_event_list(self) -> list[Event]:
         return self.event_log.values()

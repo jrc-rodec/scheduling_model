@@ -97,7 +97,7 @@ class BasicBenchmarkTranslator(DataTranslator):
         operation_time_index = 0
         for recipe_index in range(len(recipes)):
             recipe_tasks : list[Task] = []
-            for task_index in recipes[recipe_index]:
+            for task_index in range(recipes[recipe_index]):
                 setup_group = SetupGroup()
                 task = Task(name=f'task_{operation_time_index}', setup_groups=[setup_group] ) # setup group is not really needed here
                 for operation_index in range(len(operation_times[operation_time_index])):
@@ -160,9 +160,10 @@ class TimeWindowGAEncoder(Encoder):
     
 class SimpleGAEncoder(Encoder):
 
-    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]) -> tuple[list[int], list[Job]]:
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]) -> tuple[list[int], dict[int, list[int]], list[Job]]:
         # format: <workstation, start_time>
         values : list[int] = []
+        durations : dict[int, list[int]] = dict() # durations on each workstation for each indexed task
         jobs : list[Job] = []
         for order in orders:
             ro_id = 0
@@ -170,10 +171,20 @@ class SimpleGAEncoder(Encoder):
                 if len(resource[0].recipes) > 0:
                     use_recipe : Recipe = resource[0].recipes[0] # assume only 1 recipe for each resource for now
                     for task in use_recipe.tasks:
-                        jobs.append(Job(order=order, recipe=use_recipe, task=task, ro_id=ro_id))
+                        jobs.append(Job(order=order, recipe=use_recipe, task=task[0], ro_id=ro_id))
                         ro_id += 1
                         values.extend([0, 0])
-        return values, jobs
+                        d : list[int] = len(production_environment.workstations) * [0] # TODO: something wrong with the parsing of this
+                        possible_workstations = production_environment.get_available_workstations_for_task(task[0])
+                        for workstation in production_environment.get_workstation_list():
+                            d[workstation.id] = workstation.get_duration(task[0])
+                        """for possible_workstation in possible_workstations:
+                            d[possible_workstation.id] = possible_workstation.get_duration(task[0])"""
+                        """for task_duration in possible_workstation.tasks:
+                            if task_duration[0] == task[0]:
+                                d[possible_workstation.id] = task_duration[1]"""
+                        durations[task[0].id] = d
+        return values, durations, jobs
 
     def decode(self, values : list[int], jobs : list[Job], production_environment : ProductionEnvironment, objective_values : list[float] = [], solver : Solver = None) -> Schedule:
         schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
