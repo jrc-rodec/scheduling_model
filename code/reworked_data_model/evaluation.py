@@ -44,6 +44,9 @@ class Evaluator:
 
     def remove_objective(self, objective : Objective) -> None:
         self.objectives.remove(objective)
+    
+    def clear_objectives(self) -> None:
+        self.objectives :list[Objective] = []
 
 """
     Add additional objectives below
@@ -132,6 +135,8 @@ class Profit(Objective):
                         profit -= order.penalty
                     else:
                         profit += order.profit - order.tardiness_fee
+                else:
+                    profit += order.profit
             prev_job = job
         return profit
 

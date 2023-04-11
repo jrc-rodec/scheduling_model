@@ -18,6 +18,12 @@ class Solver:
     def remove_objective(self, objective : Objective) -> None:
         self.evaluator.remove_objective(objective)
 
+    def clear_objectives(self) -> None:
+        self.evaluator.clear_objectives()
+
+    def reset(self) -> None:
+        self.clear_objectives()
+    
 
 class TimeWindowGASolver(Solver):
 
@@ -300,7 +306,6 @@ class GASolver(Solver):
 
     def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], production_environment : ProductionEnvironment, orders : list[Order]):
         super().__init__('GASolver', production_environment, SimpleGAEncoder())
-        #self.name = "GASolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs : list[Job] = job_list
@@ -309,7 +314,14 @@ class GASolver(Solver):
         self.average_assignments = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', objective : str ='makespan') -> None:
+    def reset(self) -> None:
+        super().reset()
+        self.best_solution = None
+        self.assignments_best = []
+        self.average_assignments = []
+        GASolver.instance = self
+
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only') -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -330,13 +342,11 @@ class GASolver(Solver):
         gene_space_workstations = {'low': 0, 'high': len(self.production_environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
-        self.objective = objective
         self.objective_function = GASolver.fitness_function
         for _ in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
             self.gene_space.append(gene_space_starttime)
         self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
-        
         self.best_solution = None
 
     def run(self) -> None:
@@ -479,7 +489,8 @@ class GASolver(Solver):
 
     def fitness_function(solution : list[int], solution_idx) -> int:
         if not GASolver.is_feasible(solution):
-            return - (2 * GASolver.instance.last_slot)
+            #return - (2 * GASolver.instance.last_slot)
+            return - float('inf')
         instance = GASolver.instance
         schedule : Schedule = instance.encoder.decode(solution, instance.jobs, instance.production_environment, [], instance)
         fitness = instance.evaluator.evaluate(schedule, instance.jobs)[0] # only do single objective for now
@@ -489,7 +500,7 @@ class GASolver(Solver):
         job_index = int(index/2)
         sum = 0
         for order in self.orders:
-            recipe = self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
+            recipe = order.resources[0][0].recipes[0]#self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
             if job_index < sum + len(recipe.tasks):
                 return order
             sum += len(recipe.tasks)
@@ -537,3 +548,163 @@ class GASolver(Solver):
             else:
                 print("Something went completely wrong!") # TODO: should probably throw exception
         return True
+
+class GreedyAgentSolver(Solver):
+
+    instance = None
+
+    def __init__(self, encoding, durations, job_list, environment, orders):
+        super().__init__('Greedy Agent', environment, SimpleGAEncoder())
+        self.name = "GreedyAgentSolver"
+        self.encoding = encoding
+        self.durations = durations
+        self.jobs = job_list
+        self.orders = orders
+
+        self.assignments_best = []
+        self.average_assignments = []
+        GreedyAgentSolver.instance = self
+
+    def initialize(self):
+        pass
+
+    def get_order_index(self, index : int) -> int:
+        job_index = int(index/2)
+        sum = 0
+        index = 0
+        for order in self.orders:
+            recipe : Recipe = order.resources[0][0].recipes[0]
+            if job_index < sum + len(recipe.tasks):
+                return index
+            sum += len(recipe.tasks)
+            index += 1
+        return len(self.orders) -1
+
+    def run(self, output : bool = True):
+        result = len(self.encoding) * [-1]
+        prev_order = -1
+        for i in range(0, len(result), 2):
+            current_order = self.get_order_index(i)
+            workstation_options = []
+            for j in range(len(self.durations[int(self.jobs[int(i/2)].task.id)])):
+                if self.durations[int(self.jobs[int(i/2)].task.id)][j] != 0:
+                    duration = self.durations[int(self.jobs[int(i/2)].task.id)][j] # save workstation with duration
+                    tasks_on_workstation = []
+                    for k in range(0, i, 2):
+                        if j == result[k]:
+                            tasks_on_workstation.append([k, result[k+1], result[k+1] + self.durations[int(self.jobs[int(k/2)].task.id)][result[k]]]) # save index, start time and end time, probably don't need index
+                    tasks_on_workstation.sort(key=lambda x:x[1]) # sort by start time
+                    # find gaps
+                    for k in range(1, len(tasks_on_workstation)):
+                        if tasks_on_workstation[k][1] - tasks_on_workstation[k-1][2] >= duration:
+                            workstation_options.append((j, tasks_on_workstation[k-1][2])) # save workstation + end of previous task
+                    if len(tasks_on_workstation) > 0:
+                        workstation_options.append((j, tasks_on_workstation[-1][2])) # add the workstation + end of the current last task on the workstation as option
+                    else:
+                        workstation_options.append((j, 0)) # first task on this workstation
+            # workstation_options should contain all viable slots for the current task
+            # remove all slots that would invalidate the sequence of an order
+            if prev_order == current_order:
+                prev_start = result[i-1]
+                prev_end = prev_start + self.durations[int(self.jobs[int((i-2)/2)].task.id)][result[i-2]]
+                workstation_options = [option for option in workstation_options if option[1] >= prev_end] # should remove every starting slot before prev_end
+            # at this point, workstation_option should only contain valid possible starting slots for the current task
+            # evaluate all options to find options with the smallest impact on makespan
+            # create solutions:
+            """solutions = []
+            for option in workstation_options:
+                solution = deepcopy(result)
+                solution[i] = option[0]
+                solution[i+1] = option[1]
+                solutions.append(solution)"""
+            
+            best_makespan = []
+            for option in workstation_options:
+                test_solution = deepcopy(result) # slow
+                test_solution[i] = option[0] # workstation
+                test_solution[i+1] = option[1] # start time slot
+                test_fitness = self.makespan(test_solution)
+                if len(best_makespan) == 0 or test_fitness <= best_makespan[0][1]:
+                    if len(best_makespan) > 0 and test_fitness < best_makespan[0][1]:
+                        best_makespan = []
+                    best_makespan.append((test_solution, test_fitness))
+            # TODO: if more than one best solution, evaluate secondary objective, or choose randomly
+            best_idle = [] # copy.deepcopy(best_makespan)
+            for option in best_makespan:
+                test_solution = deepcopy(option[0]) # slow
+                test_fitness = self.idle_time(test_solution)
+                if len(best_idle) == 0 or test_fitness <= best_idle[0][1]:
+                    if len(best_idle) > 0 and test_fitness < best_idle[0][1]:
+                        best_idle = []
+                    best_idle.append((test_solution, test_fitness))
+            # choose randomly from all best_idle solutions
+            result = deepcopy(random.choice(best_idle))[0] # choose randomly for now
+            prev_order = current_order
+        self.best_solution = (result, self.makespan(result))
+        if output:
+            print("Done")
+    
+    def find_best(self, solutions) -> tuple[list[int], list[float]]:
+        results : list[list[float]] = []
+        best : list[float] = None
+        best_solution : list[int] = []
+        alternatives = []
+        for solution in solutions:
+            schedule : Schedule = self.encoder.decode(solution, self.jobs, self.production_environment, [], self)
+            result = self.evaluator.evaluate(schedule)
+            results.append(result)
+            if not best:
+                best = result
+                best_solution = deepcopy(solution)
+            else:
+                success = False
+                for i in range(len(result)):
+                    if result[i] < best[i]:
+                        best = result
+                        best_solution = solution
+                        success = True
+                        break
+                    elif result[i] > best[i]:
+                        success = True
+                        break
+                if not success: # equal solution
+                    alternatives.append((solution, result))
+        if len(alternatives) > 0:
+            alternatives.append((best_solution, best))
+            solution = random.choice(alternatives)
+            best_solution = solution[0]
+            best = solution[1]
+        return best_solution, best
+
+    def makespan(self, solution):
+        min = float('inf')
+        max = 0
+        for i in range(0, len(solution), 2):
+            if solution[i] != -1:
+                if solution[i+1] < min:
+                    min = solution[i+1]
+                if solution[i+1] + self.durations[int(self.jobs[int(i/2)].task.id)][solution[i]] > max:
+                    max = solution[i+1] + self.durations[int(self.jobs[int(i/2)].task.id)][solution[i]]
+        return max - min
+    
+    def idle_time(self, solution):
+        result = 0
+        for workstation in self.production_environment.workstations.values():
+            id = workstation.id
+            on_workstation = []
+            # get all start and end times on workstation:
+            for i in range(0, len(solution), 2):
+                if solution[i] == id:
+                    start = solution[i+1]
+                    end = start + self.durations[int(self.jobs[int(i/2)].task.id)][id]
+                    on_workstation.append((start, end))
+            on_workstation.sort(key= lambda x:x[0]) # sort by start times
+            for i in range(1, len(on_workstation)):
+                result += on_workstation[i][0] - on_workstation[i-1][1]
+        return result
+
+    def get_best(self):
+        return self.best_solution[0]
+
+    def get_best_fitness(self):
+        return self.best_solution[1]

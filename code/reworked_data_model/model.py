@@ -1,5 +1,25 @@
 from enum import Enum
 
+def reset_entities():
+    Event.next_id = 0
+    Task.next_id = 0
+    Recipe.next_id = 0
+    Vendor.next_id = 0
+    Resource.next_id = 0
+    Workstation.next_id = 0
+    SetupGroup.next_id = 0
+    Order.next_id = 0
+    Job.next_id = 0
+    Assignment.next_id = 0
+    Schedule.next_id = 0
+    Solver.next_id = 0
+    Customer.next_id = 0
+
+def soft_reset():
+    Job.next_id = 0
+    Assignment.next_id = 0
+    Schedule.next_id = 0
+
 class Entitiy:
 
     def __init__(self, id : int) -> None:
