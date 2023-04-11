@@ -1,15 +1,16 @@
 from model import ProductionEnvironment, Job, Order, Recipe, Workstation, Task, Resource, Schedule
 from copy import deepcopy
-from translation import TimeWindowGAEncoder
+from translation import TimeWindowGAEncoder, Encoder, SimpleGAEncoder
 from evaluation import Evaluator, Objective
 import random
 
 class Solver:
     
-    def __init__(self, name : str, production_environment : ProductionEnvironment) -> None:
+    def __init__(self, name : str, production_environment : ProductionEnvironment, encoder : Encoder = None) -> None:
         self.name = name
         self.production_environment = production_environment
         self.evaluator = Evaluator(self.production_environment)
+        self.encoder = encoder
 
     def add_objective(self, objective : Objective) -> None:
         self.evaluator.add_objective(objective)
@@ -22,7 +23,7 @@ class TimeWindowGASolver(Solver):
 
     def __init__(self, production_environment : ProductionEnvironment, orders : list[Order]) -> None:
         # TODO: after job change to objects, probably don't need list of orders anymore
-        super().__init__('Time Window GA', production_environment)
+        super().__init__('Time Window GA', production_environment, TimeWindowGAEncoder())
         self.production_environment = production_environment
         self.orders = orders
 
@@ -60,8 +61,8 @@ class TimeWindowGASolver(Solver):
         return population
 
     def _evaluate(self, individual : list[int]) -> list[float]:
-        encoder = TimeWindowGAEncoder()
-        schedule : Schedule = encoder.decode(individual, self.jobs, self.production_environment, [], self)
+        #encoder = TimeWindowGAEncoder()
+        schedule : Schedule = self.encoder.decode(individual, self.jobs, self.production_environment, [], self)
         if not schedule.is_feasible(self.jobs):
             return 2 * self.last_time_slot
         # use evaluation module
@@ -297,12 +298,12 @@ class GASolver(Solver):
 
     instance = None
 
-    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], env : ProductionEnvironment, orders : list[Order]):
-        self.name = "GASolver"
+    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], production_environment : ProductionEnvironment, orders : list[Order]):
+        super().__init__('GASolver', production_environment, SimpleGAEncoder())
+        #self.name = "GASolver"
         self.encoding = encoding
         self.durations = durations
         self.jobs : list[Job] = job_list
-        self.environment = env
         self.orders = orders
         self.assignments_best = []
         self.average_assignments = []
@@ -326,15 +327,11 @@ class GASolver(Solver):
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
         self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
-        gene_space_workstations = {'low': 0, 'high': len(self.environment.workstations)}
+        gene_space_workstations = {'low': 0, 'high': len(self.production_environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
         self.objective = objective
         self.objective_function = GASolver.fitness_function
-        if objective == 'makespan':
-            self.objective_function = GASolver.fitness_function
-        elif objective == 'idle_time':
-            self.objective_function = GASolver.fitness_function_idle_time
         for _ in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
             self.gene_space.append(gene_space_starttime)
@@ -366,7 +363,7 @@ class GASolver(Solver):
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
                     # mutate workstation assignment
-                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    workstations = instance.production_environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
                     offspring[i] = random.choice(workstations).id
                     # mutate start time
                     offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot)
@@ -400,7 +397,7 @@ class GASolver(Solver):
             p = 1 / (len(offspring)/2)
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
-                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    workstations = instance.production_environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
                     offspring[i] = random.choice(workstations).id
                     # choose random start time until fitting spot is found, or amount of tries is up
                     tries = 10000
@@ -420,7 +417,7 @@ class GASolver(Solver):
         sum = 0
         index = 0
         for order in self.orders:
-            recipe = self.environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
+            recipe = self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
             if job_index < sum + len(recipe.tasks):
                 return index
             sum += len(recipe.tasks)
@@ -437,7 +434,7 @@ class GASolver(Solver):
                 current_order = instance.get_order_index(i)
                 if random.random() < p:
                     # adjust workstation
-                    workstations = instance.environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    workstations = instance.production_environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
                     offspring[i] = random.choice(workstations).id
                 # adjust start time for all, independent of workstation assignment mutation
                 min_time_previous_job = 0
@@ -481,53 +478,18 @@ class GASolver(Solver):
         instance.average_assignments.append(sum/len(population_fitness))
 
     def fitness_function(solution : list[int], solution_idx) -> int:
-        fitness = 0
         if not GASolver.is_feasible(solution):
             return - (2 * GASolver.instance.last_slot)
-        min = float('inf')
-        max = -float('inf')
-        for i in range(1, len(solution), 2): # go through all start times
-            if solution[i] < min:
-                min = solution[i]
-            job = GASolver.instance.jobs[int((i-1) / 2)]
-            if solution[i] + GASolver.instance.durations[int(job.task.id)][solution[i-1]] > max:
-                max = solution[i] + GASolver.instance.durations[int(job.task.id)][solution[i-1]]
-        fitness += abs(max - min)
-        return -fitness # NOTE: PyGAD always maximizes
-
-    def fitness_function_idle_time(solution : list[int], solution_idx) -> int:
-        fitness = 0
-        if not GASolver.is_feasible(solution):
-            return - (2 * GASolver.instance.last_slot)
-        unused_workstations = 0
-        last_timeslot = 0
-        for workstation in GASolver.instance.environment.workstations:
-            used = False
-            slots = []
-            for i in range(0, len(solution), 2):
-                if solution[i] == workstation.id:
-                    used = True
-                    start = solution[i + 1]
-                    duration = GASolver.instance.durations[GASolver.instance.jobs[int(i/2)]][solution[i]]
-                    end = start + duration
-                    slots.append((start, end))
-                    if end > last_timeslot:
-                        last_timeslot = end
-            sorted_slots = sorted(slots, key=lambda x: x[0])
-            last_end = 0
-            for slot in sorted_slots:
-                fitness += slot[0] - last_end
-                last_end = slot[1]
-            if not used:
-                unused_workstations += 1
-        fitness += unused_workstations * last_timeslot
+        instance = GASolver.instance
+        schedule : Schedule = instance.encoder.decode(solution, instance.jobs, instance.production_environment, [], instance)
+        fitness = instance.evaluator.evaluate(schedule, instance.jobs)[0] # only do single objective for now
         return -fitness
 
     def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
         job_index = int(index/2)
         sum = 0
         for order in self.orders:
-            recipe = self.environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
+            recipe = self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
             if job_index < sum + len(recipe.tasks):
                 return order
             sum += len(recipe.tasks)

@@ -11,6 +11,7 @@ class Entitiy:
     def __ne__(self, other) -> bool:
         return not self == other
 
+
 class Event(Entitiy):
     
     next_id : int = 0

@@ -37,6 +37,7 @@ class Evaluator:
         # TODO: scenario generation
         for objective in self.objectives:
             objective_values.append(objective.evaluate(schedule, self.production_environment, jobs))
+        return objective_values
 
     def add_objective(self, objective : Objective) -> None:
         self.objectives.append(objective)
@@ -50,6 +51,9 @@ class Evaluator:
 
 class Makespan(Objective):
 
+    def __init__(self):
+        super().__init__('Makespan')
+    
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = []) -> float:
         min = float('inf')
         max = 0
@@ -63,9 +67,12 @@ class Makespan(Objective):
 
 class IdleTime(Objective):
     
+    def __init__(self):
+        super().__init__('Idle Time')
+
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment = None, jobs : list[Job] = []) -> float:
         idle_time = 0
-        for workstation in schedule.assignemnts.keys():
+        for workstation in schedule.assignments.keys():
             sorted_assignments = sorted(schedule.assignments[workstation], key=lambda x: x.start_time)
             if len(sorted_assignments) > 0:
                 idle_time += sorted_assignments[0].start_time
@@ -76,41 +83,52 @@ class IdleTime(Objective):
 
 class Tardiness(Objective):
 
+    def __init__(self):
+        super().__init__('Tardiness')
+
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         tardiness = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
             #TODO: change after job is changed to objects
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+            if job.order != prev_job.order or job.recipe != prev_job.recipe or job == jobs[-1]:
                 # check prev job end_time
                 order = prev_job.order
-                if prev_job.end_time > order.delivery_time:
-                    tardiness += prev_job.end_time - order.delivery_time
+                prev_assignment = schedule._get_assignment_for_job(prev_job)
+                if prev_assignment.end_time > order.delivery_time:
+                    tardiness += prev_assignment.end_time - order.delivery_time
             prev_job = job
         return tardiness
 
 class TimeDeviation(Objective):
 
+    def __init__(self):
+        super().__init__('Time Deviation')
+
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         deviation = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+            if job.order != prev_job.order or job.recipe != prev_job.recipe or job == jobs[-1]:
                 order = prev_job.order
-                deviation += abs(prev_job.end_time - order.delivery_time)
+                deviation += abs(schedule._get_assignment_for_job(prev_job).end_time - order.delivery_time)
             prev_job = job
         return deviation
 
 class Profit(Objective):
     
+    def __init__(self):
+        super().__init__('Profit')
+
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         profit = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+            if job.order != prev_job.order or job.recipe != prev_job.recipe or job == jobs[-1]:
                 order : Order = prev_job.order
-                if prev_job.end_time > order.delivery_time:
-                    if prev_job.end_time > order.latest_acceptable_time:
+                prev_assignment = schedule._get_assignment_for_job(prev_job)
+                if prev_assignment.end_time > order.delivery_time:
+                    if prev_assignment.end_time > order.latest_acceptable_time:
                         profit -= order.penalty
                     else:
                         profit += order.profit - order.tardiness_fee
@@ -119,13 +137,16 @@ class Profit(Objective):
 
 class UnfulfilledOrders(Objective):
 
+    def __init__(self):
+        super().__init__('Unfulfilled Order Count')
+
     def evaluate(self, schedule : Schedule, production_environment : ProductionEnvironment, jobs : list[Job] = []) -> float:
         unfulfilled_order_count = 0
         prev_job = jobs[0]
         for job in jobs[1:]:
-            if job.order_id != prev_job.order_id or job.recipe_id != prev_job.recipe_id or job == jobs[-1]:
+            if job.order != prev_job.order or job.recipe != prev_job.recipe or job == jobs[-1]:
                 # check prev job end_time
                 order : Order = prev_job.order
-                if prev_job.end_time > order.latest_acceptable_time:
+                if schedule._get_assignment_for_job(prev_job).end_time > order.latest_acceptable_time:
                     unfulfilled_order_count += 1
         return unfulfilled_order_count

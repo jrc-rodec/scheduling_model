@@ -1,7 +1,7 @@
 from translation import BenchmarkTranslator, TimeWindowGAEncoder, BasicBenchmarkTranslator, SimpleGAEncoder, FJSSPInstancesTranslator
 from model import Order
 from solver import GASolver
-from evaluation import Evaluator, Makespan
+from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation
 from visualization import visualize_schedule
 """benchmark_translator = BenchmarkTranslator()
 production_environment = benchmark_translator.translate(7)
@@ -25,7 +25,8 @@ values, durations, jobs = encoder.encode(production_environment, orders) # NOTE:
 solver = GASolver(values, durations, jobs, production_environment, orders)
 solver.initialize(selection='sss',max_generations=100,objective='makespan') # just use default options
 
-#solver.add_objective(Makespan())
+solver.add_objective(Makespan())
+
 
 solver.run()
 print(solver.get_best())
@@ -35,4 +36,9 @@ schedule = encoder.decode(solver.get_best(), jobs, production_environment, solve
 
 visualize_schedule(schedule, production_environment, orders)
 
-
+# just testing
+evaluator = solver.evaluator
+evaluator.add_objective(IdleTime())
+evaluator.add_objective(TimeDeviation())
+objective_values = evaluator.evaluate(schedule, jobs)
+print(objective_values)
