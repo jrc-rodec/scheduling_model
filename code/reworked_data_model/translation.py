@@ -66,7 +66,6 @@ class FJSSPInstancesTranslator(DataTranslator):
         return production_environment
 
 
-
 class BenchmarkTranslator(DataTranslator):
 
     def translate(self, benchmark_id : int = 0) -> ProductionEnvironment:
@@ -129,8 +128,8 @@ class BenchmarkTranslator(DataTranslator):
                             worker = production_environment.get_resource(int(row[idx]) - 1) # NOTE: workers in the benchmark are 1 indexed
                             idx += 1
                             duration = int(row[idx])
-                            setup_group = SetupGroup(id=f'r{j}w{l}t{m}', workstation_id=workstation.id)
-                            task = Task(id=f'r{j}w{l}t{m}', name=f'r{j}w{l}t{m}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[setup_group]) # TODO: remove id, switch to int ids only
+                            setup_group = SetupGroup(workstation_id=workstation.id)
+                            task = Task(name=f'r{j}w{l}t{m}', required_resources=(worker, 1), products=[], independent=False, setup_groups=[setup_group]) # TODO: remove id, switch to int ids only
                             alternative_tasks.append(task)
                             workstation.tasks.append((task, duration))
                             production_environment.add_task(task)

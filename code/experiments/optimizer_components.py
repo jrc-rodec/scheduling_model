@@ -147,7 +147,7 @@ class Particle:
         self.veclocities = []
         self.feasible = False
         for i in range(len(self.individual.genes)):
-            self.veclocities = 0
+            self.veclocities.append(0)
             self.best_genes.append(copy.deepcoy(self.individual.genes[i]))
 """
     Note: following are the implementations of different optimizer components.

@@ -3,6 +3,7 @@ from copy import deepcopy
 from translation import TimeWindowGAEncoder, Encoder, SimpleGAEncoder
 from evaluation import Evaluator, Objective
 import random
+import math
 
 class Solver:
     
@@ -708,3 +709,220 @@ class GreedyAgentSolver(Solver):
 
     def get_best_fitness(self):
         return self.best_solution[1]
+    
+
+class Particle:
+
+    def __init__(self):
+        self.best_positions : list[int] = []
+        self.best_fitness : float = float('inf')
+        self.velocities : list[float] = []
+        self.current_positions : list[int] = []
+        self.current_fitness : float = float('inf')
+
+    def update(self) -> None:
+        if self.current_fitness < self.best_fitness or math.isinf(self.best_fitness):
+            self.best_positions = deepcopy(self.current_positions)
+            self.best_fitness = self.current_fitness
+
+class PSOSolver(Solver):
+
+    def __init__(self, production_environment : ProductionEnvironment, encoder : Encoder = None, jobs : list[Job] = [], durations = dict(), start_time = 0, end_time = 1000, orders : list[Order] = []):
+        super().__init__('PSO Solver', production_environment, encoder)
+        self.jobs = jobs
+        self.durations = durations
+        self.end_time = end_time
+        self.start_time = start_time
+        self.orders = orders
+
+    def initialize(self, dimensions : int = 10, lower_bounds : list[int] = None, upper_bounds : list[int] = None, particle_amount : int = 50, max_iterations : int = 25000, personal_weight : float = 2, global_weight : float = 2, inertia : float = 0.8, max_velocity : float = None, min_velocity : float = None, min_workstation_mutation_probability : float = 1.0, update_weights :bool = True):
+        self.dimensions = dimensions
+        self.lower_bounds = lower_bounds
+        self.upper_bounds = upper_bounds
+        self.best = None
+        self.particle_amount = particle_amount
+        self.max_iterations = max_iterations
+        self.personal_weight = personal_weight
+        self.global_weight = global_weight
+        self.inertia = inertia
+        self.max_velocity = max_velocity
+        self.min_velocity = min_velocity
+        self.min_workstation_mutation_probability = min_workstation_mutation_probability
+        self.swarm : list[Particle] = []
+        self.update_weights = update_weights
+
+
+    def get_best_particle(self) -> Particle:
+        best = self.swarm[0]
+        for particle in self.swarm:
+            if particle.best_fitness < best.best_fitness:
+                best = particle
+        return best
+
+    def create_particle(self, jobs : list[Job]) -> Particle:
+        particle : Particle = Particle()
+        for i in range(self.dimensions):
+            if i % 2 == 0:
+                # workstation NOTE: currently ensures starting population uses only allowed workstations
+                workstations = self.production_environment.get_available_workstations_for_task(jobs[int(i/2)].task)
+                particle.current_positions.append(int(random.choice(workstations).id))
+            else:
+                # start time
+                particle.current_positions.append(random.randint(self.lower_bounds[i], self.upper_bounds[i]))
+            particle.velocities.append(0.0)
+        return particle
+
+    def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
+        job_index = int(index/2)
+        sum = 0
+        for order in self.orders:
+            recipe = order.resources[0][0].recipes[0]#self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
+            if job_index < sum + len(recipe.tasks):
+                return order
+            sum += len(recipe.tasks)
+        return self.orders[len(self.orders)-1]
+
+    def is_feasible(self, particle : Particle) -> bool: # TODO
+        solution = particle.current_positions
+        order = None
+        for i in range(0, len(solution), 2): # go through all workstation assignments
+            job = self.jobs[int(i/2)]
+            # check for last time slot
+            if solution[i+1] + self.durations[int(job.task.id)][solution[i]] > self.end_time: #TODO: durations, end time
+                return False
+            # check for earliest time slot
+            if solution[i+1] < self.start_time: #TDOO: start time
+                return False
+            # check for overlaps
+            for j in range(0, len(solution), 2):
+                if not i == j:
+                    if solution[i] == solution[j]: # tasks run on the same workstation
+                        other_job = self.jobs[int(j/2)]
+                        own_start = solution[i+1]
+                        other_start = solution[j+1]
+                        own_duration = self.durations[int(job.task.id)][solution[i]]
+                        other_duration = self.durations[int(other_job.task.id)][solution[j]]
+                        own_end = own_start + own_duration
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return False
+                        if own_end > other_start and own_end <= other_end:
+                            return False
+                        if other_start >= own_start and other_start < own_end:
+                            return False
+                        if other_end > own_start and other_end <= own_end:
+                            return False
+            # check for correct sequence
+            prev_order = order
+            order = self.get_order(i) # find order corresponding to task # TODO: get_order
+            if order:
+                if not prev_order is None and order == prev_order: # if current task is not the first job of this order, check if the previous job ends before the current one starts
+                    prev_start = solution[i-1]
+                    prev_end = prev_start + self.durations[int(self.jobs[int((i-2)/2)].task.id)][solution[i-2]]
+                    if solution[i+1] < prev_end:
+                        return False
+            else:
+                print("Something went completely wrong!") # TODO: should probably throw exception
+        return True
+
+    def evaluate(self, particle : Particle) -> None:
+        if not self.is_feasible(particle):
+            particle.current_fitness = float('inf')
+        else:
+            schedule : Schedule = self.encoder.decode(particle.current_positions, self.jobs, self.production_environment)
+            fitness = self.evaluator.evaluate(schedule, self.jobs)[0] # single objective for now
+            particle.current_fitness = fitness
+        particle.update()
+
+    def evaluate_swarm(self) -> None:
+        for particle in self.swarm:
+            self.evaluate(particle)
+
+    def move_swarm(self) -> None:
+        for particle in self.swarm:
+            for i in range(self.dimensions):
+                if i % 2 == 0:
+                    # mutate workstations
+                    """
+                    workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/2)].task)
+                    probabilities = [1.0/len(workstations)] * len(workstations)
+                    p_sum = 0
+                    for j in len(workstations):
+                        workstation = workstations[j]
+                        if particle.best_positions[j] == int(workstation.id):
+                            probabilities[j] += probabilities[j] * personal_weight # maybe use separate parameters
+                        if current_best.best_positions[j] == int(workstation.id):
+                            probabilities[j] += probabilities[j] * global_weight
+                        p_sum += probabilities[j]
+                    r = random.uniform(0.0, p_sum)
+                    p_sum = 0
+                    for j in len(probabilities):
+                        p_sum += probabilities[j]
+                        if p_sum >= r:
+                            particle.current_positions[i] = workstations[j]
+                            break
+                    """
+                    if random.random() < self.min_workstation_mutation_probability:
+                        workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/2)].task)
+                        particle.current_positions[i] = int(random.choice(workstations).id)
+                else:
+                    # mutate start time
+                    r_personal = random.uniform(0, 1)
+                    r_global = random.uniform(0, 1)
+                    velocity = self.inertia * particle.velocities[i] + self.personal_weight * r_personal * (particle.best_positions[i] - particle.current_positions[i]) + self.global_weight * r_global * (self.current_best.best_positions[i] - particle.current_positions[i])
+                    if self.max_velocity and velocity > self.max_velocity:
+                        velocity = self.max_velocity
+                    if self.min_velocity and velocity < self.min_velocity:
+                        velocity = self.min_velocity
+                    particle.current_positions[i] += velocity
+                    particle.velocities[i] = velocity
+                    if particle.current_positions[i] > self.upper_bounds[i]:
+                        particle.current_positions[i] = self.upper_bounds[i]
+                    if particle.current_positions[i] < self.lower_bounds[i]:
+                        particle.current_positions[i] = self.lower_bounds[i]
+                    particle.current_positions[i] = int(particle.current_positions[i]) # clip to integers
+
+    def adjust_weights(self, iteration):
+        t = iteration
+        n = self.max_iterations
+        # TODO: remove magic numbers
+        self.inertia = (0.4/n**2) * (t - n) ** 2 + 0.4
+        self.personal_weight = - 3 * t / n + 3.5
+        self.global_weight = 3 * t / n + 0.5
+
+    def update_history(self):
+        self.best_history.append(self.current_best.best_fitness)
+        average_fitness = 0
+        average_best_fitness = 0
+        for particle in self.swarm:
+            average_fitness += particle.current_fitness
+            average_best_fitness += particle.best_fitness
+        self.average_swarm_history.append(average_fitness / len(self.swarm))
+        self.average_best_history.append(average_best_fitness / len(self.swarm))
+
+    def run(self) -> Particle:
+        self.best_history = []
+        self.average_best_history = []
+        self.average_swarm_history = []
+        for _ in range(self.particle_amount):
+            particle : Particle = self.create_particle(self.jobs)
+            #self.evaluate(particle)
+            self.swarm.append(particle)
+        self.evaluate_swarm()
+        for iteration in range(self.max_iterations):
+            self.current_best = self.get_best_particle()
+            self.update_history()
+            self.move_swarm()
+            self.evaluate_swarm()
+            #TODO: maybe adjust parameters over time
+            if self.update_weights:
+                self.adjust_weights(iteration)
+        self.current_best = self.get_best_particle()
+        self.best = self.current_best
+        return self.current_best
+
+    def get_best(self):
+        return self.best.best_positions
+    
+    def get_best_fitness(self):
+        return self.best.best_fitness
