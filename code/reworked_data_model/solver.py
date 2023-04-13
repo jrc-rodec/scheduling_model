@@ -311,15 +311,15 @@ class GASolver(Solver):
         self.durations = durations
         self.jobs : list[Job] = job_list
         self.orders = orders
-        self.assignments_best = []
-        self.average_assignments = []
+        self.best_history = []
+        self.average_history = []
         GASolver.instance = self
 
     def reset(self) -> None:
         super().reset()
         self.best_solution = None
-        self.assignments_best = []
-        self.average_assignments = []
+        self.best_history = []
+        self.average_history = []
         GASolver.instance = self
 
     def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only') -> None:
@@ -424,16 +424,8 @@ class GASolver(Solver):
         return offsprings
 
     def get_order_index(self, index : int) -> int: # NOTE: should probably be replaces
-        job_index = int(index/2)
-        sum = 0
-        index = 0
-        for order in self.orders:
-            recipe = self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
-            if job_index < sum + len(recipe.tasks):
-                return index
-            sum += len(recipe.tasks)
-            index += 1
-        return len(self.orders) -1
+        return int(self.jobs[int(index/2)].order.id)
+
 
     def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
         instance = GASolver.instance
@@ -477,16 +469,16 @@ class GASolver(Solver):
     def on_fitness_assignemts(ga_instance, population_fitness) -> None:
         instance = GASolver.instance
         current_best = abs(sorted(population_fitness, reverse=True)[0]) - 1
-        if len(instance.assignments_best) == 0:
-            instance.assignments_best.append(current_best)
-        elif current_best < instance.assignments_best[len(instance.assignments_best)-1]:
-            instance.assignments_best.append(current_best)
+        if len(instance.best_history) == 0:
+            instance.best_history.append(current_best)
+        elif current_best < instance.best_history[len(instance.best_history)-1]:
+            instance.best_history.append(current_best)
         else:
-            instance.assignments_best.append(instance.assignments_best[len(instance.assignments_best)-1])
+            instance.best_history.append(instance.best_history[len(instance.best_history)-1])
         sum = 0
         for individual_fitness in population_fitness:
             sum += abs(individual_fitness)-1
-        instance.average_assignments.append(sum/len(population_fitness))
+        instance.average_history.append(sum/len(population_fitness))
 
     def fitness_function(solution : list[int], solution_idx) -> int:
         if not GASolver.is_feasible(solution):
@@ -773,14 +765,7 @@ class PSOSolver(Solver):
         return particle
 
     def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
-        job_index = int(index/2)
-        sum = 0
-        for order in self.orders:
-            recipe = order.resources[0][0].recipes[0]#self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
-            if job_index < sum + len(recipe.tasks):
-                return order
-            sum += len(recipe.tasks)
-        return self.orders[len(self.orders)-1]
+        return self.jobs[int(index/2)].order
 
     def is_feasible(self, particle : Particle) -> bool: # TODO
         solution = particle.current_positions
