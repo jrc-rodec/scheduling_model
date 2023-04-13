@@ -337,6 +337,8 @@ class GASolver(Solver):
             self.mutation_type = GASolver.mutation_function
         elif mutation == 'random_only_feasible':
             self.mutation_type = GASolver.only_feasible_mutation
+        elif mutation == 'force_feasible':
+            self.mutation_type = GASolver.force_feasible_mutation
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
         self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
@@ -426,6 +428,48 @@ class GASolver(Solver):
     def get_order_index(self, index : int) -> int: # NOTE: should probably be replaces
         return int(self.jobs[int(index/2)].order.id)
 
+    def is_first(self, index : int) -> bool:
+        if index == 0 or self.jobs[index].order == self.jobs[index-1].order:
+            return True
+        return False
+    
+    def get_longest_duration(self, job_index : int) -> int:
+        job = self.jobs[job_index]
+        task = job.task
+        max_duration = 0
+        for duration in self.durations[int(task.id)]:
+            if duration > max_duration:
+                max_duration = duration
+        return max_duration
+            
+    def force_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]: #NOTE: does not guarantee no overlaps, just valid workstations + valid sequence
+        instance = GASolver.instance
+        for offspring in offsprings:
+            p = 1 / (len(offspring)/2)
+            for i in range(0, len(offspring), 2):
+                if random.random() < p:
+                    # mutate workstation
+                    workstations = instance.production_environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
+                    offspring[i] = int(random.choice(workstations).id)
+                    # mutate start time
+                    if instance.is_first(int(i/2)):
+                        min_buffer = 0
+                        j = i+2
+                        while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
+                            min_buffer += instance.get_longest_duration(int(j/2))
+                            j+=2
+                        offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot - min_buffer)
+                    else:
+                        previous_job = instance.jobs[int((i-2)/2)]
+                        previous_duration = instance.durations[int(previous_job.task.id)][offspring[i-2]]
+                        previous_end = offspring[i-1] + previous_duration
+                        min_buffer = 0
+                        j = i+2
+                        while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
+                            min_buffer += instance.get_longest_duration(int(j/2))
+                            j+=2
+                        offspring[i+1] = random.randint(previous_end, instance.last_slot - min_buffer)
+        return offsprings
 
     def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
         instance = GASolver.instance
