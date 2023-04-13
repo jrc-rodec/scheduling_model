@@ -452,23 +452,19 @@ class GASolver(Solver):
                     workstations = instance.production_environment.get_available_workstations_for_task(instance.jobs[int(i/2)].task)
                     offspring[i] = int(random.choice(workstations).id)
                     # mutate start time
-                    if instance.is_first(int(i/2)):
-                        min_buffer = 0
-                        j = i+2
-                        while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
-                            min_buffer += instance.get_longest_duration(int(j/2))
-                            j+=2
-                        offspring[i+1] = random.randint(instance.earliest_slot, instance.last_slot - min_buffer)
-                    else:
+                    lower_bound = instance.earliest_slot
+                    upper_bound = instance.last_slot
+                    if not instance.is_first(int(i/2)):
                         previous_job = instance.jobs[int((i-2)/2)]
                         previous_duration = instance.durations[int(previous_job.task.id)][offspring[i-2]]
-                        previous_end = offspring[i-1] + previous_duration
-                        min_buffer = 0
-                        j = i+2
-                        while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
-                            min_buffer += instance.get_longest_duration(int(j/2))
-                            j+=2
-                        offspring[i+1] = random.randint(previous_end, instance.last_slot - min_buffer)
+                        lower_bound = offspring[i-1] + previous_duration
+                    min_buffer = 0
+                    j = i
+                    while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
+                        min_buffer += instance.get_longest_duration(int(j/2))
+                        j+=2
+                    upper_bound = upper_bound - min_buffer
+                    offspring[i+1] = random.randint(lower_bound, upper_bound)
         return offsprings
 
     def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
