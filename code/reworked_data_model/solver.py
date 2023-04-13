@@ -346,11 +346,32 @@ class GASolver(Solver):
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
         self.objective_function = GASolver.fitness_function
-        for _ in range(0, len(self.encoding), 2):
+        for i in range(0, len(self.encoding), 2):
             self.gene_space.append(gene_space_workstations)
-            self.gene_space.append(gene_space_starttime)
+            if mutation == 'force_feasible':
+                lower_bound, upper_bound = self.determine_gene_space(i)
+                self.gene_space.append({'low': lower_bound, 'high': upper_bound})
+            else:
+                self.gene_space.append(gene_space_starttime)
         self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
         self.best_solution = None
+
+    def determine_gene_space(self, index : int) -> tuple[int,int]:
+        lower_bound = self.earliest_slot
+        upper_bound = self.last_slot
+        previous_duration = 0
+        if not self.is_first(int(index/2)):
+            previous_job = self.jobs[int((index-2)/2)]
+            previous_durations = self.durations[int(previous_job.task.id)]
+            previous_duration = max(previous_durations)
+            lower_bound = lower_bound + previous_duration
+        min_buffer = self.get_longest_duration(int(index/2))#max(self.durations[int(self.jobs[int(index/2)].id)])#previous_duration#0
+        j = index+2
+        while int(j/2) < len(self.jobs) and self.jobs[int(j/2)].order == self.jobs[int(index/2)].order:
+            min_buffer += self.get_longest_duration(int(j/2))
+            j+=2
+        upper_bound = upper_bound - min_buffer
+        return lower_bound, upper_bound
 
     def run(self) -> None:
         self.ga_instance.run()
@@ -429,18 +450,10 @@ class GASolver(Solver):
         return int(self.jobs[int(index/2)].order.id)
 
     def is_first(self, index : int) -> bool:
-        if index == 0 or self.jobs[index].order == self.jobs[index-1].order:
-            return True
-        return False
+        return index == 0 or self.jobs[index].order == self.jobs[index-1].order
     
     def get_longest_duration(self, job_index : int) -> int:
-        job = self.jobs[job_index]
-        task = job.task
-        max_duration = 0
-        for duration in self.durations[int(task.id)]:
-            if duration > max_duration:
-                max_duration = duration
-        return max_duration
+        return max(self.durations[int(self.jobs[job_index].task.id)])
             
     def force_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]: #NOTE: does not guarantee no overlaps, just valid workstations + valid sequence
         instance = GASolver.instance
@@ -454,16 +467,17 @@ class GASolver(Solver):
                     # mutate start time
                     lower_bound = instance.earliest_slot
                     upper_bound = instance.last_slot
+                    previous_duration = 0
                     if not instance.is_first(int(i/2)):
                         previous_job = instance.jobs[int((i-2)/2)]
                         previous_duration = instance.durations[int(previous_job.task.id)][offspring[i-2]]
-                        lower_bound = offspring[i-1] + previous_duration
-                    min_buffer = 0
-                    j = i
+                        lower_bound = offspring[i-1] + previous_duration # end of the previous job in the sequence
+                    min_buffer = instance.get_longest_duration(int(i/2))#instance.durations[int(instance.jobs[int(i/2)].id)][offspring[i]] # leave at least enough space for the duration of the task
+                    j = i+2
                     while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
                         min_buffer += instance.get_longest_duration(int(j/2))
                         j+=2
-                    upper_bound = upper_bound - min_buffer
+                    upper_bound -= min_buffer
                     offspring[i+1] = random.randint(lower_bound, upper_bound)
         return offsprings
 
@@ -529,15 +543,8 @@ class GASolver(Solver):
         fitness = instance.evaluator.evaluate(schedule, instance.jobs)[0] # only do single objective for now
         return -fitness
 
-    def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
-        job_index = int(index/2)
-        sum = 0
-        for order in self.orders:
-            recipe = order.resources[0][0].recipes[0]#self.production_environment.get_recipe(order.resources[0][0].recipes[0].id) # TODO: probably needs to be changed in the future
-            if job_index < sum + len(recipe.tasks):
-                return order
-            sum += len(recipe.tasks)
-        return self.orders[len(self.orders)-1]
+    def get_order(self, index : int) -> Order:
+        return self.jobs[int(index/2)].order
 
     def is_feasible(solution : list[int]) -> bool:
         order = None
@@ -767,7 +774,7 @@ class PSOSolver(Solver):
         self.start_time = start_time
         self.orders = orders
 
-    def initialize(self, dimensions : int = 10, lower_bounds : list[int] = None, upper_bounds : list[int] = None, particle_amount : int = 50, max_iterations : int = 25000, personal_weight : float = 2, global_weight : float = 2, inertia : float = 0.8, max_velocity : float = None, min_velocity : float = None, min_workstation_mutation_probability : float = 1.0, update_weights :bool = True):
+    def initialize(self, dimensions : int = 10, lower_bounds : list[int] = None, upper_bounds : list[int] = None, particle_amount : int = 50, max_iterations : int = 25000, personal_weight : float = 2, global_weight : float = 2, inertia : float = 0.8, max_velocity : float = None, min_velocity : float = None, min_workstation_mutation_probability : float = 1.0, update_weights :bool = True, use_alternative : bool = False):
         self.dimensions = dimensions
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
@@ -782,6 +789,7 @@ class PSOSolver(Solver):
         self.min_workstation_mutation_probability = min_workstation_mutation_probability
         self.swarm : list[Particle] = []
         self.update_weights = update_weights
+        self.alternative = use_alternative
 
 
     def get_best_particle(self) -> Particle:
@@ -802,6 +810,14 @@ class PSOSolver(Solver):
                 # start time
                 particle.current_positions.append(random.randint(self.lower_bounds[i], self.upper_bounds[i]))
             particle.velocities.append(0.0)
+        return particle
+    
+    def create_particle_alternative(self, jobs : list[Job]) -> Particle:
+        # NOTE: requires lower and upper bounds to contain amounts of workstations for each job
+        particle : Particle = Particle()
+        for i in range(self.dimensions):
+            particle.current_positions.append(random.randint(self.lower_bounds[i], self.upper_bounds[i]))
+            particle.velocities.append(0.0) # NOTE: velocities should be randomized initially
         return particle
 
     def get_order(self, index : int) -> Order: # NOTE: should probably be replaces
@@ -854,7 +870,15 @@ class PSOSolver(Solver):
         if not self.is_feasible(particle):
             particle.current_fitness = float('inf')
         else:
-            schedule : Schedule = self.encoder.decode(particle.current_positions, self.jobs, self.production_environment)
+            values = particle.current_positions
+            if self.alternative:
+                values = []
+                for i in range(len(particle.current_positions)):
+                    if i % 2 == 0:
+                        values.append(self.translate_to_workstation_id(particle, i))
+                    else:
+                        values.append(particle.current_positions[i])
+            schedule : Schedule = self.encoder.decode(values, self.jobs, self.production_environment)
             fitness = self.evaluator.evaluate(schedule, self.jobs)[0] # single objective for now
             particle.current_fitness = fitness
         particle.update()
@@ -862,6 +886,27 @@ class PSOSolver(Solver):
     def evaluate_swarm(self) -> None:
         for particle in self.swarm:
             self.evaluate(particle)
+
+    def translate_to_workstation_id(self, particle, index):
+        return int(self.production_environment.get_available_workstations_for_task(self.jobs[int(index/2)].task)[particle.current_positions[index]].id)
+
+    def move_swarm_alternative(self) -> None:
+        for particle in self.swarm:
+            for i in range(self.dimensions):
+                r_personal = random.uniform(0, 1)
+                r_global = random.uniform(0, 1)
+                velocity = self.inertia * particle.velocities[i] + self.personal_weight * r_personal * (particle.best_positions[i] - particle.current_positions[i]) + self.global_weight * r_global * (self.current_best.best_positions[i] - particle.current_positions[i])
+                if self.max_velocity and velocity > self.max_velocity:
+                    velocity = self.max_velocity
+                if self.min_velocity and velocity < self.min_velocity:
+                    velocity = self.min_velocity
+                particle.current_positions[i] += velocity
+                particle.velocities[i] = velocity
+                if particle.current_positions[i] > self.upper_bounds[i]:
+                    particle.current_positions[i] = self.upper_bounds[i]
+                if particle.current_positions[i] < self.lower_bounds[i]:
+                    particle.current_positions[i] = self.lower_bounds[i]
+                particle.current_positions[i] = int(particle.current_positions[i])
 
     def move_swarm(self) -> None:
         for particle in self.swarm:
@@ -930,14 +975,20 @@ class PSOSolver(Solver):
         self.average_best_history = []
         self.average_swarm_history = []
         for _ in range(self.particle_amount):
-            particle : Particle = self.create_particle(self.jobs)
+            if self.alternative:
+                particle : Particle = self.create_particle_alternative(self.jobs)
+            else:
+                particle : Particle = self.create_particle(self.jobs)
             #self.evaluate(particle)
             self.swarm.append(particle)
         self.evaluate_swarm()
         for iteration in range(self.max_iterations):
             self.current_best = self.get_best_particle()
             self.update_history()
-            self.move_swarm()
+            if self.alternative:
+                self.move_swarm_alternative()
+            else:
+                self.move_swarm()
             self.evaluate_swarm()
             #TODO: maybe adjust parameters over time
             if self.update_weights:
@@ -947,6 +998,15 @@ class PSOSolver(Solver):
         return self.current_best
 
     def get_best(self):
+        values = self.best.best_positions
+        if self.alternative:
+            values = []
+            for i in range(len(self.best.best_positions)):
+                if i % 2 == 0:
+                    w_id = int(self.production_environment.get_available_workstations_for_task(self.jobs[int(i/2)].task)[self.best.best_positions[i]].id)
+                    values.append(w_id)
+                else:
+                    values.append(self.best.best_positions[i])
         return self.best.best_positions
     
     def get_best_fitness(self):
