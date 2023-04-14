@@ -322,7 +322,7 @@ class GASolver(Solver):
         self.average_history = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only') -> None:
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10) -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -353,20 +353,20 @@ class GASolver(Solver):
                 self.gene_space.append({'low': lower_bound, 'high': upper_bound})
             else:
                 self.gene_space.append(gene_space_starttime)
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space)
+        self.k_tournament = k_tournament
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament)
         self.best_solution = None
 
     def determine_gene_space(self, index : int) -> tuple[int,int]:
         lower_bound = self.earliest_slot
         upper_bound = self.last_slot
-        previous_duration = 0
         if not self.is_first(int(index/2)):
+        #if not index == 0 and (self.jobs[int((index-2)/2)].order == self.jobs[int((index)/2)].order):
             previous_job = self.jobs[int((index-2)/2)]
-            previous_durations = self.durations[int(previous_job.task.id)]
-            previous_duration = max(previous_durations)
+            previous_duration = max(self.durations[int(previous_job.task.id)])
             lower_bound = lower_bound + previous_duration
-        min_buffer = self.get_longest_duration(int(index/2))#max(self.durations[int(self.jobs[int(index/2)].id)])#previous_duration#0
-        j = index+2
+        min_buffer = 0#self.get_longest_duration(int(index/2))
+        j = index#+2
         while int(j/2) < len(self.jobs) and self.jobs[int(j/2)].order == self.jobs[int(index/2)].order:
             min_buffer += self.get_longest_duration(int(j/2))
             j+=2
@@ -450,7 +450,7 @@ class GASolver(Solver):
         return int(self.jobs[int(index/2)].order.id)
 
     def is_first(self, index : int) -> bool:
-        return index == 0 or self.jobs[index].order == self.jobs[index-1].order
+        return index == 0 or self.jobs[index].order != self.jobs[index-1].order
     
     def get_longest_duration(self, job_index : int) -> int:
         return max(self.durations[int(self.jobs[job_index].task.id)])
@@ -469,11 +469,12 @@ class GASolver(Solver):
                     upper_bound = instance.last_slot
                     previous_duration = 0
                     if not instance.is_first(int(i/2)):
+                    #if not i == 0 and (instance.jobs[int((i-2)/2)].order == instance.jobs[int(i/2)].order):
                         previous_job = instance.jobs[int((i-2)/2)]
                         previous_duration = instance.durations[int(previous_job.task.id)][offspring[i-2]]
                         lower_bound = offspring[i-1] + previous_duration # end of the previous job in the sequence
-                    min_buffer = instance.get_longest_duration(int(i/2))#instance.durations[int(instance.jobs[int(i/2)].id)][offspring[i]] # leave at least enough space for the duration of the task
-                    j = i+2
+                    min_buffer = 0#instance.durations[int(instance.jobs[int(i/2)].id)][offspring[i]] # leave at least enough space for the duration of the task
+                    j = i#+2
                     while int(j/2) < len(instance.jobs) and instance.jobs[int(j/2)].order == instance.jobs[int(i/2)].order:
                         min_buffer += instance.get_longest_duration(int(j/2))
                         j+=2
