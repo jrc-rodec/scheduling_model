@@ -322,7 +322,7 @@ class GASolver(Solver):
         self.average_history = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10) -> None:
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0) -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -341,7 +341,7 @@ class GASolver(Solver):
             self.mutation_type = GASolver.force_feasible_mutation
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
-        self.keep_parents = int(self.population_size / 4) # TODO: add as parameter
+        self.keep_parents = keep_parents
         gene_space_workstations = {'low': 0, 'high': len(self.production_environment.workstations)}
         gene_space_starttime = {'low': self.earliest_slot, 'high': self.last_slot}
         self.gene_space = []
@@ -458,7 +458,7 @@ class GASolver(Solver):
     def force_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]: #NOTE: does not guarantee no overlaps, just valid workstations + valid sequence
         instance = GASolver.instance
         for offspring in offsprings:
-            p = 1 / (len(offspring)/2)
+            p = 1 / (len(offspring))
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
                     # mutate workstation
