@@ -1036,6 +1036,7 @@ class NestedGA(Solver):
         return result_fitness
 
     def run(self):
+        # run outer solver
         pass
 
 class StagedGA(Solver):
@@ -1069,6 +1070,9 @@ class StagedGA(Solver):
         return -results[0] # just use first for now
 
     def run(self):
+        # run workstation assignment solver
+
+        # run start time solver
         pass
 
 class SequenceOrderGA(Solver):

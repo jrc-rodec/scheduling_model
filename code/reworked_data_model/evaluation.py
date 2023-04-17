@@ -1,4 +1,4 @@
-from model import Schedule, ProductionEnvironment, Job, Order
+from model import Schedule, ProductionEnvironment, Job, Order, Assignment
 from uncertainty import ScenarioGenerator
 
 class Objective:
@@ -27,13 +27,20 @@ class Objective:
 
 class FeasibilityConstraint:
 
-    pass
+    def __init__(self,start_time, end_time):
+        self.start_time = start_time
+        self.end_time = end_time
+
+    def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
+        pass
 
 class FeasibilityTester:
 
-    def __init__(self, production_environment : ProductionEnvironment) -> None:
+    def __init__(self, production_environment : ProductionEnvironment, start_time, end_time) -> None:
         self.constraints : list[FeasibilityConstraint] = []
         self.production_environment = production_environment
+        self.start_time = start_time
+        self.end_time = end_time
 
     def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
         i = 0
@@ -192,3 +199,36 @@ class UnfulfilledOrders(Objective):
 """
     Add additional feasibility constraints below
 """
+
+class TimeBoundsConstraint(FeasibilityConstraint):
+    
+    def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
+        for assignment in schedule.assignments.values():
+            if assignment.start_time < self.start_time or assignment.end_time > self.end_time:
+                return False
+        return True
+
+class JobSequenceConstraint(FeasibilityConstraint):
+    
+    def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
+        orders : dict[int,list[Assignment]] = dict()
+        for assignment in schedule.assignments.values():
+            if assignment.job.order.id not in orders:
+                orders[assignment.job.order.id] = []
+            for prev_assignment in orders[assignment.job.order.id]:
+                if prev_assignment.job.ro_id > assignment.job.ro_id:
+                    if prev_assignment.end_time < assignment.end_time:
+                        return False
+            orders[assignment.job.order.id].append(assignment)
+        return True
+
+class JobOverlapConstraint(FeasibilityConstraint):
+    
+    def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
+        for workstation in schedule.assignemnts.keys():
+            assignments = schedule.assignments[workstation]
+            sorted_assignments : list[Assignment] = assignments.sort(key=lambda x: x.start_time)
+            for i in range(1, len(sorted_assignments)):
+                if sorted_assignments[i].start_time < sorted_assignments[i-1].end_time:
+                    return False
+        return True
