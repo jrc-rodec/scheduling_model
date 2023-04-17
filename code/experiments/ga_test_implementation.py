@@ -83,6 +83,40 @@ class GeneticAlgorithm:
             previous_probability = probability
         return self._select(population, probabilities), self._select(population, probabilities) # just for testing
 
+    def _tournament_selection(self, population : list[list[int]], population_fitness : list[list[float]]) -> list[int]:
+        parent = None
+        k = len(population)/4 # TODO: parameter
+        n = len(population)/4 # TODO: parameter
+        for i in range(n): # tournament rounds
+            contestants : list[tuple[list[int], list[float]]] = []
+            round_winner : tuple[list[int], list[float]] = []
+            for j in range(k): # contestants
+                contestant = None
+                while not contestant or contestant in contestants:
+                    contestant_index : list[int] = random.randint(0, len(population)-1)
+                    contestant = population[contestant_index]
+                contestants.append((contestant, population_fitness[contestant_index]))
+                #TODO: more than one objective
+                if population_fitness[contestant_index] < round_winner[1][0]:
+                    round_winner = (contestant, population_fitness[contestant_index])
+            if not parent or round_winner[1][0] < parent[1][0]:
+                parent = round_winner
+        return parent[0]
+    
+    def _select_parents_tournament(self, population : list[list[int]], population_fitness : list[list[float]]) -> tuple[list[int], list[int]]:
+        parent_a = self._tournament_selection(population, population_fitness)
+        parent_b = self._tournament_selection(population, population_fitness)
+        max_tries = 100
+        attempts = 0
+        while parent_a == parent_b and attempts < max_tries:
+            parent_b = self._tournament_selection(population, population_fitness)
+            attempt += 1
+        if parent_a == parent_b:
+            parent_b = random.choice(population)
+            while parent_a == parent_b:
+                parent_b = random.choice(population)
+        return parent_a, parent_b
+
     def _mutate(self, individual : list[int]) -> None:
         for i in range(len(individual)):
             if random.random() < self.mutation_probability:
