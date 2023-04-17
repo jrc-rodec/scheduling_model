@@ -54,9 +54,9 @@ class FJSSPInstancesTranslator(DataTranslator):
                 task : Task = Task(name=f'task_{i}_{j}', required_resources=[], products=[], independent=False, setup_groups=[setup_group])
                 for k in range(int(row[idx])): # should be amount of workstations for task x
                     idx += 1
-                    w_id = row[idx]
+                    w_id = int(row[idx])-1
                     idx += 1
-                    production_environment.get_workstation(int(w_id)-1).tasks.append((task, int(row[idx]))) # NOTE: benchmark data are 1 indexex
+                    production_environment.get_workstation(w_id).tasks.append((task, int(row[idx]))) # NOTE: benchmark data are 1 indexed
                 production_environment.add_task(task)
                 production_environment.add_setup_group(setup_group)
                 recipe_tasks.append((task, k, k+1))

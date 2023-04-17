@@ -25,6 +25,39 @@ class Objective:
     def remove_parameter(self, name : str) -> None:
         self.parameters.pop(name)
 
+class FeasibilityConstraint:
+
+    pass
+
+class FeasibilityTester:
+
+    def __init__(self, production_environment : ProductionEnvironment) -> None:
+        self.constraints : list[FeasibilityConstraint] = []
+        self.production_environment = production_environment
+
+    def test(self, schedule : Schedule, jobs : list[Job]) -> bool:
+        i = 0
+        feasible = True
+        while i < len(self.constraints) and feasible:
+            feasible = self.constraints[i].test(schedule, jobs)
+            i += 1
+        return feasible
+    
+    def test_all(self, schedule : Schedule, jobs : list[Job]) -> list[bool]:
+        results : list[bool] = []
+        for constraint in self.constraints:
+            results.append(constraint.test(schedule, jobs))
+        return results
+    
+    def add_constraint(self, constraint : FeasibilityConstraint) -> None:
+        self.constraints.append(constraint)
+    
+    def remove_constraint(self, constraint : FeasibilityConstraint) -> None:
+        self.constraints.remove(constraint)
+    
+    def clear_constraints(self) -> None:
+        self.constraints.clear()
+
 class Evaluator:
 
     def __init__(self, production_environment : ProductionEnvironment) -> None:
@@ -155,3 +188,7 @@ class UnfulfilledOrders(Objective):
                 if schedule._get_assignment_for_job(prev_job).end_time > order.latest_acceptable_time:
                     unfulfilled_order_count += 1
         return unfulfilled_order_count
+    
+"""
+    Add additional feasibility constraints below
+"""

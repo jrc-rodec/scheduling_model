@@ -749,7 +749,6 @@ class GreedyAgentSolver(Solver):
 
     def get_best_fitness(self):
         return self.best_solution[1]
-    
 
 class Particle:
 
@@ -1012,3 +1011,74 @@ class PSOSolver(Solver):
     
     def get_best_fitness(self):
         return self.best.best_fitness
+
+class NestedGA(Solver):
+
+    def __init__(self):
+        # outer solver > workstation assignment
+        # inner solver > start times
+        NestedGA.instance = self
+        pass
+
+    def initialize(self, inner_solver : str = 'pso', inner_parameters : dict[str,] = dict()):
+        if inner_solver == 'pso':
+            pass
+        elif inner_solver == 'ga':
+            pass
+        elif inner_solver == 'hs':
+            pass
+        else:
+            pass
+
+    def evaluate(solution):
+        instance = NestedGA.instance
+        result, result_fitness = instance.inner_solver.run(solution)
+        return result_fitness
+
+    def run(self):
+        pass
+
+class StagedGA(Solver):
+    
+    def __init__(self):
+        # first solver > workstation assignment (balance load)
+        # second solver > start times
+        StagedGA.instance = self
+        pass
+
+    def initialize(self):
+        pass
+
+    def evaluate_load(solution):
+        instance = StagedGA.instance
+        loads = [0] * len(len(instance.production_environment.workstations.keys()))
+        for i in range(len(solution)):
+            loads[solution[i]] += instance.durations[int(instance.jobs[i].task.id)][solution[i]]
+        mean = sum(loads) / len(loads)
+        var = sum((load - mean) ** 2 for load in loads) / len(loads)
+        return -var
+
+    def evaluate_start_times(solution):
+        instance = StagedGA.instance
+        values = []
+        for i in range(len(solution)):
+            values.append(instance.first_solution[i])
+            values.append(solution[i])
+        schedule : Schedule = instance.encoder.decode(values, instance.jobs, instance.production_environment, [], instance)
+        results = instance.evaluator.evaluate(schedule, instance.jobs)
+        return -results[0] # just use first for now
+
+    def run(self):
+        pass
+
+class SequenceOrderGA(Solver):
+
+    def __init__(self):
+        # optimize job order, use greedy algorithm to determine start times and workstations
+        pass
+
+    def initialize(self):
+        pass
+
+    def run(self):
+        pass
