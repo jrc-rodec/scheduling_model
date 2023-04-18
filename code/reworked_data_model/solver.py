@@ -330,7 +330,7 @@ class GASolver(Solver):
         self.max_generations = max_generations
         self.crossover_type = crossover
         self.parent_selection_type = selection
-        self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
+        #self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
         if mutation == 'workstation_only':
             self.mutation_type = GASolver.alternative_mutation_function
         elif mutation == 'full_random':
@@ -339,6 +339,8 @@ class GASolver(Solver):
             self.mutation_type = GASolver.only_feasible_mutation
         elif mutation == 'force_feasible':
             self.mutation_type = GASolver.force_feasible_mutation
+        else:
+            self.mutation_type = mutation
         self.mutation_percentage_genes = 10 # not used, but necessary parameter
         self.gene_type = int
         self.keep_parents = keep_parents
@@ -347,7 +349,11 @@ class GASolver(Solver):
         self.gene_space = []
         self.objective_function = GASolver.fitness_function
         for i in range(0, len(self.encoding), 2):
-            self.gene_space.append(gene_space_workstations)
+            #self.gene_space.append(gene_space_workstations)
+            #NOTE: experimental
+            #NOTE: maybe do custom initialization, use inital_population parameter
+            possible_workstations = [int(x.id) for x in self.production_environment.get_available_workstations_for_task(self.jobs[int(i/2)].task)]
+            self.gene_space.append(possible_workstations)
             if mutation == 'force_feasible':
                 lower_bound, upper_bound = self.determine_gene_space(i)
                 self.gene_space.append({'low': lower_bound, 'high': upper_bound})
@@ -1041,39 +1047,137 @@ class NestedGA(Solver):
 
 class StagedGA(Solver):
     
-    def __init__(self):
+    def __init__(self, production_environment : ProductionEnvironment):
         # first solver > workstation assignment (balance load)
         # second solver > start times
+        super().__init__('StagedGA', production_environment, SimpleGAEncoder())
+        self.best_history = []
+        self.average_history = []
         StagedGA.instance = self
-        pass
 
-    def initialize(self):
-        pass
+    def initialize(self, encoding : list[int], jobs : list[Job], durations, start_time : int = 0, end_time : int = 1000):
+        # TODO: obviously add all parameters 
+        max_generations = 1000
+        population_size = 50
+        offspring_amount = 2000
+        self.jobs = jobs
+        self.encoding = encoding
+        first_encoding = encoding[::2]
+        second_encoding = encoding[1::2]
+        self.earliest_slot = start_time
+        self.last_slot = end_time
+        self.durations = durations
+        self.gene_space = []
+        for job in self.jobs:
+            possibilities = self.production_environment.get_available_workstations_for_task(job.task)
+            possible_ids = [int(x.id) for x in possibilities]
+            self.gene_space.append(possible_ids)
+        self.stage_one = pygad.GA(num_generations=max_generations, num_parents_mating=int(population_size/2), fitness_func=StagedGA.evaluate_load, on_fitness=StagedGA.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(first_encoding), parent_selection_type='tournament', keep_parents=0, crossover_type='two_points', mutation_type='random', mutation_percent_genes=10, gene_type=int, gene_space=self.gene_space, K_tournament=int(population_size/4))
+        self.gene_space = []
+        for i in range(len(second_encoding)):
+            self.gene_space.append({'low': self.earliest_slot, 'high': self.last_slot})
+        self.stage_two = pygad.GA(num_generations=max_generations, num_parents_mating=int(population_size/2), fitness_func=StagedGA.evaluate_start_times, on_fitness=StagedGA.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(second_encoding), parent_selection_type='tournament', keep_parents=0, crossover_type='two_points', mutation_type='random', mutation_percent_genes=10, gene_type=int, gene_space=self.gene_space, K_tournament=int(population_size/4))
 
-    def evaluate_load(solution):
+    def evaluate_load(solution : list[int], solution_idx) -> int:
         instance = StagedGA.instance
-        loads = [0] * len(len(instance.production_environment.workstations.keys()))
+        loads = [0] * len(instance.production_environment.workstations.keys())
         for i in range(len(solution)):
             loads[solution[i]] += instance.durations[int(instance.jobs[i].task.id)][solution[i]]
         mean = sum(loads) / len(loads)
         var = sum((load - mean) ** 2 for load in loads) / len(loads)
         return -var
 
-    def evaluate_start_times(solution):
+    def is_feasible(solution : list[int]) -> bool:
+        order = None
+        instance : StagedGA = StagedGA.instance
+        for i in range(0, len(solution), 2): # go through all workstation assignments
+            job = instance.jobs[int(i/2)]
+            # check for last time slot
+            if solution[i+1] + instance.durations[int(job.task.id)][solution[i]] > instance.last_slot:
+                return False
+            # check for earliest time slot
+            if solution[i+1] < instance.earliest_slot:
+                return False
+            # check for overlaps
+            for j in range(0, len(solution), 2):
+                if not i == j:
+                    if solution[i] == solution[j]: # tasks run on the same workstation
+                        other_job = instance.jobs[int(j/2)]
+                        own_start = solution[i+1]
+                        other_start = solution[j+1]
+                        own_duration = instance.durations[int(job.task.id)][solution[i]]
+                        other_duration = instance.durations[int(other_job.task.id)][solution[j]]
+                        own_end = own_start + own_duration
+                        other_end = other_start + other_duration
+                        if own_start >= other_start and own_start < other_end:
+                            return False
+                        if own_end > other_start and own_end <= other_end:
+                            return False
+                        if other_start >= own_start and other_start < own_end:
+                            return False
+                        if other_end > own_start and other_end <= own_end:
+                            return False
+            # check for correct sequence
+            prev_order = order
+            order = instance.get_order(i) # find order corresponding to task
+            if order:
+                if not prev_order is None and order == prev_order: # if current task is not the first job of this order, check if the previous job ends before the current one starts
+                    prev_start = solution[i-1]
+                    prev_end = prev_start + instance.durations[int(instance.jobs[int((i-2)/2)].task.id)][solution[i-2]]
+                    if solution[i+1] < prev_end:
+                        return False
+            else:
+                print("Something went completely wrong!") # TODO: should probably throw exception
+        return True
+
+    def get_order(self, index : int) -> Order:
+        return self.jobs[int(index/2)].order
+
+    def evaluate_start_times(solution : list[int], solution_idx) -> int:
         instance = StagedGA.instance
         values = []
         for i in range(len(solution)):
             values.append(instance.first_solution[i])
             values.append(solution[i])
+        if not StagedGA.is_feasible(values): #TODO: replace
+            return -float('inf')
         schedule : Schedule = instance.encoder.decode(values, instance.jobs, instance.production_environment, [], instance)
         results = instance.evaluator.evaluate(schedule, instance.jobs)
         return -results[0] # just use first for now
 
     def run(self):
         # run workstation assignment solver
-
+        self.stage_one.run()
+        self.first_solution, self.first_solution_fitness, self.first_solution_idx = self.stage_one.best_solution()
         # run start time solver
-        pass
+        self.stage_two.run()
+        self.second_solution, self.second_solution_fitness, self.second_solution_idx = self.stage_two.best_solution()
+        # create endresult
+        result = []
+        for i in range(len(self.first_solution)):
+            result.append(self.first_solution[i])
+            result.append(self.second_solution[i])
+        self.best_solution = (result, self.second_solution_fitness)
+
+    def get_best(self) -> list[int]:
+        return self.best_solution[0]
+
+    def get_best_fitness(self) -> int:
+        return self.best_solution[1]
+    
+    def on_fitness_assignemts(ga_instance, population_fitness) -> None:
+        instance = StagedGA.instance
+        current_best = abs(sorted(population_fitness, reverse=True)[0]) - 1
+        if len(instance.best_history) == 0:
+            instance.best_history.append(current_best)
+        elif current_best < instance.best_history[len(instance.best_history)-1]:
+            instance.best_history.append(current_best)
+        else:
+            instance.best_history.append(instance.best_history[len(instance.best_history)-1])
+        sum = 0
+        for individual_fitness in population_fitness:
+            sum += abs(individual_fitness)-1
+        instance.average_history.append(sum/len(population_fitness))
 
 class SequenceOrderGA(Solver):
 
