@@ -650,3 +650,4 @@ class ProductionEnvironment:
     
     def get_inventory_list(self) -> list[tuple[Resource, int]]:
         return self.resources.values()
+    

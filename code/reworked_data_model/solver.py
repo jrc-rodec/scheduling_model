@@ -322,7 +322,7 @@ class GASolver(Solver):
         self.average_history = []
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0) -> None:
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10]) -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -1035,10 +1035,14 @@ class NestedGA(Solver):
             pass
         else:
             pass
+        self.outer_solver = pygad.GA()
+        self.inner_solver = pygad.GA()
 
     def evaluate(solution):
         instance = NestedGA.instance
         result, result_fitness = instance.inner_solver.run(solution)
+        instance.inner_solver.run(solution)
+        inner_solution, inner_solution_fitness, inner_solution_idx = instance.inner_solver.best_solution()
         return result_fitness
 
     def run(self):
@@ -1059,7 +1063,7 @@ class StagedGA(Solver):
         # TODO: obviously add all parameters 
         max_generations = 1000
         population_size = 50
-        offspring_amount = 2000
+        offspring_amount = 100
         self.jobs = jobs
         self.encoding = encoding
         first_encoding = encoding[::2]
@@ -1074,6 +1078,7 @@ class StagedGA(Solver):
             self.gene_space.append(possible_ids)
         self.stage_one = pygad.GA(num_generations=max_generations, num_parents_mating=int(population_size/2), fitness_func=StagedGA.evaluate_load, on_fitness=StagedGA.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(first_encoding), parent_selection_type='tournament', keep_parents=0, crossover_type='two_points', mutation_type='random', mutation_percent_genes=10, gene_type=int, gene_space=self.gene_space, K_tournament=int(population_size/4))
         self.gene_space = []
+        max_generations = 2000
         for i in range(len(second_encoding)):
             self.gene_space.append({'low': self.earliest_slot, 'high': self.last_slot})
         self.stage_two = pygad.GA(num_generations=max_generations, num_parents_mating=int(population_size/2), fitness_func=StagedGA.evaluate_start_times, on_fitness=StagedGA.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(second_encoding), parent_selection_type='tournament', keep_parents=0, crossover_type='two_points', mutation_type='random', mutation_percent_genes=10, gene_type=int, gene_space=self.gene_space, K_tournament=int(population_size/4))
