@@ -360,7 +360,7 @@ class GASolver(Solver):
             else:
                 self.gene_space.append(gene_space_starttime)
         self.k_tournament = k_tournament
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament)
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament)#, parallel_processing=parallel_processing)
         self.best_solution = None
 
     def determine_gene_space(self, index : int) -> tuple[int,int]:
@@ -541,7 +541,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(solution : list[int], solution_idx) -> int:
+    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
         if not GASolver.is_feasible(solution):
             #return - (2 * GASolver.instance.last_slot)
             return - float('inf')
