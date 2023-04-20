@@ -313,6 +313,8 @@ class GASolver(Solver):
         self.orders = orders
         self.best_history = []
         self.average_history = []
+        self.memory : dict[list[int], float] = dict()
+        self.memory_duplicate = 0
         GASolver.instance = self
 
     def reset(self) -> None:
@@ -320,6 +322,8 @@ class GASolver(Solver):
         self.best_solution = None
         self.best_history = []
         self.average_history = []
+        self.memory : dict[list[int], float] = dict()
+        self.memory_duplicate = 0
         GASolver.instance = self
 
     def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10]) -> None:
@@ -541,13 +545,18 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+    def fitness_function(solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+        if GASolver.instance.memory.get(solution.tostring()):
+            GASolver.instance.memory_duplicate += 1
+            return GASolver.instance.memory[solution.tostring()]
         if not GASolver.is_feasible(solution):
             #return - (2 * GASolver.instance.last_slot)
-            return - float('inf')
+            GASolver.instance.memory[solution.tostring()] = -float('inf')
+            return -float('inf')
         instance = GASolver.instance
         schedule : Schedule = instance.encoder.decode(solution, instance.jobs, instance.production_environment, [], instance)
         fitness = instance.evaluator.evaluate(schedule, instance.jobs)[0] # only do single objective for now
+        instance.memory[solution.tostring()] = -fitness
         return -fitness
 
     def get_order(self, index : int) -> Order:
