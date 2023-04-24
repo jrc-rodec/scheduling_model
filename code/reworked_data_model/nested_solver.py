@@ -18,7 +18,7 @@ class GAPSONestedSolver:
                 self.current_fitness : float = float('inf')
 
             def update(self) -> None:
-                if self.current_fitness < self.best_fitness:
+                if len(self.best_positions) == 0 or self.current_fitness < self.best_fitness:
                     self.best_positions = self.current_positions.copy() # shallow copy should be enough for int list
                     self.best_fitness = self.current_fitness
         
@@ -41,7 +41,7 @@ class GAPSONestedSolver:
             velocities : list[float] = []
             for i in range(self.dimensions):
                 positions.append(random.randint(self.lower_bounds[i], self.upper_bounds[i]))
-                velocities.append(random.random(self.min_velocities[i], self.max_velocities[i]))
+                velocities.append(random.uniform(self.min_velocities[i], self.max_velocities[i]))
             particle = self.Particle()
             particle.current_positions = positions
             particle.velocities = velocities
@@ -95,7 +95,7 @@ class GAPSONestedSolver:
                 if order:
                     if not prev_order is None and order == prev_order: # if current task is not the first job of this order, check if the previous job ends before the current one starts
                         prev_start = solution[i-1]
-                        prev_workstation = self.production_environment.get_workstation(i-2)
+                        prev_workstation = self.production_environment.get_workstation(solution[i-2])
                         prev_end = prev_start + prev_workstation.get_duration(self.jobs[int((i-2)/2)].task)
                         if solution[i+1] < prev_end:
                             return False
@@ -124,11 +124,13 @@ class GAPSONestedSolver:
             self.min_velocities = min_velocities
             self.max_velocities = max_velocities
 
+            self.evaluator.add_objective(Makespan())
+
             swarm : list[self.Particle] = []
             for i in range(self.swarm_size):
                 swarm.append(self._create_particle())
-            
-            for generation in self.max_generations:
+                self._evaluate(swarm[-1])
+            for generation in range(self.max_generations):
                 current_best = self.get_best(swarm)
                 for particle in swarm:
                     for i in range(self.dimensions):
@@ -151,6 +153,8 @@ class GAPSONestedSolver:
 
     def _run_inner(self, solution : list[int] = [], swarm_size : int = 100, max_generations : int = 100, personal_weight : float = 0.8, global_weight : float = 1.2, inertia : float = 0.8, min_velocities : list[float] = [], max_velocities : list[float] = []) -> tuple[list[int], float]:
         # TODO: parameters
+        min_velocities = [0] * len(solution)
+        max_velocities = [10] * len(solution)
         pso = self.PSO(swarm_size=swarm_size, dimensions=len(self.jobs), lower_bounds=[self.start_time] * len(self.jobs), upper_bounds=[self.end_time] * len(self.jobs), production_environment=self.production_environment, jobs=self.jobs, workstations=solution, start_time=self.start_time, end_time=self.end_time)
         result, fitness = pso.run(max_generations=max_generations, personal_weight=personal_weight, global_weight=global_weight, inertia=inertia, min_velocities=min_velocities, max_velocities=max_velocities)
         return result, fitness[0]
@@ -165,7 +169,7 @@ class GAPSONestedSolver:
         self.production_environment = production_environment
         GAPSONestedSolver.instance = self
 
-    def _evaluate(solution, solution_idx) -> float:
+    def _evaluate(ga_instance, solution, solution_idx) -> float:
         _, fitness = GAPSONestedSolver.instance._run_inner(solution) # TODO: parameter
         return -fitness
 
@@ -174,6 +178,8 @@ class GAPSONestedSolver:
         population_size = 100
         self.jobs = jobs
         self.encoding = encoding
+        self.start_time = start_time
+        self.end_time = end_time
         outer_encoding = self.encoding[::2]
         self.gene_space = []
         for job in self.jobs:
@@ -186,4 +192,21 @@ class GAPSONestedSolver:
         self.outer_solution, self.outer_solution_fitness, self.outer_solution_idx = self.outer_solver.best_solution()
 
         self.final_result, self.fitness = self._run_inner(self.outer_solution) # TODO: parameter
-        
+
+from translation import SimpleGAEncoder, FJSSPInstancesTranslator
+from model import Order
+from evaluation import Makespan
+translator = FJSSPInstancesTranslator()
+production_environment = translator.translate('6_Fattahi', 1)
+orders : list[Order] = []
+for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
+    orders.append(Order(delivery_time=1000, latest_acceptable_time=1000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
+
+encoder = SimpleGAEncoder()
+values, durations, jobs = encoder.encode(production_environment, orders)
+
+solver = GAPSONestedSolver(production_environment)
+#solver.add_objective(Makespan())
+solver.run(values, jobs, 0, 1000)
+print(solver.get_best())
+print(solver.get_best_fitness())
