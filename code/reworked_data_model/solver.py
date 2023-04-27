@@ -1,6 +1,6 @@
 from model import ProductionEnvironment, Job, Order, Recipe, Workstation, Task, Resource, Schedule
 from copy import deepcopy
-from translation import TimeWindowGAEncoder, Encoder, SimpleGAEncoder
+from translation import TimeWindowGAEncoder, Encoder, SimpleGAEncoder, GurobiEncoder
 from evaluation import Evaluator, Objective
 import random
 import math
@@ -1204,3 +1204,64 @@ class SequenceOrderGA(Solver):
 
     def run(self):
         pass
+
+
+import gurobipy as gp
+class GurobiSolver(Solver):
+
+    def __init__(self, production_environment : ProductionEnvironment):
+        super().__init__('GurobiSolver', production_environment, GurobiEncoder())
+
+    def initialize(self, nb_jobs, nb_operations, nb_machines, job_ops_machs, duration, job_op_suitable, L):
+        self.job_ops_machs = job_ops_machs
+        self.m = gp.Model('milp32')
+        jobs = [j for j in range(1,nb_jobs+1)]
+        job_ops = [(j+1,k+1) for j in range(nb_jobs) for k in range(nb_operations[j])] 
+        machines = [m for m in range(1,nb_machines+1)]
+        list_X_var = []
+        for j, k in job_ops :
+            if j < nb_jobs :
+                for jp, kp in job_ops:
+                    if jp > j:
+                        list_X_var.append((j,k,jp,kp))
+        Y = self.m.addVars(job_ops_machs, obj = 0.0, vtype=gp.GRB.BINARY, name ="Y")
+        X = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="X")
+        C = self.m.addVars(job_ops,  obj = 0.0, lb = 0.0, vtype=gp.GRB.CONTINUOUS, name ="C")
+        Cmax = self.m.addVar(obj = 1.0, name="Cmax")
+        self.m.addConstrs((Y.sum(j,k,'*') == 1 for j, k in job_ops), "Y_const")
+
+        self.m.addConstrs((Y.prod(duration,j,k,'*') <= C[j,k] for j, k in job_ops if k == 1),"C_time")
+
+        self.m.addConstrs((Y.prod(duration,j,k,'*') + C[j,k-1] <= C[j,k] for j, k in job_ops if k != 1), "C_time")
+
+        self.m.addConstrs((C[j,k] >= C[jp,kp] + duration[j,k,i] - L*(3 - X[j,k,jp,kp] - Y[j,k,i] - Y[jp,kp,i]) 
+                        for j, k in job_ops if j < nb_jobs
+                        for jp, kp in job_ops if jp > j 
+                        for i in machines if i in job_op_suitable[j,k] if i in job_op_suitable[jp,kp]), "l1")
+        self.m.addConstrs((C[jp,kp] >= C[j,k] + duration[jp,kp,i] - L*(X[j,k,jp,kp] + 2 - Y[j,k,i] - Y[jp,kp,i]) 
+                    for j, k in job_ops if j < nb_jobs
+                    for jp, kp in job_ops if jp > j 
+                    for i in machines if i in job_op_suitable[j,k] if i in job_op_suitable[jp,kp]), "l2")
+
+        self.m.addConstrs((Cmax>=C[j,nb_operations[j-1]] for j in jobs),"Cmax")
+        self.X = X
+        self.Y = Y
+        self.C = C
+
+    def run(self):
+        self.m.update()
+        self.m.display()
+        self.m.optimize()
+
+    def get_best(self):
+        if self.m.Status == gp.GRB.OPTIMAL:
+            xsol = self.m.getAttr('X', self.X)
+            ysol = self.m.getAttr('X', self.Y)
+            csol = self.m.getAttr('X', self.C)
+            return xsol, ysol, csol
+        else:
+            print("status = {}\n".format(self.m.status))
+            return None
+        
+    def get_best_fitness(self):
+        return 0

@@ -250,3 +250,52 @@ class SimpleGAEncoder(Encoder):
             schedule.add_assignment(workstation=workstation, job=jobs[job_idx], start_time=start_time, end_time=end_time, resources=[])
             job_idx += 1
         return schedule
+    
+
+class GurobiEncoder(Encoder):
+
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
+        #NOTE: all IDs used by the gurobi solver a 1 indexed
+        recipes = [] # jobs
+        job_ops_machs : tuple[int,int,int] = []
+        durations : dict[tuple[int,int,int],int] = dict() # recipe/order id, ro_id, workstation_id -> duration
+        job_op_suitable : dict[tuple[int, int]] = dict()
+        nb_machines : int = len(production_environment.workstations.keys())
+        for order in orders:
+            recipes.append(order.resources[0][0].recipes[0]) # default recipe for now
+        nb_jobs = len(recipes)
+        nb_operations = [len(recipe.tasks) for recipe in recipes]
+        INFINITE = 1000000
+        task_processing_times : list[list[list[int]]] = [[[INFINITE for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+        jobs : list[Job] = []
+        for order in orders:
+            recipe = order.resources[0][0].recipes[0]
+            for i in range(len(recipe.tasks)):
+                task = recipe.tasks[i][0]
+                workstations = production_environment.get_available_workstations_for_task(task)
+                for workstation in workstations:
+                    job_ops_machs.append((order.id + 1, i + 1, workstation.id + 1))
+                    duration = workstation.get_duration(task)
+                    durations[order.id + 1, i + 1, workstation.id + 1] = duration
+                    task_processing_times[order.id][i][workstation.id] = duration
+                job_op_suitable[order.id + 1, i + 1] = [w.id + 1 for w in workstations]
+                jobs.append(Job(order=order, recipe=recipe, task=task, ro_id=i))
+        upper_bound = 0
+        for j in range(nb_jobs):
+            for o in range(nb_operations[j]):
+                upper_bound += max(x for x in task_processing_times[j][o] if x != INFINITE)
+        return nb_machines, nb_jobs, nb_operations, job_ops_machs, durations, job_op_suitable, upper_bound, jobs
+
+    def decode(self, xsol, ysol, csol, job_ops_machs, durations, production_environment : ProductionEnvironment, jobs : list[Job], solver : Solver = None):
+        schedule : Schedule = Schedule()
+        schedule.solver = solver
+        job_idx = 0
+        for j, k, i in job_ops_machs:
+            if ysol[j,k,i] > 0:
+                job = jobs[job_idx]
+                job_idx+=1
+                workstation = production_environment.get_workstation(i-1)
+                start_time = csol[j,k]-durations[j,k,i]
+                end_time = csol[j,k]
+                schedule.add_assignment(workstation, job, start_time, end_time, resources=[])
+        return schedule
