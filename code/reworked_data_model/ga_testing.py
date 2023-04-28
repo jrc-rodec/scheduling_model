@@ -4,6 +4,8 @@ from solver import GASolver
 from visualization import visualize_schedule
 from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, Profit, UnfulfilledOrders
 
+# TODO: sequence GA, result compacting in on_mutation
+
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
 simple_translator = FJSSPInstancesTranslator()
