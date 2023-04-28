@@ -326,7 +326,7 @@ class GASolver(Solver):
         self.memory_duplicate = 0
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10]) -> None:
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10], verbose : bool = True, repair : bool = False, repair_on_crossover : bool = False) -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -334,6 +334,8 @@ class GASolver(Solver):
         self.max_generations = max_generations
         self.crossover_type = crossover
         self.parent_selection_type = selection
+        self.verbose = verbose
+        self.repair = repair
         #self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
         if mutation == 'workstation_only':
             self.mutation_type = GASolver.alternative_mutation_function
@@ -363,9 +365,40 @@ class GASolver(Solver):
                 self.gene_space.append({'low': lower_bound, 'high': upper_bound})
             else:
                 self.gene_space.append(gene_space_starttime)
+        on_crossover = None
+        on_mutation = None
+        if repair:
+            if repair_on_crossover:
+                on_crossover = GASolver.repair
+            else:
+                on_mutation = GASolver.repair
         self.k_tournament = k_tournament
-        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament)#, parallel_processing=parallel_processing)
+        self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament, on_generation=GASolver.on_generation, on_crossover=on_crossover, on_mutation=on_mutation)#, parallel_processing=parallel_processing)
         self.best_solution = None
+
+    # maybe do on crossover?
+    def repair(ga_instance, offspring):
+        instance = GASolver.instance
+        if instance.repair:
+            # repair the offspring (overlaps)
+            w_sortings : list[list[int]] = [] * len(instance.production_environment.workstations.keys())
+            for i in range(0, len(offspring), 2):
+                for j in range(len(w_sortings[offspring[i]])):
+                    index = w_sortings[offspring[i]][j]
+                    if offspring[i+1] < offspring[index+1]:
+                        w_sortings[offspring[i]].insert(index, i)
+                        break
+                    elif offspring[i+1] == offspring[index+1]:
+                        pass # something
+            for i in range(w_sortings):
+                # fix if overlap found
+                pass
+            # or
+            print('on_mutation')
+
+    def on_generation(ga_instance):
+        if GASolver.instance.verbose and ga_instance.generations_completed % 100 == 0:
+            print(f'Generation {ga_instance.generations_completed}, Current Best: {GASolver.instance.best_history[-1]}')
 
     def determine_gene_space(self, index : int) -> tuple[int,int]:
         lower_bound = self.earliest_slot
@@ -545,7 +578,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+    def fitness_function(solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
         if GASolver.instance.memory.get(solution.tostring()):
             GASolver.instance.memory_duplicate += 1
             return GASolver.instance.memory[solution.tostring()]

@@ -1,11 +1,13 @@
-from translation import BasicBenchmarkTranslator, GurobiEncoder
+from translation import BasicBenchmarkTranslator, GurobiEncoder, FJSSPInstancesTranslator
 from model import ProductionEnvironment, Order
 from solver import GurobiSolver
 from visualization import visualize_schedule
 from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, Profit, UnfulfilledOrders
 
-simple_translator = BasicBenchmarkTranslator()
-production_environment = simple_translator.translate(3)
+#simple_translator = BasicBenchmarkTranslator()
+#production_environment = simple_translator.translate(3)
+simple_translator = FJSSPInstancesTranslator()
+production_environment = simple_translator.translate(source='1_Brandimarte', benchmark_id=10)
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
@@ -15,7 +17,7 @@ encoder = GurobiEncoder()
 nb_machines, nb_jobs, nb_operations, job_ops_machs, durations, job_op_suitable, upper_bound, jobs = encoder.encode(production_environment, orders)
 solver = GurobiSolver(production_environment)
 solver.initialize(nb_jobs, nb_operations, nb_machines, job_ops_machs, durations, job_op_suitable, upper_bound)
-solver.m.Params.TIME_LIMIT = 7200 # time limit in seconds
+solver.m.Params.TIME_LIMIT = 3600 # time limit in seconds
 solver.run()
 
 print(solver.get_best())
