@@ -7,7 +7,7 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
 simple_translator = FJSSPInstancesTranslator()
-production_environment = simple_translator.translate(source='6_Fattahi', benchmark_id=1)
+production_environment = simple_translator.translate(source='6_Fattahi', benchmark_id=10)
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
@@ -19,7 +19,7 @@ solver = GASolver(values, durations, jobs, production_environment, orders)
 
 start_time_slot = 0
 end_time_slot = 1000
-population_size = 100
+population_size = 50
 offspring_amount = 2 * population_size
 max_generations = 30000
 keep_parents = 0#int(population_size/4)#int(population_size / 6) #NOTE: weirdly only applies if keep_elitism=0, otherwise keep_elitism is used
@@ -28,6 +28,8 @@ crossover = 'two_points' # available options: single_point, two_points, uniform,
 selection = 'tournament' # available options: sss (Stead State Selection), rws (Roulette Wheel Selection), sus (Stochastic Universal Selection), rank (Rank Selection), random (Random Selection), tournament (Torunament Selection)
 k_tournament = int(population_size/4)
 mutation = 'force_feasible' # available options: workstation_only, full_random, random_only_feasible, force_feasible
+repair = False
+random_until_feasible = True
 
 end = 0
 for order in orders:
@@ -38,7 +40,7 @@ for order in orders:
         end += longest
 end_time_slot = end
 
-solver.initialize(earliest_slot=start_time_slot, last_slot=end_time_slot, population_size=population_size, offspring_amount=offspring_amount, max_generations=max_generations, crossover=crossover, selection=selection, mutation=mutation, k_tournament=k_tournament, keep_parents=keep_parents, keep_elitism=keep_elitism, repair=True)
+solver.initialize(earliest_slot=start_time_slot, last_slot=end_time_slot, population_size=population_size, offspring_amount=offspring_amount, max_generations=max_generations, crossover=crossover, selection=selection, mutation=mutation, k_tournament=k_tournament, keep_parents=keep_parents, keep_elitism=keep_elitism, repair=repair, random_until_feasible=random_until_feasible)
 print('starting...')
 solver.add_objective(Makespan())
 solver.run()

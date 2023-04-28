@@ -326,7 +326,7 @@ class GASolver(Solver):
         self.memory_duplicate = 0
         GASolver.instance = self
 
-    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10], verbose : bool = True, repair : bool = False, repair_on_crossover : bool = False) -> None:
+    def initialize(self, earliest_slot : int = 0, last_slot : int = 1000, population_size : int = 100, offspring_amount : int = 50, max_generations : int = 5000, crossover : str = 'two_points', selection : str = 'rws', mutation : str = 'workstation_only', k_tournament : int = 10, keep_parents : int = 10, keep_elitism : int = 0, parallel_processing=["process", 10], verbose : bool = True, repair : bool = False, repair_on_crossover : bool = False, random_until_feasible : bool = False) -> None:
         self.earliest_slot = earliest_slot
         self.last_slot = last_slot
         self.population_size = population_size
@@ -335,6 +335,7 @@ class GASolver(Solver):
         self.crossover_type = crossover
         self.parent_selection_type = selection
         self.verbose = verbose
+        self.random_until_feasible = random_until_feasible
         self.repair = repair
         #self.mutation_type = GASolver.alternative_mutation_function # set as default if no feasible option is provided
         if mutation == 'workstation_only':
@@ -369,32 +370,41 @@ class GASolver(Solver):
         on_mutation = None
         if repair:
             if repair_on_crossover:
-                on_crossover = GASolver.repair
+                on_crossover = GASolver.repair_offspring
             else:
-                on_mutation = GASolver.repair
+                on_mutation = GASolver.repair_offspring
         self.k_tournament = k_tournament
         self.ga_instance = pygad.GA(num_generations=max_generations, num_parents_mating=int(self.population_size/2), fitness_func=self.objective_function, on_fitness=GASolver.on_fitness_assignemts, sol_per_pop=population_size, num_genes=len(self.encoding), init_range_low=self.earliest_slot, init_range_high=self.last_slot, parent_selection_type=self.parent_selection_type, keep_parents=self.keep_parents, crossover_type=self.crossover_type, mutation_type=self.mutation_type, mutation_percent_genes=self.mutation_percentage_genes, gene_type=self.gene_type, gene_space=self.gene_space, K_tournament=self.k_tournament, on_generation=GASolver.on_generation, on_crossover=on_crossover, on_mutation=on_mutation)#, parallel_processing=parallel_processing)
         self.best_solution = None
 
     # maybe do on crossover?
-    def repair(ga_instance, offspring):
+    def repair_offspring(ga_instance, offsprings): # NOTE: weird explanation in pygad docs
         instance = GASolver.instance
         if instance.repair:
-            # repair the offspring (overlaps)
-            w_sortings : list[list[int]] = [] * len(instance.production_environment.workstations.keys())
-            for i in range(0, len(offspring), 2):
-                for j in range(len(w_sortings[offspring[i]])):
-                    index = w_sortings[offspring[i]][j]
-                    if offspring[i+1] < offspring[index+1]:
-                        w_sortings[offspring[i]].insert(index, i)
-                        break
-                    elif offspring[i+1] == offspring[index+1]:
-                        pass # something
-            for i in range(w_sortings):
-                # fix if overlap found
-                pass
-            # or
-            print('on_mutation')
+            for offspring in offsprings:
+                # repair the offspring (overlaps)
+                w_sortings : list[list[int]] = [] 
+                for i in range(len(instance.production_environment.workstations.keys())):
+                    w_sortings.append([])
+                for i in range(0, len(offspring), 2):
+                    if len(w_sortings[offspring[i]]) == 0:
+                        w_sortings[offspring[i]].append(i)
+                    else:
+                        for j in range(len(w_sortings[offspring[i]])):
+                            index = w_sortings[offspring[i]][j]
+                            if offspring[i+1] < offspring[index+1]:
+                                w_sortings[offspring[i]].insert(index, i)
+                                break
+                            elif offspring[i+1] == offspring[index+1]:
+                                pass # something
+                for w in w_sortings:
+                    # fix if overlap found
+                    # in theory overlaps should only be able to occur on the workstations, not for the sequences
+                    for i in range(1, len(w)):
+                        index = w[i]
+                        #prev_start = offspring[index-1]
+                        prev_end = offspring[w[i-1]+1] + instance.production_environment.get_workstation(offspring[w[i-1]]).get_duration(instance.jobs[int(w[i-1]/2)].task)
+                        offspring[index+1] = max(offspring[index+1], prev_end)
 
     def on_generation(ga_instance):
         if GASolver.instance.verbose and ga_instance.generations_completed % 100 == 0:
@@ -501,7 +511,10 @@ class GASolver(Solver):
     def force_feasible_mutation(offsprings : list[list[int]], ga_instance) -> list[list[int]]: #NOTE: does not guarantee no overlaps, just valid workstations + valid sequence
         instance = GASolver.instance
         for offspring in offsprings:
-            p = 1 / (len(offspring))
+            if instance.random_until_feasible and instance.best_history[-1] == float('inf'):
+                p = 1
+            else:
+                p = 1 / (len(offspring))
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
                     # mutate workstation
@@ -578,7 +591,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
         if GASolver.instance.memory.get(solution.tostring()):
             GASolver.instance.memory_duplicate += 1
             return GASolver.instance.memory[solution.tostring()]
@@ -607,7 +620,7 @@ class GASolver(Solver):
             if solution[i+1] < instance.earliest_slot:
                 return False
             # check for overlaps
-            for j in range(0, len(solution), 2):
+            for j in range(i, len(solution), 2):
                 if not i == j:
                     if solution[i] == solution[j]: # tasks run on the same workstation
                         other_job = instance.jobs[int(j/2)]
