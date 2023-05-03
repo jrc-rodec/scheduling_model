@@ -383,8 +383,15 @@ class GASolver(Solver):
         if instance.repair:
             for offspring in offsprings:
                 # repair the offspring (overlaps)
-                w_sortings : list[list[int]] = [] 
-                for i in range(len(instance.production_environment.workstations.keys())):
+                w_sortings : list[list[int]] = []
+                #TODO: test
+                for workstation in instance.production_environment.workstations.keys():
+                    w_sortings.append([])
+                    for i in range(0, len(offspring), 2):
+                        if offspring[i] == int(workstation):
+                            w_sortings[-1].append(i)
+                    w_sortings[-1].sort(key= lambda x: offspring[x+1])
+                """for i in range(len(instance.production_environment.workstations.keys())):
                     w_sortings.append([])
                 for i in range(0, len(offspring), 2):
                     if len(w_sortings[offspring[i]]) == 0:
@@ -393,18 +400,25 @@ class GASolver(Solver):
                         for j in range(len(w_sortings[offspring[i]])):
                             index = w_sortings[offspring[i]][j]
                             if offspring[i+1] < offspring[index+1]:
-                                w_sortings[offspring[i]].insert(index, i)
+                                w_sortings[offspring[i]].insert(w_sortings[offspring[i]].index(index), i)
                                 break
                             elif offspring[i+1] == offspring[index+1]:
-                                pass # something
+                                # NOTE: maybe it should be inserted after, maybe even randomized
+                                w_sortings[offspring[i]].insert(w_sortings[offspring[i]].index(index), i)
+                                break # something"""
                 for w in w_sortings:
                     # fix if overlap found
                     # in theory overlaps should only be able to occur on the workstations, not for the sequences
                     for i in range(1, len(w)):
                         index = w[i]
+                        lb_sequence = 0
+                        if not instance.is_first(int(index/2)): # NOTE: inefficient
+                            # gather ending time of previous in sequence
+                            lb_sequence = offspring[index-1]
+                        lb_workstation = 0
                         #prev_start = offspring[index-1]
-                        prev_end = offspring[w[i-1]+1] + instance.production_environment.get_workstation(offspring[w[i-1]]).get_duration(instance.jobs[int(w[i-1]/2)].task)
-                        offspring[index+1] = max(offspring[index+1], prev_end)
+                        lb_workstation = offspring[w[i-1]+1] + instance.production_environment.get_workstation(offspring[w[i-1]]).get_duration(instance.jobs[int(w[i-1]/2)].task)
+                        offspring[index+1] = max(offspring[index+1], max(lb_sequence, lb_workstation)) #NOTE: could use min to force tighter schedules, probably bad for robustness optimization
 
     def on_generation(ga_instance):
         if GASolver.instance.verbose and ga_instance.generations_completed % 100 == 0:
@@ -535,7 +549,9 @@ class GASolver(Solver):
                         min_buffer += instance.get_longest_duration(int(j/2))
                         j+=2
                     upper_bound -= min_buffer
-                    offspring[i+1] = random.randint(lower_bound, upper_bound)
+                    #TODO: temporary to avoid multiple restarts
+                    offspring[i+1] = random.randint(min(lower_bound, upper_bound), max(lower_bound, upper_bound))
+                    #offspring[i+1] = random.randint(lower_bound, upper_bound)
         return offsprings
 
     def alternative_mutation_function(offsprings : list[list[int]], ga_instance) -> list[list[int]]:
@@ -591,7 +607,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+    def fitness_function(solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
         if GASolver.instance.memory.get(solution.tostring()):
             GASolver.instance.memory_duplicate += 1
             return GASolver.instance.memory[solution.tostring()]
@@ -1249,6 +1265,35 @@ class SequenceOrderGA(Solver):
         pass
 
     def run(self):
+        pass
+
+    def recombine(self):
+        p1 = []
+        p2 = []
+        c = [p1[i] if random.random() < 0.5 else p2[i] for i in range(len(p1))]
+        # repair sequence in created child
+
+    def mutate(self):
+        solution = []
+        p = 1 / len(solution)
+        production_environment = ProductionEnvironment()
+        jobs = []
+        #if mutate workstation, choose from available
+        solution = [solution[i] if p < random.random() else random.choice(production_environment.get_available_workstations_for_task(jobs[int(i/2)])) for i in range(0, len(solution), 2)]
+        #if mutate sequence on workstation, swap with random other on same workstation
+        for i in range(1, len(solution), 1):
+            if random.random() < p:
+                indices = []
+                for j in range(0, len(solution), 2):
+                    if solution[i] == solution[j]:
+                        indices.append(j+1)
+                index = random.choice(indices)
+                tmp = solution[i]
+                solution[i] = solution[index]
+                solution[index] = tmp
+        # repair sequence in mutated individual
+
+    def determine_start_times(self):
         pass
 
 
