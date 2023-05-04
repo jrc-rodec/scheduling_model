@@ -13,7 +13,7 @@ production_environment = simple_translator.translate(source='6_Fattahi', benchma
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
-    orders.append(Order(delivery_time=1000, latest_acceptable_time=10000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
+    orders.append(Order(delivery_time=1000, latest_acceptable_time=100000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
 
 encoder = SimpleGAEncoder()
 values, durations, jobs = encoder.encode(production_environment, orders) # NOTE: create duration dictionary
@@ -21,9 +21,9 @@ solver = GASolver(values, durations, jobs, production_environment, orders)
 
 start_time_slot = 0
 #end_time_slot = 1000
-population_size = 100
+population_size = 25
 offspring_amount = 2 * population_size #NOTE: currently unused parameter
-max_generations = 30000 #NOTE: for comparison to gurobi, max_time would be more useful, currently not supported by GA library
+max_generations = 100000 #NOTE: for comparison to gurobi, max_time would be more useful, currently not supported by GA library
 keep_parents = 0#int(population_size/4)#int(population_size / 6) #NOTE: weirdly only applies if keep_elitism=0, otherwise keep_elitism is used
 keep_elitism= int(population_size/4)
 crossover = 'two_points' # available options: single_point, two_points, uniform, scattered

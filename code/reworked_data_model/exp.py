@@ -8,18 +8,37 @@ solution = [1,7367,    1, 7592,    3, 7732,    7, 7882,    0, 7111,    2, 7520, 
 
 print(solution)
 
-w_sorting : list[list[int]] = []
+"""w_sorting : list[list[int]] = []
 for workstation in [0,1,2,3,4,5,6,7]:
     w_sorting.append([])
     for i in range(0, len(solution), 2):
         if solution[i] == int(workstation):
             w_sorting[-1].append(i)
-            """if len(w_sorting) == 0:
-                w_sorting.append(i)
-            else:
-                for j in w_sorting[-1]:
-                    if solution[w_sorting[-1][j]] < solution[i]:"""
     w_sorting[-1].sort(key= lambda x: solution[x+1])
 print(w_sorting)
 for sorting in w_sorting:
-    print([solution[x+1] for x in sorting])
+    print([solution[x+1] for x in sorting])"""
+
+"""on_workstations = [[i for i in range(0, len(solution), 2) if i == j] for j in [0,1,2,3,4,5,6,7]] # all indices for each workstation
+for workstation in [0,1,2,3,4,5,6,7]:
+    on_workstations[workstation] = []
+    for i in range(0, len(solution), 2):
+        if solution[i] == workstation:
+            on_workstations[workstation].append(i)
+for workstation in on_workstations:
+    workstation.sort(key=lambda x: solution[x+1]) # sort indices by sequence
+print(on_workstations)"""
+
+import datetime
+
+import time
+a = time.localtime()
+print(a)
+time.sleep(2)
+b = time.localtime()
+print(b)
+
+
+
+print((time.mktime(b) - time.mktime(a)))
+

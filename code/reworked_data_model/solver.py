@@ -528,7 +528,7 @@ class GASolver(Solver):
             if instance.random_until_feasible and instance.best_history[-1] == float('inf'):
                 p = 1
             else:
-                p = 1 / (len(offspring))
+                p = (1 / (len(offspring)))# + (ga_instance.generations_completed / ga_instance.num_generations)
             for i in range(0, len(offspring), 2):
                 if random.random() < p:
                     # mutate workstation
@@ -615,6 +615,8 @@ class GASolver(Solver):
             #return - (2 * GASolver.instance.last_slot)
             GASolver.instance.memory[solution.tostring()] = -float('inf')
             return -float('inf')
+        # for testing purposes
+        #fitness = (max(solution[1::2]) - min(solution[1::2]))
         instance = GASolver.instance
         schedule : Schedule = instance.encoder.decode(solution, instance.jobs, instance.production_environment, [], instance)
         fitness = instance.evaluator.evaluate(schedule, instance.jobs)[0] # only do single objective for now
@@ -725,7 +727,7 @@ class GreedyAgentSolver(Solver):
             if prev_order == current_order:
                 prev_start = result[i-1]
                 prev_end = prev_start + self.durations[int(self.jobs[int((i-2)/2)].task.id)][result[i-2]]
-                workstation_options = [option for option in workstation_options if option[1] >= prev_end] # should remove every starting slot before prev_end
+                workstation_options = [(option[0], prev_end) if option[1] < prev_end else option for option in workstation_options ] # should remove every starting slot before prev_end
             # at this point, workstation_option should only contain valid possible starting slots for the current task
             # evaluate all options to find options with the smallest impact on makespan
             # create solutions:
@@ -1293,8 +1295,18 @@ class SequenceOrderGA(Solver):
                 solution[index] = tmp
         # repair sequence in mutated individual
 
-    def determine_start_times(self):
-        pass
+    def determine_start_times(self, solution : list[int]) -> list[int]:
+        on_workstations = []
+        for i in range(len(self.production_environment.workstations.keys())):
+            on_workstations[i] = []
+            for j in range(0, len(solution), 2):
+                if solution[j] == workstation:
+                    on_workstations[i].append(j)
+        solution_with_start_times = [solution[i] if i % 2 == 0 else 0 for i in range(len(solution))] # set all start times to 0
+        for workstation in on_workstations:
+            workstation.sort(key=lambda x: solution[x+1]) # sort indices by sequence
+        # TODO: assign start times
+        return solution_with_start_times
 
 
 import gurobipy as gp
@@ -1356,3 +1368,5 @@ class GurobiSolver(Solver):
         
     def get_best_fitness(self):
         return 0
+    
+# workstation, sequence, time window, second objective to minimize time window size
