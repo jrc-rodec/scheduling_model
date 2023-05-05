@@ -1261,6 +1261,8 @@ class SequenceOrderGA(Solver):
 
     def __init__(self):
         # optimize job order, use greedy algorithm to determine start times and workstations
+
+        SequenceOrderGA.instance = self
         pass
 
     def initialize(self):
@@ -1296,17 +1298,31 @@ class SequenceOrderGA(Solver):
         # repair sequence in mutated individual
 
     def determine_start_times(self, solution : list[int]) -> list[int]:
+        instance : SequenceOrderGA = SequenceOrderGA.instance
+        result = solution.copy()
         on_workstations = []
-        for i in range(len(self.production_environment.workstations.keys())):
-            on_workstations[i] = []
-            for j in range(0, len(solution), 2):
-                if solution[j] == workstation:
-                    on_workstations[i].append(j)
-        solution_with_start_times = [solution[i] if i % 2 == 0 else 0 for i in range(len(solution))] # set all start times to 0
+        for workstation in len(instance.production_environment.get_workstation_list()):
+            on_workstations.append([])
+            for i in range(0,len(result), 2):
+                if result[i] == workstation:
+                    on_workstations[workstation].append(i)
         for workstation in on_workstations:
-            workstation.sort(key=lambda x: solution[x+1]) # sort indices by sequence
-        # TODO: assign start times
-        return solution_with_start_times
+            workstation.sort(key=lambda x: solution[x+1])
+            for i in range(len(workstation)):
+                if i == 0:
+                    result[workstation[i]+1] = 0
+                else:
+                    result[workstation[i]+1] = result[workstation[i-1]+1] + instance.production_environment.get_workstation(workstation[i]).get_duration(instance.jobs[int(i/2)].task)#TODO: duration result[workstation[i-1]+2]
+        for i in range(0,len(result),2):
+            if i > 0 and instance.jobs[int(i/2)].order == instance.jobs[int(i/2)-1].order:
+                for w in on_workstations:
+                    if i in w:
+                        on_workstation = w
+                        break
+                for j in range(on_workstation.index(i), len(on_workstation)):
+                    prev_end = result[i-1] + instance.production_environment.get_workstation(result[i-2]).get_duration(instance.jobs[int(i/2)-1].task)# TODO: duration result[i-1]
+                    result[on_workstation[j]+1] = max(result[on_workstation[j]+1], prev_end)
+        return result
 
 
 import gurobipy as gp
@@ -1357,14 +1373,11 @@ class GurobiSolver(Solver):
         self.m.optimize()
 
     def get_best(self):
-        if self.m.Status == gp.GRB.OPTIMAL:
-            xsol = self.m.getAttr('X', self.X)
-            ysol = self.m.getAttr('X', self.Y)
-            csol = self.m.getAttr('X', self.C)
-            return xsol, ysol, csol
-        else:
-            print("status = {}\n".format(self.m.status))
-            return None
+        xsol = self.m.getAttr('X', self.X)
+        ysol = self.m.getAttr('X', self.Y)
+        csol = self.m.getAttr('X', self.C)
+        return xsol, ysol, csol
+
         
     def get_best_fitness(self):
         return 0

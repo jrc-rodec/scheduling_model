@@ -6,7 +6,7 @@ solution = [1,7367,    1, 7592,    3, 7732,    7, 7882,    0, 7111,    2, 7520, 
     7, 7477,    3, 6862,    5, 7136,   5, 7361,    6, 7605,    1, 7039,    3, 7212,
     4, 7462,    5, 7526,    1, 6620,    2, 7264,    4, 7502,    7, 7652]
 
-print(solution)
+#print(solution)
 
 """w_sorting : list[list[int]] = []
 for workstation in [0,1,2,3,4,5,6,7]:
@@ -29,16 +29,41 @@ for workstation in on_workstations:
     workstation.sort(key=lambda x: solution[x+1]) # sort indices by sequence
 print(on_workstations)"""
 
-import datetime
+values = [0, 0, 10, 0, 1, 5, 1, 1, 5, 1, 0, 10]
+jobs = [0, 0, 0, 1]
+result = values.copy()
+on_workstations = []
+for workstation in [0, 1]:
+    on_workstations.append([])
+    for i in range(0,len(result), 3):
+        if result[i] == workstation:
+            on_workstations[workstation].append(i)
+print(on_workstations)
+for workstation in on_workstations:
+    workstation.sort(key=lambda x: values[x+1])
+    for i in range(len(workstation)):
+        if i == 0:
+            result[workstation[i]+1] = 0
+        else:
+            result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+2]
+print(on_workstations)
+print(result)
+for i in range(0,len(result),3):
+    if i > 0 and jobs[int(i/3)] == jobs[int(i/3)-1]:
+        #on_workstation = [x for x in on_workstations if result[i] in x][0]
+        for w in on_workstations:
+            if i in w:
+                on_workstation = w
+                break
+        for j in range(on_workstation.index(i), len(on_workstation)):
+            prev_end = result[i-2] + result[i-1]
+            result[on_workstation[j]+1] = max(result[on_workstation[j]+1], prev_end)
+print(values)
+print(result)
 
-import time
-a = time.localtime()
-print(a)
-time.sleep(2)
-b = time.localtime()
-print(b)
 
-
-
-print((time.mktime(b) - time.mktime(a)))
-
+"""test = [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]
+l = [x for x in test if 0 in x]
+print(l[0])
+for i in range(l[0].index(2), len(l[0])):
+    print(l[0][i])"""

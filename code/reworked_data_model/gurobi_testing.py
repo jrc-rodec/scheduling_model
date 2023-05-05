@@ -17,7 +17,7 @@ encoder = GurobiEncoder()
 nb_machines, nb_jobs, nb_operations, job_ops_machs, durations, job_op_suitable, upper_bound, jobs = encoder.encode(production_environment, orders)
 solver = GurobiSolver(production_environment)
 solver.initialize(nb_jobs, nb_operations, nb_machines, job_ops_machs, durations, job_op_suitable, upper_bound)
-solver.m.Params.TIME_LIMIT = 3600 # time limit in seconds
+solver.m.Params.TIME_LIMIT = 1800 # time limit in seconds
 solver.run()
 
 print(solver.get_best())

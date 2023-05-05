@@ -9,7 +9,7 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
 simple_translator = FJSSPInstancesTranslator()
-production_environment = simple_translator.translate(source='6_Fattahi', benchmark_id=20)
+production_environment = simple_translator.translate(source='6_Fattahi', benchmark_id=19)
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
