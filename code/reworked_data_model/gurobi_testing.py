@@ -6,8 +6,10 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
+source = '6_Fattahi'
+benchmark_id = 1
 simple_translator = FJSSPInstancesTranslator()
-production_environment = simple_translator.translate(source='1_Brandimarte', benchmark_id=10)
+production_environment = simple_translator.translate(source=source, benchmark_id=benchmark_id)
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
@@ -38,3 +40,7 @@ evaluator.add_objective(UnfulfilledOrders())
 objective_values = evaluator.evaluate(schedule, jobs)
 print(f'Solution created with: {solver.name}')
 print(objective_values)
+
+
+from result_writer import write_result
+write_result(f'{source}_{benchmark_id}', solver.name, objective_values)

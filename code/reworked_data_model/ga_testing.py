@@ -8,8 +8,10 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
+source='6_Fattahi'
+benchmark_id=1
 simple_translator = FJSSPInstancesTranslator()
-production_environment = simple_translator.translate(source='6_Fattahi', benchmark_id=19)
+production_environment = simple_translator.translate(source=source, benchmark_id=benchmark_id)
 
 orders : list[Order] = []
 for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
@@ -23,7 +25,7 @@ start_time_slot = 0
 #end_time_slot = 1000
 population_size = 25
 offspring_amount = 2 * population_size #NOTE: currently unused parameter
-max_generations = 100000 #NOTE: for comparison to gurobi, max_time would be more useful, currently not supported by GA library
+max_generations = 1000 #NOTE: for comparison to gurobi, max_time would be more useful, currently not supported by GA library
 keep_parents = 0#int(population_size/4)#int(population_size / 6) #NOTE: weirdly only applies if keep_elitism=0, otherwise keep_elitism is used
 keep_elitism= int(population_size/4)
 crossover = 'two_points' # available options: single_point, two_points, uniform, scattered
@@ -119,3 +121,6 @@ evaluator.add_objective(UnfulfilledOrders())
 objective_values = evaluator.evaluate(schedule, jobs)
 print(f'Solution created with: {solver.name}')
 print(objective_values)
+
+from result_writer import write_result
+write_result(f'{source}_{benchmark_id}', solver.name, objective_values)
