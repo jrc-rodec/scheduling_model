@@ -1,6 +1,7 @@
 from solver import Solver
 from model import ProductionEnvironment, Schedule
 from translation import Encoder
+import random
 
 class TimeWindowSequenceGA(Solver):
 
@@ -15,24 +16,94 @@ class TimeWindowSequenceGA(Solver):
         pass
 
     def mutate(self, individual):
-        p = 1 / len(individual)
+        p = 1 / len(individual) # maybe check whether or not genes should be kept complete
         # mutate workstation assignments
-        for i in range(0, len(individual), 3):
-            pass
+        for i in range(0, len(individual), 4):
+            if random.random() < p:
+                workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)])
+                individual[i] = int(random.choice(workstations).id)
+            
         # mutate sequence order
-        for i in range(1, len(individual), 3):
-            pass
+        for i in range(1, len(individual), 4):
+            if random.random() < p:
+                workstation = individual[i-1]
+                indices = []
+                for j in range(0, len(individual), 4):
+                    if individual[j] == workstation and j != i-1:
+                        indices.append(j+1)
+                if len(indices) > 0:
+                    swap = random.choice(indices)
+                    temp = individual[i]
+                    individual[i] = individual[swap]
+                    individual[swap] = temp
+
+        if self.mutate_worker:
+            pass # TODO
         # if time windows enabled, mutate time window size
         if self.mutate_duration:
-            for i in range(2, len(individual), 3):
-                pass
-        pass
+            for i in range(2, len(individual), 4):
+                pass # TODO
+
+    def one_point_crossover(self, parent_a, parent_b):
+        crossover_point = random.randint(0, len(parent_a)-2)
+        offspring = []
+        offspring.extend(parent_a[:crossover_point])
+        offspring.extend(parent_b[crossover_point+1:])
+        self.repair(offspring)
+        return offspring
+
+    def uniform_crossover(self, parent_a, parent_b):
+        selection_values = [0 if random.random() < 0.5 else 1 for _ in range(len(parent_a))]
+        offspring = []
+        for i in range(len(selection_values)):
+            offspring.append(parent_a[i] if selection_values[i] == 1 else parent_b[i])
+        # repair
+        for i in range(0, len(offspring), 4):
+            workstation = offspring[i]
+            conflicts_found = True
+            while conflicts_found:
+                conflicts_found = False
+                for j in range(0, len(offspring), 4):
+                    if i != j and offspring[j] == workstation:
+                        # check if sequence has a conflict
+                        if offspring[i+1] == offspring[j+1]:
+                            conflicts_found = True
+                            if (selection_values[i+1] == 1 and selection_values[j+1] == 1) or (selection_values[i+1] == 0 and selection_values[j+1] == 0):
+                                if random.random() < 0.5:
+                                    offspring[j+1] += 1
+                                else:
+                                    offspring[i+1] += 1
+                            elif selection_values[i+1] == 1:
+                                offspring[j+1] += 1
+                            else:
+                                offspring[i+1] += 1
+        return offspring
 
     def recombine(self):
-        pass
+        # for testing, just single point crossover
+        parent_a = self.select()
+        parent_b = self.select()
+        while parent_a == parent_b:
+            parent_b = self.select() # NOTE: maybe needs changing
+        offspring = self.one_point_crossover(parent_a, parent_b)
+        return offspring
 
-    def repair(self):
-        pass
+    def repair(self, offspring):
+        for i in range(0, len(offspring), 4):
+            workstation = offspring[i]
+            conflicts_found = True
+            while conflicts_found:
+                conflicts_found = False
+                for j in range(0, len(offspring), 4):
+                    if i != j and offspring[j] == workstation:
+                        # check if sequence has a conflict
+                        if offspring[i+1] == offspring[j+1]:
+                            conflicts_found = True
+                            if random.random() < 0.5:
+                                offspring[j+1] += 1
+                            else:
+                                offspring[i+1] += 1
+        return offspring
 
     def select(self):
         pass
@@ -83,7 +154,9 @@ class TimeWindowSequenceGA(Solver):
             #create offsprings
             offsprings : list[list[int]] = []
             for _ in range(len(self.offspring_amount)):
-                offsprings.append(self.recombine())
+                offspring = self.recombine()
+                #self.repair(offspring) # done at the end of recombination instead
+                offsprings.append(offspring)
             #mutate offsprings
             for offspring in offsprings:
                 self.mutate(offspring)

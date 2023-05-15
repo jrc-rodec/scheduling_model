@@ -29,7 +29,7 @@ for workstation in on_workstations:
     workstation.sort(key=lambda x: solution[x+1]) # sort indices by sequence
 print(on_workstations)"""
 
-values = [0, 0, 10, 0, 1, 5, 1, 1, 5, 1, 0, 10]
+"""values = [0, 0, 10, 0, 1, 5, 1, 1, 5, 1, 0, 10]
 jobs = [0, 0, 0, 1]
 result = values.copy()
 on_workstations = []
@@ -59,7 +59,7 @@ for i in range(0,len(result),3):
             prev_end = result[i-2] + result[i-1]
             result[on_workstation[j]+1] = max(result[on_workstation[j]+1], prev_end)
 print(values)
-print(result)
+print(result)"""
 
 
 """test = [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]
@@ -67,3 +67,33 @@ l = [x for x in test if 0 in x]
 print(l[0])
 for i in range(l[0].index(2), len(l[0])):
     print(l[0][i])"""
+
+import random
+offspring = [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 2, 0, 3]
+loop_count = 0
+on_workstations = [(offspring[i], offspring[i+1]) for i in range(0, len(offspring), 2)]
+for i in range(0, len(offspring), 2):
+    workstation = offspring[i]
+    conflicts_found = True
+    while conflicts_found:
+        loop_count += 1
+        conflicts_found = False
+        for j in range(0, len(offspring), 2):
+            if i != j and offspring[j] == workstation:
+                # check if sequence has a conflict
+                if offspring[i+1] == offspring[j+1]:
+                    conflicts_found = True
+                    if random.random() < 0.5:
+                        offspring[j+1] += 1
+                    else:
+                        offspring[i+1] += 1
+on_workstations = [(offspring[i], offspring[i+1]) for i in range(0, len(offspring), 2)]
+print(on_workstations)
+on_zero = [x for x in on_workstations if x[0] == 0]
+on_zero.sort(key=lambda x: x[1])
+on_one = [x for x in on_workstations if x[0] == 1]
+on_one.sort(key=lambda x: x[1])
+print(on_zero)
+print(on_one)
+print(loop_count)
+print(len(offspring))
