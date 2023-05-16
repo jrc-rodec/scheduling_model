@@ -1381,5 +1381,71 @@ class GurobiSolver(Solver):
         
     def get_best_fitness(self):
         return 0
+
+class GurobiWithWorkerSolver(Solver):
     
+    def __init__(self, production_environment : ProductionEnvironment):
+        super().__init__('GurobiSolver (incl. Worker)', production_environment, GurobiEncoder())
+
+    def initialize(self, nb_jobs, nb_operations, nb_machines, nb_workers, job_op_machsuitable, job_op_mach_worker, duration, job_op_mach_workersuitable, L):
+        self.m = gp.Model('milp33')
+        jobs = [j for j in range(1,nb_jobs+1)]
+        job_ops = [(j+1,k+1) for j in range(nb_jobs) for k in range(nb_operations[j])] 
+        machines = [m for m in range(1,nb_machines+1)]
+        workers = [s for s in range(1,nb_workers+1)]
+        list_X_var = []
+        
+        for j, k in job_ops :
+            if j < nb_jobs :
+                for jp, kp in job_ops:
+                    if jp > j:
+                        list_X_var.append((j,k,jp,kp)) 
+
+        self.Y = self.m.addVars(job_op_mach_worker, obj = 0.0, vtype=gp.GRB.BINARY, name ="Y")
+        self.X = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="X")
+        self.U = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="U")
+        self.C = self.m.addVars(job_ops,  obj = 0.0, lb = 0.0, vtype=gp.GRB.CONTINUOUS, name ="C")
+        Cmax = self.m.addVar(obj = 1.0, name="Cmax")
+
+        self.m.addConstrs((self.Y.sum(j,k,'*','*') == 1 for j, k in job_ops), "Y_const")
+        self.m.addConstrs((self.Y.prod(duration,j,k,'*','*') <= self.C[j,k] for j, k in job_ops if k == 1),"C_time")
+        self.m.addConstrs((self.Y.prod(duration,j,k,'*','*') + self.C[j,k-1] <= self.C[j,k] for j, k in job_ops if k != 1), "C_time")
+        self.m.addConstrs((self.C[j,k] >= self.C[jp,kp] + duration[j,k,i,s] - L*(3 - self.X[j,k,jp,kp] - self.Y[j,k,i,s] - self.Y[jp,kp,i,sp]) 
+                    for j, k in job_ops if j < nb_jobs
+                    for jp, kp in job_ops if jp > j 
+                    for i in machines if i in job_op_machsuitable[j,k] if i in job_op_machsuitable[jp,kp]
+                    for s in workers if s in job_op_mach_workersuitable[j,k,i]
+                    for sp in workers if sp in job_op_mach_workersuitable[jp,kp,i]) ,"l1_X")
+        self.m.addConstrs((self.C[jp,kp] >= self.C[j,k] + duration[jp,kp,i,sp] - L*(self.X[j,k,jp,kp] + 2 - self.Y[j,k,i,s] - self.Y[jp,kp,i,sp]) 
+                    for j, k in job_ops if j < nb_jobs
+                    for jp, kp in job_ops if jp > j 
+                    for i in machines if i in job_op_machsuitable[j,k] if i in job_op_machsuitable[jp,kp]
+                    for s in job_op_mach_workersuitable[j,k,i]
+                    for sp in job_op_mach_workersuitable[jp,kp,i]), "l2_X")
+        self.m.addConstrs((self.C[j,k] >= self.C[jp,kp] + duration[j,k,i,s] - L*(3 - self.U[j,k,jp,kp] - self.Y[j,k,i,s] - self.Y[jp,kp,ip,s]) 
+                    for j, k in job_ops if j < nb_jobs
+                    for jp, kp in job_ops if jp > j 
+                    for i in machines if i in job_op_machsuitable[j,k] 
+                    for ip in machines if ip in job_op_machsuitable[jp,kp]
+                    for s in workers if s in job_op_mach_workersuitable[j,k,i] if s in job_op_mach_workersuitable[jp,kp,ip]) ,"l1_U")
+        self.m.addConstrs((self.C[jp,kp] >= self.C[j,k] + duration[jp,kp,ip,s] - L*(self.U[j,k,jp,kp] + 2 - self.Y[j,k,i,s] - self.Y[jp,kp,ip,s]) 
+                    for j, k in job_ops if j < nb_jobs
+                    for jp, kp in job_ops if jp > j 
+                    for i in machines if i in job_op_machsuitable[j,k] 
+                    for ip in machines if ip in job_op_machsuitable[jp,kp]
+                    for s in workers if s in job_op_mach_workersuitable[j,k,i] if s in job_op_mach_workersuitable[jp,kp,ip]), "l2_U")
+        self.m.addConstrs((Cmax>=self.C[j,nb_operations[j-1]] for j in jobs),"Cmax")
+
+    def run(self):
+        self.m.update()
+        self.m.display()
+        self.m.optimize()
+
+    def get_best(self):
+        xsol = self.m.getAttr('X', self.X)
+        usol = self.m.getAttr('X', self.U)
+        ysol = self.m.getAttr('X', self.Y)
+        csol = self.m.getAttr('X', self.C)
+        return xsol, usol, ysol, csol
+
 # workstation, sequence, time window, second objective to minimize time window size

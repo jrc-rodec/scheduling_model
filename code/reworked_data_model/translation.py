@@ -356,3 +356,72 @@ class GurobiEncoder(Encoder):
                 end_time = csol[j,k]
                 schedule.add_assignment(workstation, job, start_time, end_time, resources=[])
         return schedule
+    
+import gurobipy as gp
+
+class GurobiWithWorkersEncoder(Encoder):
+
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order], lines): # TODO: replace and remove lines parameter
+        INFINITE = 1000000
+        recipes = []
+        nb_operations = [len(recipe.tasks) for recipe in recipes]
+        nb_jobs = len(recipes)
+        nb_machines = len(production_environment.workstations.keys())
+        nb_workers = len(production_environment.resources.keys())
+        for order in orders:
+            recipes.append(order.resources[0][0].recipes[0]) # default recipe for now
+        task_processing_time = [[[[INFINITE for s in range(nb_workers)] 
+                                        for m in range(nb_machines)] 
+                                        for o in range(nb_operations[j])] 
+                                        for j in range(nb_jobs)]
+    
+        job_op_dur_helper = {}
+        job_op_machsuitable = {}
+        job_op_mach_workersuitable = {}
+        for j in range(nb_jobs):
+            line = lines[j + 1].split()
+            tmp_idx = 1
+            for o in range(nb_operations[j]):
+                nb_machines_operation = int(line[tmp_idx])
+                tmp_idx += 1
+                suitable_machine_helper = []
+                for i in range(nb_machines_operation):
+                    machine = int(line[tmp_idx])
+                    suitable_machine_helper += [machine]
+                    nb_m_workers = int(line[tmp_idx + 1])
+                    tmp_idx += 2
+                    suitable_worker_helper = []
+                    for s in range(nb_m_workers):
+                        worker = int(line[tmp_idx])
+                        time = int(line[tmp_idx + 1])
+                        tmp_idx += 2
+                        task_processing_time[j][o][machine-1][worker-1] = time
+                        suitable_worker_helper += [worker]
+                        job_op_dur_helper[j+1,o+1,machine,worker] = time
+                    
+                    job_op_mach_workersuitable[j+1,o+1,machine] = suitable_worker_helper
+                job_op_machsuitable[j+1,o+1] = suitable_machine_helper
+
+        job_op_mach_worker, duration = gp.multidict(job_op_dur_helper)
+        
+        # Trivial upper bound for the completion times of the tasks
+        L=0
+        for j in range(nb_jobs):
+            for o in range(nb_operations[j]):
+                L += max(task_processing_time[j][o][m][s] for m in range(nb_machines) for s in range(nb_workers) if task_processing_time[j][o][m][s] != INFINITE )
+        return nb_jobs, nb_operations, nb_machines, nb_workers, job_op_machsuitable, job_op_mach_worker, duration, job_op_mach_worker, L
+        
+
+    def decode(self, xsol, usol, ysol, csol, job_ops_machs, durations, production_environment : ProductionEnvironment, jobs : list[Job], solver : Solver = None):
+        schedule : Schedule = Schedule()
+        schedule.solver = solver
+        job_idx = 0
+        for j, k, i in job_ops_machs:
+            if ysol[j,k,i] > 0:
+                job = jobs[job_idx]
+                job_idx+=1
+                workstation = production_environment.get_workstation(i-1)
+                start_time = csol[j,k]-durations[j,k,i]
+                end_time = csol[j,k]
+                schedule.add_assignment(workstation, job, start_time, end_time, resources=[])
+        return schedule
