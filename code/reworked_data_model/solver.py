@@ -1424,14 +1424,14 @@ class GurobiWithWorkerSolver(Solver):
                     for sp in job_op_mach_workersuitable[jp,kp,i]), "l2_X")
         self.m.addConstrs((self.C[j,k] >= self.C[jp,kp] + duration[j,k,i,s] - L*(3 - self.U[j,k,jp,kp] - self.Y[j,k,i,s] - self.Y[jp,kp,ip,s]) 
                     for j, k in job_ops if j < nb_jobs
-                    for jp, kp in job_ops if jp > j 
-                    for i in machines if i in job_op_machsuitable[j,k] 
+                    for jp, kp in job_ops if jp > j
+                    for i in machines if i in job_op_machsuitable[j,k]
                     for ip in machines if ip in job_op_machsuitable[jp,kp]
                     for s in workers if s in job_op_mach_workersuitable[j,k,i] if s in job_op_mach_workersuitable[jp,kp,ip]) ,"l1_U")
         self.m.addConstrs((self.C[jp,kp] >= self.C[j,k] + duration[jp,kp,ip,s] - L*(self.U[j,k,jp,kp] + 2 - self.Y[j,k,i,s] - self.Y[jp,kp,ip,s]) 
                     for j, k in job_ops if j < nb_jobs
-                    for jp, kp in job_ops if jp > j 
-                    for i in machines if i in job_op_machsuitable[j,k] 
+                    for jp, kp in job_ops if jp > j
+                    for i in machines if i in job_op_machsuitable[j,k]
                     for ip in machines if ip in job_op_machsuitable[jp,kp]
                     for s in workers if s in job_op_mach_workersuitable[j,k,i] if s in job_op_mach_workersuitable[jp,kp,ip]), "l2_U")
         self.m.addConstrs((Cmax>=self.C[j,nb_operations[j-1]] for j in jobs),"Cmax")

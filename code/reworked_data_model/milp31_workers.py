@@ -81,7 +81,7 @@ if 1==1:
             L += max(task_processing_time[j][o][m][s] for m in range(nb_machines) for s in range(nb_workers) if task_processing_time[j][o][m][s] != INFINITE )
             
           
-#initialize optimization    
+    #initialize optimization    
     m = gp.Model('milp33')
     
     #list of jobs for creating Variables
