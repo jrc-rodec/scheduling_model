@@ -1,7 +1,8 @@
 from solver import Solver
-from model import ProductionEnvironment, Schedule
+from model import ProductionEnvironment, Schedule, Job, Order
 from translation import Encoder
 import random
+import copy
 
 class TimeWindowSequenceGA(Solver):
 
@@ -11,13 +12,14 @@ class TimeWindowSequenceGA(Solver):
         self.max_generations = 0
         self.max_function_evaluations = 0
 
-    def initialize(self):
-        self.jobs = []
+    def initialize(self, jobs : list[Job]):
+        self.jobs = jobs
         self.mutate_workers = False
         self.mutate_duration = False
         self.allow_overlap = False
         self.split_genes = True
-        self.elitism = True
+        self.elitism = False
+        self.include_random_individuals = False
         self.recombination_method = self.uniform_crossover
         #self.recombination_method = self.one_point_crossover
 
@@ -26,7 +28,7 @@ class TimeWindowSequenceGA(Solver):
             p = 1 / (len(individual)/4)
             for i in range(0, len(individual), 4):
                 if random.random() < p:
-                    workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)])
+                    workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)].task)
                     individual[i] = int(random.choice(workstations).id)
                     workstation = individual[i]
 
@@ -53,7 +55,7 @@ class TimeWindowSequenceGA(Solver):
             # mutate workstation assignments
             for i in range(0, len(individual), 4):
                 if random.random() < p:
-                    workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)])
+                    workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)].task)
                     individual[i] = int(random.choice(workstations).id)
                 
             # mutate sequence order
@@ -87,7 +89,7 @@ class TimeWindowSequenceGA(Solver):
             crossover_point = max(3, crossover_point-1) # NOTE: review
         offspring = []
         offspring.extend(parent_a[:crossover_point])
-        offspring.extend(parent_b[crossover_point+1:])
+        offspring.extend(parent_b[crossover_point:])
         self.repair(offspring)
         return offspring
 
@@ -153,8 +155,10 @@ class TimeWindowSequenceGA(Solver):
     def select(self):
         # tournament selection
         participant_amount = int(self.population_size / 4) # TODO
-        participants = []
-        for _ in participant_amount:
+        participants = random.choices(range(0, len(self.population)), k=participant_amount)
+        winner = sorted(participants, key=lambda x: self.population_fitness[x])[0]
+        return self.population[winner]
+        for _ in range(participant_amount):
             participants.append(random.randint(0, len(self.population)-1))
         winner = participants[0]
         for i in range(1, len(participants)):
@@ -163,10 +167,10 @@ class TimeWindowSequenceGA(Solver):
         return self.population[winner]
 
     def evaluate(self, solution : list[int]):
-        if solution in self.memory:
+        if str(solution) in self.memory:
             self.memory_access += 1
-            return self.memory[solution][0] # NOTE: just use the first values for now
-        feasible = False # TODO
+            return self.memory[str(solution)][0] # NOTE: just use the first values for now
+        feasible = True # TODO
         if self.allow_overlap:
             pass
         else:
@@ -177,7 +181,7 @@ class TimeWindowSequenceGA(Solver):
             return float('inf')
         schedule : Schedule = self.encoder.decode(solution, self.jobs, self.production_environment, [], self)
         result = self.evaluator.evaluate(schedule, self.jobs)
-        self.memory[solution] = result
+        self.memory[str(solution)] = result
         self.function_evaluations += 1
         return result[0] # NOTE: just using the first value for now
 
@@ -187,12 +191,33 @@ class TimeWindowSequenceGA(Solver):
             population_fitness.append(self.evaluate(population[i]))
         return population_fitness
 
+    def create_individual(self) -> list[int]:
+        individual : list[int] = []
+        for j in range(len(self.jobs)):
+            workstation = int(random.choice(self.production_environment.get_available_workstations_for_task(self.jobs[j].task)).id)
+            tasks_on_workstation = 0
+            for k in range(0, len(individual), 4):
+                if individual[k] == workstation:
+                    tasks_on_workstation += 1
+            sequence = random.randint(0, tasks_on_workstation)
+            worker = 0
+            if self.mutate_workers:
+                # TODO choose available worker
+                pass
+            duration = self.production_environment.get_workstation(workstation).get_duration(self.jobs[j].task)
+            if self.mutate_duration:
+                # TODO randomly select duration
+                pass
+            individual.extend([workstation, sequence, worker, duration])
+        self.repair(individual)
+        return individual
+
     def create_population(self) -> list[list[int]]:
         population :list[list[int]] = []
         for i in range(self.population_size):
-            individual : list[int] = []
-            for j in range(self.jobs):
-                workstation = int(random.choice(self.production_environment.get_available_workstations_for_task(self.jobs[j].task)))
+            """individual : list[int] = []
+            for j in range(len(self.jobs)):
+                workstation = int(random.choice(self.production_environment.get_available_workstations_for_task(self.jobs[j].task)).id)
                 tasks_on_workstation = 0
                 for k in range(0, len(individual), 4):
                     if individual[k] == workstation:
@@ -207,7 +232,8 @@ class TimeWindowSequenceGA(Solver):
                     # TODO randomly select duration
                     pass
                 individual.extend([workstation, sequence, worker, duration])
-            self.repair(individual)
+            self.repair(individual)"""
+            individual = self.create_individual()
             population.append(individual)
         return population
 
@@ -217,9 +243,33 @@ class TimeWindowSequenceGA(Solver):
         if self.max_function_evaluations > 0 and self.function_evaluations >= self.max_function_evaluations:
             return True
         return False
+    
+    def select_next_generation(self, population, population_fitness, offsprings, offspring_fitness):
+        elitism_rate = int(len(population)/len(population)) # only keep the best for now
+        next_generation = []
+        next_generation_fitness = []
+        sorted_population = sorted(population, key=lambda x: population_fitness[population.index(x)])
+        sorted_offsprings = sorted(offsprings, key=lambda x: offspring_fitness[offsprings.index(x)])
+        population_fitness.sort()
+        offspring_fitness.sort()
+        if self.include_random_individuals:
+            for i in range(int(self.population_size / 5)):
+                individual = self.create_individual()
+                next_generation.append(individual)
+                next_generation_fitness.append(self.evaluate(individual))
+        next_generation.extend(sorted_offsprings[:self.population_size - len(next_generation)])
+        next_generation_fitness.extend(offspring_fitness[:self.population_size - len(next_generation_fitness)])
+        for i in range(elitism_rate):
+            if population_fitness[i] >= next_generation_fitness[-i-1]:
+                break
+            next_generation[-i-1] = sorted_population[i]
+            next_generation_fitness[-i-1] = population_fitness[i]
+        next_generation = sorted(next_generation, key=lambda x: next_generation_fitness[next_generation.index(x)])
+        next_generation_fitness.sort()
+        return next_generation, next_generation_fitness
 
     def run(self, population_size : int = 25, offspring_amount : int = 50, start_population : list[list[int]] = None):
-        self.memory : dict(list[int], list[int]) = []
+        self.memory : dict(str, list[int]) = dict()
         self.history = {"best": [], "average": []}
         self.function_evaluations = 0
         self.memory_access = 0
@@ -238,9 +288,11 @@ class TimeWindowSequenceGA(Solver):
             print('No stopping criteria set, abort')
             return False
         while not self.should_stop():
+            if self.generation > 0 and self.generation % 100 == 0:
+                print(f'Currently at Generation {self.generation} with best fitness: {self.history["best"][-1]} and average fitness of {self.history["average"][-1]}')
             #create offsprings
             offsprings : list[list[int]] = []
-            for _ in range(len(self.offspring_amount)):
+            for _ in range(self.offspring_amount):
                 offspring = self.recombine()
                 #self.repair(offspring) # done at the end of recombination instead
                 offsprings.append(offspring)
@@ -250,15 +302,17 @@ class TimeWindowSequenceGA(Solver):
             #evaluate offsprings
             offspring_fitness : list[float] = self.evaluate_population(offsprings)
             #select new population
-            selection_pool = offsprings
+            """selection_pool = offsprings
             selection_pool_fitness = offspring_fitness
-            if self.elitism:
-                selection_pool.extend(self.population)
-                selection_pool_fitness.extend(self.population_fitness)
-            selection_pool.sort(key=lambda x: selection_pool_fitness[selection_pool.index(x)])
+            if self.elitism: # NOTE: deepcopies not necessary
+                selection_pool.extend(copy.deepcopy(self.population))
+                selection_pool_fitness.extend(copy.deepcopy(self.population_fitness))
+            tmp_list = copy.deepcopy(selection_pool)
+            selection_pool.sort(key=lambda x: selection_pool_fitness[tmp_list.index(x)])
             selection_pool_fitness.sort()
             self.population = selection_pool[:self.population_size]
-            self.population_fitness = selection_pool_fitness[:self.population_size]
+            self.population_fitness = selection_pool_fitness[:self.population_size]"""
+            self.population, self.population_fitness = self.select_next_generation(self.population, self.population_fitness, offsprings, offspring_fitness)
 
             if self.population_fitness[0] < self.current_best_fitness:
                 self.current_best = self.population[0]
@@ -267,4 +321,37 @@ class TimeWindowSequenceGA(Solver):
             self.history["average"].append(sum(self.population_fitness) / len(self.population_fitness))
 
             self.generation += 1
-        
+
+from translation import TimeWindowSequenceEncoder, FJSSPInstancesTranslator
+from evaluation import Makespan
+from visualization import visualize_schedule
+def generate_one_order_per_recipe(production_environment : ProductionEnvironment) -> list[Order]:
+    orders : list[Order] = []
+    for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
+        orders.append(Order(delivery_time=1000, latest_acceptable_time=1000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
+    return orders
+
+encoder = TimeWindowSequenceEncoder()
+production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate('6_Fattahi', 10)
+orders = generate_one_order_per_recipe(production_environment)
+solver = TimeWindowSequenceGA(production_environment, encoder)
+values, jobs = encoder.encode(production_environment, orders)
+solver.initialize(jobs)
+
+solver.max_generations = 1000
+solver.add_objective(Makespan())
+solver.run(50,100)
+
+result = solver.current_best
+fitness = solver.current_best_fitness
+print(result)
+print(fitness)
+visualize_schedule(encoder.decode(result, jobs, production_environment, [], solver), production_environment, orders)
+
+import matplotlib.pyplot as plt
+best_history = solver.history["best"]
+generation_average_history = solver.history["average"]
+
+plt.plot(best_history)
+plt.plot(generation_average_history)
+plt.show()

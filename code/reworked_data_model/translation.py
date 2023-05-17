@@ -254,7 +254,7 @@ class SimpleGAEncoder(Encoder):
 class TimeWindowSequenceEncoder(Encoder):
 
     def encode(self, production_environment : ProductionEnvironment, orders : list[Order]):
-        values = list[int] = []
+        values : list[int] = []
         jobs : list[Job] = []
         for order in orders:
             ro_id = 0
@@ -264,16 +264,17 @@ class TimeWindowSequenceEncoder(Encoder):
                     for task in use_recipe.tasks:
                         jobs.append(Job(order=order, recipe=use_recipe, task=task[0], ro_id=ro_id))
                         ro_id += 1
-                        values.exted[[0, 0, 0]] # workstation, sequence value on workstation, time window size
+                        values.extend([0, 0, 0]) # workstation, sequence value on workstation, time window size
         return values, jobs
     
     def determine_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
-        #values = [0, 0, 10, 0, 1, 5, 1, 1, 5, 1, 0, 10]
+        #values = [0, 0, 0, 10, 0, 1, 0, 5, 1, 1, 0, 5, 1, 0, 0, 10]
+        # TODO: rewrite to include workers
         result = values.copy()
         on_workstations = []
-        for workstation in len(production_environment.get_workstation_list()):
+        for workstation in range(len(production_environment.workstations.keys())):
             on_workstations.append([])
-            for i in range(0,len(result), 3):
+            for i in range(0,len(result), 4):
                 if result[i] == workstation:
                     on_workstations[workstation].append(i)
         for workstation in on_workstations:
@@ -282,28 +283,39 @@ class TimeWindowSequenceEncoder(Encoder):
                 if i == 0:
                     result[workstation[i]+1] = 0
                 else:
-                    result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+2]
-        for i in range(0,len(result),3):
-            if i > 0 and jobs[int(i/3)].order == jobs[int(i/3)-1].order:
+                    result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+3]
+        for i in range(0,len(result),4):
+            if i > 0 and jobs[int(i/4)].order == jobs[int(i/4)-1].order:
                 for w in on_workstations:
                     if i in w:
                         on_workstation = w
                         break
+                prev_end = result[i-3] + result[i-1]
+                shift = prev_end - result[i+1]
                 for j in range(on_workstation.index(i), len(on_workstation)):
-                    prev_end = result[i-2] + result[i-1]
-                    result[on_workstation[j]+1] = max(result[on_workstation[j]+1], prev_end)
+                    #prev_end = result[i-3] + result[i-1]
+                    #result[on_workstation[j]+1] = max(result[on_workstation[j]+1], shift)
+                    # NOTE: check if shift is necessary at all
+                    if j == 0:
+                        #result[on_workstation[j]+1] = max(result[on_workstation[j]+1], result[on_workstation[j]+1] + shift)
+                        result[on_workstation[j]+1] += shift
+                    #elif result[on_workstation[j-1]+1] + shift > result[on_workstation[j]+1]:
+                    else:
+                        result[on_workstation[j]+1] = result[on_workstation[j-1]+1] + result[on_workstation[j-1]+3]#max(result[on_workstation[j]+1], result[on_workstation[j]+1] + shift)
+                    #else:
+                    #    break # in case the previous job didn't have to shift, all others can stop shifting
         return result
 
 
     def decode(self, values : list[int], jobs : list[Job], production_environment : ProductionEnvironment, objective_values : list[float] = [], solver : Solver = None) -> Schedule:
-        schedule : Schedule = Schedule(start_time=0, assignmens=dict(), objective_values=objective_values, solver=solver)
+        schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
         job_idx : int = 0
         solution = self.determine_start_times(values, production_environment, jobs)
-        for i in range(0, len(solution), 3):
+        for i in range(0, len(solution), 4):
             workstation_id : int = solution[i]
             workstation : Workstation = production_environment.get_workstation(workstation_id)
             start_time = solution[i+1]
-            end_time : int = start_time + solution[i+2]
+            end_time : int = start_time + solution[i+3]
             schedule.add_assignment(workstation=workstation, job=jobs[job_idx], start_time=start_time, end_time=end_time, resources=[])
             job_idx += 1
         return schedule

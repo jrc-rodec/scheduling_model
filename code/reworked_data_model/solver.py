@@ -305,7 +305,7 @@ class GASolver(Solver):
 
     instance = None
 
-    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[int], production_environment : ProductionEnvironment, orders : list[Order]):
+    def __init__(self, encoding : list[int], durations : dict[int, list[int]], job_list : list[Job], production_environment : ProductionEnvironment, orders : list[Order]):
         super().__init__('GASolver', production_environment, SimpleGAEncoder())
         self.encoding = encoding
         self.durations = durations

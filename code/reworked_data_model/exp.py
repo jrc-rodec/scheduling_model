@@ -68,7 +68,7 @@ print(l[0])
 for i in range(l[0].index(2), len(l[0])):
     print(l[0][i])"""
 
-import random
+"""import random
 offspring = [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 2, 0, 3]
 loop_count = 0
 on_workstations = [(offspring[i], offspring[i+1]) for i in range(0, len(offspring), 2)]
@@ -96,4 +96,29 @@ on_one.sort(key=lambda x: x[1])
 print(on_zero)
 print(on_one)
 print(loop_count)
-print(len(offspring))
+print(len(offspring))"""
+
+def select_next_generation(population, population_fitness, offsprings, offspring_fitness):
+    elitism_rate = int(len(population)/4)
+    population_size = 10
+    next_generation = []
+    sorted_population = sorted(population, key=lambda x: population_fitness[population.index(x)])
+    sorted_offsprings = sorted(offsprings, key=lambda x: offspring_fitness[offsprings.index(x)])
+    population_fitness.sort()
+    offspring_fitness.sort()
+    next_generation = sorted_offsprings[:population_size]
+    next_generation_fitness = offspring_fitness[:population_size]
+    for i in range(elitism_rate):
+        if population_fitness[i] >= next_generation_fitness[-i-1]:
+            break
+        next_generation[-i-1] = sorted_population[i]
+        next_generation_fitness[-i-1] = population_fitness[i]
+    return next_generation, next_generation_fitness
+
+population = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+population_fitness = [18, 16, 14, 12, 10, 8, 6, 4, 2, 0]
+offsprings = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+offspring_fitness = [39, 37, 35, 33, 31, 29, 27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7, 5, 3, 1]
+next_population, next_population_fitness = select_next_generation(population, population_fitness, offsprings, offspring_fitness)
+print(next_population)
+print(next_population_fitness)
