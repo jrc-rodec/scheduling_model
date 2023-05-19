@@ -267,6 +267,17 @@ class TimeWindowSequenceEncoder(Encoder):
                         values.extend([0, 0, 0]) # workstation, sequence value on workstation, time window size
         return values, jobs
     
+    def get_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
+        result = values.copy()
+        # set min times for sequence
+        for i in range(len(jobs)):
+            if i != 0 and jobs[i-1].order == jobs[i]:
+                result[i * 4 + 1] = result[i * 4 - 3] + result[i * 4 - 1]
+            else:
+                result[i * 4 + 1] = 0
+        # set min times for workstations
+        pass
+    
     def determine_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
         #values = [0, 0, 0, 10, 0, 1, 0, 5, 1, 1, 0, 5, 1, 0, 0, 10]
         # TODO: rewrite to include workers
