@@ -19,7 +19,9 @@ class TimeWindowSequenceGA(Solver):
         self.allow_overlap = False
         self.split_genes = True
         self.elitism = False
-        self.include_random_individuals = False
+        self.include_random_individuals = 0
+        self.tournament_size = 0
+        self.replace_duplicates = False
         self.recombination_method = self.uniform_crossover
         #self.recombination_method = self.one_point_crossover
 
@@ -45,7 +47,12 @@ class TimeWindowSequenceGA(Solver):
                     # mutate workers
                     if self.mutate_workers:
                         # individual[i+2]
-                        pass
+                        alternatives = self.production_environment.get_alternative_tasks(self.jobs[int(i/4)].task)
+                        task = random.choice(alternatives)
+                        individual[i+2] = int(task.id)
+                        self.jobs[int(i/4)].task = task
+                        if not self.mutate_duration:
+                            individual[i+1] = self.production_environment.get_workstation(individual[i-2]).get_duration(task) # set new duration NOTE: all of the alternative tasks should be able to be processed on the same workstations
                     # mutate duration
                     if self.mutate_duration:
                         # individual[i+3]
@@ -75,7 +82,12 @@ class TimeWindowSequenceGA(Solver):
             if self.mutate_workers:
                 for i in range(2, len(individual), 4):
                     if random.random() < p:
-                        pass # TODO
+                        alternatives = self.production_environment.get_alternative_tasks(self.jobs[int((i-2)/4)].task)
+                        task = random.choice(alternatives)
+                        individual[i] = int(task.id)
+                        self.jobs[int((i-2)/4)].task = task
+                        if not self.mutate_duration:
+                            individual[i+1] = self.production_environment.get_workstation(individual[i-2]).get_duration(task)
             # if time windows enabled, mutate time window size
             if self.mutate_duration:
                 for i in range(3, len(individual), 4):
@@ -154,7 +166,10 @@ class TimeWindowSequenceGA(Solver):
 
     def select(self):
         # tournament selection
-        participant_amount = int(self.population_size / 4) # TODO
+        if self.tournament_size == 0:
+            participant_amount = int(self.population_size / 10) # TODO
+        else:
+            participant_amount = int(self.tournament_size)
         participants = random.choices(range(0, len(self.population)), k=participant_amount)
         winner = sorted(participants, key=lambda x: self.population_fitness[x])[0]
         return self.population[winner]
@@ -202,8 +217,10 @@ class TimeWindowSequenceGA(Solver):
             sequence = random.randint(0, tasks_on_workstation)
             worker = 0
             if self.mutate_workers:
-                # TODO choose available worker
-                pass
+                alternatives = production_environment.get_alternative_tasks(self.jobs[j].task)
+                task = random.choice(alternatives)
+                worker = int(task.id)
+                self.jobs[j].task = task
             duration = self.production_environment.get_workstation(workstation).get_duration(self.jobs[j].task)
             if self.mutate_duration:
                 # TODO randomly select duration
@@ -215,24 +232,6 @@ class TimeWindowSequenceGA(Solver):
     def create_population(self) -> list[list[int]]:
         population :list[list[int]] = []
         for i in range(self.population_size):
-            """individual : list[int] = []
-            for j in range(len(self.jobs)):
-                workstation = int(random.choice(self.production_environment.get_available_workstations_for_task(self.jobs[j].task)).id)
-                tasks_on_workstation = 0
-                for k in range(0, len(individual), 4):
-                    if individual[k] == workstation:
-                        tasks_on_workstation += 1
-                sequence = random.randint(0, tasks_on_workstation)
-                worker = 0
-                if self.mutate_workers:
-                    # TODO choose available worker
-                    pass
-                duration = self.production_environment.get_workstation(workstation).get_duration(self.jobs[j].task)
-                if self.mutate_duration:
-                    # TODO randomly select duration
-                    pass
-                individual.extend([workstation, sequence, worker, duration])
-            self.repair(individual)"""
             individual = self.create_individual()
             population.append(individual)
         return population
@@ -252,13 +251,29 @@ class TimeWindowSequenceGA(Solver):
         sorted_offsprings = sorted(offsprings, key=lambda x: offspring_fitness[offsprings.index(x)])
         population_fitness.sort()
         offspring_fitness.sort()
-        if self.include_random_individuals:
-            for i in range(int(self.population_size / 5)):
+        if self.include_random_individuals > 0:
+            for i in range(int(self.include_random_individuals)):
                 individual = self.create_individual()
                 next_generation.append(individual)
                 next_generation_fitness.append(self.evaluate(individual))
-        next_generation.extend(sorted_offsprings[:self.population_size - len(next_generation)])
-        next_generation_fitness.extend(offspring_fitness[:self.population_size - len(next_generation_fitness)])
+        if self.replace_duplicates:
+            for i in range(self.population_size - len(next_generation)):
+                duplicate = False
+                if len(next_generation) > 0:
+                    for individual in next_generation:
+                        if individual == sorted_offsprings[i]:
+                            duplicate = True
+                            break
+                if duplicate:
+                    individual = self.create_individual()
+                    next_generation.append(individual)
+                    next_generation_fitness.append(self.evaluate(individual))
+                else:
+                    next_generation.append(sorted_offsprings[i])
+                    next_generation_fitness.append(offspring_fitness[i])
+        else:
+            next_generation.extend(sorted_offsprings[:self.population_size - len(next_generation)])
+            next_generation_fitness.extend(offspring_fitness[:self.population_size - len(next_generation_fitness)])
         for i in range(elitism_rate):
             if population_fitness[i] >= next_generation_fitness[-i-1]:
                 break
@@ -302,16 +317,6 @@ class TimeWindowSequenceGA(Solver):
             #evaluate offsprings
             offspring_fitness : list[float] = self.evaluate_population(offsprings)
             #select new population
-            """selection_pool = offsprings
-            selection_pool_fitness = offspring_fitness
-            if self.elitism: # NOTE: deepcopies not necessary
-                selection_pool.extend(copy.deepcopy(self.population))
-                selection_pool_fitness.extend(copy.deepcopy(self.population_fitness))
-            tmp_list = copy.deepcopy(selection_pool)
-            selection_pool.sort(key=lambda x: selection_pool_fitness[tmp_list.index(x)])
-            selection_pool_fitness.sort()
-            self.population = selection_pool[:self.population_size]
-            self.population_fitness = selection_pool_fitness[:self.population_size]"""
             self.population, self.population_fitness = self.select_next_generation(self.population, self.population_fitness, offsprings, offspring_fitness)
 
             if self.population_fitness[0] < self.current_best_fitness:
@@ -332,15 +337,27 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = TimeWindowSequenceEncoder()
-production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate('6_Fattahi', 10)
+production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate('6_Fattahi', 11)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 1000
+solver.max_generations = 5000
 solver.add_objective(Makespan())
-solver.run(50,100)
+population_size = 50
+offspring_amount = 100
+
+solver.mutate_workers = False
+solver.mutate_duration = False
+solver.allow_overlap = False
+solver.split_genes = True
+solver.elitism = False
+solver.include_random_individuals = 0#population_size / 10
+solver.replace_duplicates = True
+solver.tournament_size = population_size / 4
+
+solver.run(population_size, offspring_amount)
 
 result = solver.current_best
 fitness = solver.current_best_fitness

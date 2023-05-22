@@ -651,3 +651,14 @@ class ProductionEnvironment:
     def get_inventory_list(self) -> list[tuple[Resource, int]]:
         return self.resources.values()
     
+    def get_alternative_tasks(self, task: Task) -> list[Task]:
+        for recipe in self.get_recipe_list():
+            for tasks in recipe.tasks:
+                if type(tasks) == list:
+                    if task in tasks:
+                        return tasks
+                elif type(tasks) == Task and task == tasks:
+                    return [tasks]
+                else:
+                    print('Something went horribly wrong')
+        return []

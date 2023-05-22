@@ -269,15 +269,46 @@ class TimeWindowSequenceEncoder(Encoder):
     
     def get_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
         result = values.copy()
-        # set min times for sequence
-        for i in range(len(jobs)):
-            if i != 0 and jobs[i-1].order == jobs[i]:
-                result[i * 4 + 1] = result[i * 4 - 3] + result[i * 4 - 1]
-            else:
-                result[i * 4 + 1] = 0
-        # set min times for workstations
-        pass
-    
+        on_workstations = []
+        for workstation in range(len(production_environment.workstations.keys())):
+            on_workstations.append([])
+            for i in range(0,len(result), 4):
+                if result[i] == workstation:
+                    on_workstations[workstation].append(i)
+        for workstation in on_workstations:
+            workstation.sort(key=lambda x: values[x+1])
+            for i in range(len(workstation)):
+                if i == 0:
+                    result[workstation[i]+1] = 0
+                else:
+                    result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+3]
+        changes = True
+        counter = 0
+        while changes:
+            changes = False
+            for i in range(0, len(result), 4): # for all jobs
+                if i > 0 and jobs[int(i/4)].order == jobs[int(i/4) - 1].order: # first job in order sequence is not affected
+                    if result[i-3] + result[i-1] > result[i+1]:
+                        #changes = True
+                        # adjust
+                        shift = result[i-3] + result[i-1] - result[i+1]
+                        result[i+1] += shift
+                        # shift all on workstation until no longer necessary
+                        w = None
+                        for workstation in on_workstations:
+                            if i in workstation:
+                                w = workstation
+                                break
+                        for j in range(w.index(i) + 1, len(w)):
+                            #shift = result[w[j-1]+1] + result[w[j-1]+3] - result[w[j]+1]
+                            if result[w[j-1]+1] + result[w[j-1]+3] <= result[w[j]+1]:
+                                break # stop shifting
+                            result[w[j]+1] = result[w[j-1]+1] + result[w[j-1]+3] # move start time to previous end time, unless already later
+            counter += 1
+            if counter > 1000:
+                print('loop')
+        return result
+
     def determine_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
         #values = [0, 0, 0, 10, 0, 1, 0, 5, 1, 1, 0, 5, 1, 0, 0, 10]
         # TODO: rewrite to include workers
@@ -312,7 +343,7 @@ class TimeWindowSequenceEncoder(Encoder):
                         result[on_workstation[j]+1] += shift
                     #elif result[on_workstation[j-1]+1] + shift > result[on_workstation[j]+1]:
                     else:
-                        result[on_workstation[j]+1] = result[on_workstation[j-1]+1] + result[on_workstation[j-1]+3]#max(result[on_workstation[j]+1], result[on_workstation[j]+1] + shift)
+                        result[on_workstation[j]+1] = result[on_workstation[j-1]+1] + result[on_workstation[j-1]+3] + shift #max(result[on_workstation[j]+1], result[on_workstation[j]+1] + shift)
                     #else:
                     #    break # in case the previous job didn't have to shift, all others can stop shifting
         return result
@@ -321,7 +352,8 @@ class TimeWindowSequenceEncoder(Encoder):
     def decode(self, values : list[int], jobs : list[Job], production_environment : ProductionEnvironment, objective_values : list[float] = [], solver : Solver = None) -> Schedule:
         schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
         job_idx : int = 0
-        solution = self.determine_start_times(values, production_environment, jobs)
+        #solution = self.determine_start_times(values, production_environment, jobs)
+        solution = self.get_start_times(values, production_environment, jobs)
         for i in range(0, len(solution), 4):
             workstation_id : int = solution[i]
             workstation : Workstation = production_environment.get_workstation(workstation_id)
