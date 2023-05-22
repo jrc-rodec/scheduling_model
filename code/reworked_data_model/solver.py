@@ -607,7 +607,7 @@ class GASolver(Solver):
             sum += abs(individual_fitness)-1
         instance.average_history.append(sum/len(population_fitness))
 
-    def fitness_function(solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
+    def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:#def fitness_function(ga_instance, solution : list[int], solution_idx) -> int:
         if GASolver.instance.memory.get(solution.tostring()):
             GASolver.instance.memory_duplicate += 1
             return GASolver.instance.memory[solution.tostring()]

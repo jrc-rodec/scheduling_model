@@ -123,4 +123,4 @@ print(f'Solution created with: {solver.name}')
 print(objective_values)
 
 from result_writer import write_result
-write_result(f'{source}_{benchmark_id}', solver.name, objective_values)
+write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, solution)

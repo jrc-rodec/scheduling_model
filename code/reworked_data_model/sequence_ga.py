@@ -337,13 +337,15 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = TimeWindowSequenceEncoder()
-production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate('6_Fattahi', 11)
+source = '6_Fattahi'
+benchmark_id = 1
+production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate(source, benchmark_id)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 5000
+solver.max_generations = 1000
 solver.add_objective(Makespan())
 population_size = 50
 offspring_amount = 100
@@ -363,7 +365,8 @@ result = solver.current_best
 fitness = solver.current_best_fitness
 print(result)
 print(fitness)
-visualize_schedule(encoder.decode(result, jobs, production_environment, [], solver), production_environment, orders)
+schedule = encoder.decode(result, jobs, production_environment, [], solver)
+visualize_schedule(schedule, production_environment, orders)
 
 import matplotlib.pyplot as plt
 best_history = solver.history["best"]
@@ -372,3 +375,16 @@ generation_average_history = solver.history["average"]
 plt.plot(best_history)
 plt.plot(generation_average_history)
 plt.show()
+
+from evaluation import * 
+evaluator = Evaluator(production_environment)
+evaluator.add_objective(Makespan())
+evaluator.add_objective(IdleTime())
+evaluator.add_objective(TimeDeviation())
+evaluator.add_objective(Tardiness())
+evaluator.add_objective(Profit())
+evaluator.add_objective(UnfulfilledOrders())
+objective_values = evaluator.evaluate(schedule, jobs)
+parameters = f'max_generations:{solver.max_generations},population_size:{population_size},offspring_amount:{offspring_amount}'
+from result_writer import write_result
+write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, parameters, result)
