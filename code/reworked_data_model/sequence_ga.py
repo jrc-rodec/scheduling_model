@@ -338,7 +338,7 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 encoder = TimeWindowSequenceEncoder()
 source = '6_Fattahi'
-benchmark_id = 1
+benchmark_id = 10
 production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate(source, benchmark_id)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)
@@ -386,5 +386,7 @@ evaluator.add_objective(Profit())
 evaluator.add_objective(UnfulfilledOrders())
 objective_values = evaluator.evaluate(schedule, jobs)
 parameters = f'max_generations:{solver.max_generations},population_size:{population_size},offspring_amount:{offspring_amount}'
+
+
 from result_writer import write_result
 write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, parameters, result)

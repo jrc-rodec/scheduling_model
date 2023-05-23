@@ -7,7 +7,7 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
 source = '6_Fattahi'
-benchmark_id = 2
+benchmark_id = 10
 simple_translator = FJSSPInstancesTranslator()
 production_environment = simple_translator.translate(source=source, benchmark_id=benchmark_id)
 
@@ -41,6 +41,6 @@ objective_values = evaluator.evaluate(schedule, jobs)
 print(f'Solution created with: {solver.name}')
 print(objective_values)
 
-
+# TODO: include ysol + csol
 from result_writer import write_result
-write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, xsol)
+write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, '', xsol)

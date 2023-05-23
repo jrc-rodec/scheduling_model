@@ -6,7 +6,7 @@ def write_result(schedule : Schedule, benchmark_name : str, solver_name : str, o
     objectives = ''
     for objective in objective_values:
         objectives += f'{objective};'
-    solution_string = ''
+    solution_string = ';'
     if solution:
         solution_string = f'{str(solution)};'
     output = f'{benchmark_name};{solver_name};{solution_string}{objectives}{parameters};'
