@@ -1,14 +1,11 @@
 import os 
 import inspect
 import random
-import copy
 
-def read_file(source, id) -> list[str]:
-    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    path = currentdir + '\\..\\external_test_data\\FJSSPinstances\\'
-    if source.startswith('0_'):
+def read_file(source : str, id : int, path : str) -> list[str]:
+    if source.startswith('0'):
         target_file = f'Behnke{id}.fjs'
-    elif source.startswith('1_'):
+    elif source.startswith('1'):
         target_file = f'BrandimarteMk{id}.fjs'
     elif source.startswith('2a'):
         target_file = f'HurinkSdata{id}.fjs'
@@ -18,49 +15,65 @@ def read_file(source, id) -> list[str]:
         target_file = f'HurinkRdata{id}.fjs'
     elif source.startswith('2d'):
         target_file = f'HurinkVdata{id}.fjs'
-    elif source.startswith('3_'):
+    elif source.startswith('3'):
         target_file = f'DPaulli{id}a.fjs'
-    elif source.startswith('4_'):
+    elif source.startswith('4'):
         target_file = f'ChambersBarnes{id}.fjs'
-    elif source.startswith('5_'):
+    elif source.startswith('5'):
         target_file = f'Kacem{id}.fjs'
-    elif source.startswith('6_'):
+    elif source.startswith('6'):
         target_file = f'Fattahi{id}.fjs'
     path += f'{source}\\{target_file}'
     file = open(path, 'r')
     return file.readlines()
 
-def rewrite_benchmark(source, id, lower_bound, upper_bound, worker_amount):
-    file_content : list[str] = read_file(source, id)
-    values = [list(map(int, x.split(' '))) for x in file_content]
+def write_file(benchmark : list[list[int]], path : str, file_name : str) -> None:
+    file = open(path + file_name, 'w')
+    # there's probably an easier way to do this
+    for line in benchmark:
+        output = ''
+        for value in line:
+            output += str(value) + ' '
+        file.write(output + '\n')
+    file.close()
+
+def rewrite_benchmark(source : str, id : int, lower_bound : float, upper_bound : float, worker_amount : int, path : str) -> list[list[int]]:
+    file_content : list[str] = read_file(source, id, path)
+    
+    values = [list(map(float, x.strip('\n').split(' '))) for x in file_content]
     result = []
-    result.append(values[0].copy())
-    result[0].append(worker_amount)
-    print(values)
-    #2 2 1 2 1 25 2 30 2 1 1 37 2 1 1 2 32 2 2 1 24 2 33 -> 2 operations, o1 -> 2 workstations, o1 on m1 -> 2 worker -> o1 on m1 with w1 -> 25, o1 on m1 with w2 -> 30, ...
+    result.append([int(values[0][0]), int(values[0][1]), worker_amount])
+    #original: 2 2 1 2 1 25 2 30 2 1 1 37 2 1 1 2 32 2 2 1 24 2 33 -> 2 operations, o1 -> 2 workstations, o1 on m1 -> 2 worker -> o1 on m1 with w1 -> 25, o1 on m1 with w2 -> 30, ...
     for line in values[1:]:
         new_line = []
         idx = 0
-        for i in range(line[0]): # for each operation
-            new_line.append(line[idx])
+        new_line.append(int(line[idx]))
+        for i in range(int(line[0])): # for each operation
             idx += 1
-            for j in range(int(line[idx])): # for each option
-                new_line.append(line[idx])
+            workstations = int(line[idx])
+            new_line.append(int(line[idx]))
+            for j in range(workstations): # for each option
                 idx += 1 # workstation
-                new_line.append(line[idx])
+                new_line.append(int(line[idx]))
                 # randomly choose amount of workers
                 workers = random.randint(1, worker_amount)
                 new_line.append(workers)
-                options = random.choices(range(1, worker_amount), k=workers)
+                options = random.sample(range(1, worker_amount+1), k=workers)
+                options.sort()
                 idx += 1 # duration
                 original_duration = line[idx]
                 for k in options: # for each possible worker
-                    worker_duration = random.uniform(original_duration * lower_bound, original_duration * upper_bound)
+                    worker_duration = int(random.uniform(original_duration * lower_bound, original_duration * upper_bound) + 0.5)
                     new_line.append(k)
                     new_line.append(worker_duration)
-                #idx += 1
         result.append(new_line)
-    print(result)
+    return result
 
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+read_path = currentdir + '/../external_test_data/FJSSPinstances/'
+write_path = currentdir + '/changed_benchmarks/'
+source = '1_Brandimarte'
+id = 1
 
-rewrite_benchmark('6_Fattahi', 1, 0.9, 1.1, 3)
+result = rewrite_benchmark(source=source, id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path=read_path)
+write_file(benchmark=result,path=write_path, file_name=f'{source}_{id}_updated.fjs')
