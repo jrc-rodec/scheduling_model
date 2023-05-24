@@ -17,7 +17,7 @@ def read_file(source : str, id : int, path : str) -> list[str]:
     elif source.startswith('2d'):
         target_file = f'HurinkVdata{id}.fjs'
     elif source.startswith('3'):
-        target_file = f'DPaulli{id}a.fjs'
+        target_file = f'DPpaulli{id}.fjs'
     elif source.startswith('4'):
         target_file = f'ChambersBarnes{id}.fjs'
     elif source.startswith('5'):
@@ -81,12 +81,22 @@ def rewrite_all_from_source(source : str, lower_bound : float, upper_bound : flo
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/../external_test_data/FJSSPinstances/'
 write_path = currentdir + '/changed_benchmarks/'
-source = '6_Fattahi'
-id = 5
+sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
+
+"""
+    EXAMPLE USAGES:
+"""
+source = 1
 
 # rewrite a specific benchmark
-result = rewrite_benchmark(source=source, id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path=read_path)
-write_file(benchmark=result,path=write_path, file_name=f'{source}_{id}_updated.fjs')
+id = 5
+result = rewrite_benchmark(source=sources[source], id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path=read_path)
+write_file(benchmark=result,path=write_path, file_name=f'{sources[source]}_{id}_updated.fjs')
 
 # rewrite all benchmarks from a specific source
-rewrite_all_from_source(source, 0.9, 1.1, 3, read_path, write_path)
+rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)
+
+# rewrite all benchmarks (with the same parameters)
+for i in range(len(sources)):
+    source = i
+    rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)
