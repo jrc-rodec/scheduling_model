@@ -69,11 +69,18 @@ def rewrite_benchmark(source : str, id : int, lower_bound : float, upper_bound :
         result.append(new_line)
     return result
 
+def rewrite_all_from_source(source : str, lower_bound : float, upper_bound : float, worker_amount : int, read_path : str, write_path : str) -> None:
+    full_path = read_path + source + '/'
+    for i in range(len(os.listdir(full_path))):
+        result = rewrite_benchmark(source, i+1, lower_bound, upper_bound, worker_amount, read_path)
+        write_file(result, write_path, f'{source}_{id}_updated.fjs')
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/../external_test_data/FJSSPinstances/'
 write_path = currentdir + '/changed_benchmarks/'
-source = '1_Brandimarte'
-id = 1
+source = '6_Fattahi'
+id = 5
 
 result = rewrite_benchmark(source=source, id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path=read_path)
 write_file(benchmark=result,path=write_path, file_name=f'{source}_{id}_updated.fjs')
+#rewrite_all_from_source(source, 0.9, 1.1, 3, read_path, write_path)
