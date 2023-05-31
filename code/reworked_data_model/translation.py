@@ -281,7 +281,7 @@ class TimeWindowSequenceEncoder(Encoder):
                 if i == 0:
                     result[workstation[i]+1] = 0
                 else:
-                    result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+3]
+                    result[workstation[i]+1] = result[workstation[i-1]+1] + result[workstation[i-1]+3]# + 1
         changes = True
         counter = 0
         while changes:
@@ -291,8 +291,9 @@ class TimeWindowSequenceEncoder(Encoder):
                     if result[i-3] + result[i-1] > result[i+1]:
                         #changes = True
                         # adjust
-                        shift = result[i-3] + result[i-1] - result[i+1]
-                        result[i+1] += shift
+                        #shift = result[i-3] + result[i-1] - result[i+1]
+                        #result[i+1] += shift# + 1
+                        result[i+1] = result[i-3] + result[i-1]
                         # shift all on workstation until no longer necessary
                         w = None
                         for workstation in on_workstations:
@@ -301,12 +302,16 @@ class TimeWindowSequenceEncoder(Encoder):
                                 break
                         for j in range(w.index(i) + 1, len(w)):
                             #shift = result[w[j-1]+1] + result[w[j-1]+3] - result[w[j]+1]
-                            if result[w[j-1]+1] + result[w[j-1]+3] <= result[w[j]+1]:
-                                break # stop shifting
-                            result[w[j]+1] = result[w[j-1]+1] + result[w[j-1]+3] # move start time to previous end time, unless already later
+                            #if result[w[j-1]+1] + result[w[j-1]+3] <= result[w[j]+1]:
+                            #    break # stop shifting
+                            #result[w[j]+1] = max(result[w[j-1]+1] + result[w[j-1]+3] + 1, result[w[j]-3 + result[w[j]]-1]) # move start time to previous end time, unless already later
+                            prev = 0
+                            if jobs[int((w[j]-4) / 4)].order == jobs[int(w[j] / 4)].order:
+                                prev = result[w[j]-3] + result[w[j]-1]
+                            result[w[j]+1] = max(result[w[j-1]+1] + result[w[j-1]+3], prev) # move start time to previous end time, unless already later
             counter += 1
             if counter > 1000:
-                print('loop')
+                print(counter)
         return result
 
     def determine_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:

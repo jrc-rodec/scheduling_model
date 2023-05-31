@@ -7,7 +7,7 @@ from evaluation import Evaluator, Makespan, IdleTime, TimeDeviation, Tardiness, 
 #simple_translator = BasicBenchmarkTranslator()
 #production_environment = simple_translator.translate(3)
 source = '6_Fattahi'
-benchmark_id = 10
+benchmark_id = 12
 simple_translator = FJSSPInstancesTranslator()
 production_environment = simple_translator.translate(source=source, benchmark_id=benchmark_id)
 
