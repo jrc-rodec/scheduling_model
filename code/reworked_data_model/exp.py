@@ -162,7 +162,31 @@ def right_shift(values : list[int], sequence_values : list[int], job_orders : li
 
 def determine_start_times(values : list[int], job_orders : list[int], workstations):
     result = values.copy()
-   
+    """
+        Option 1:
+            insert first on each workstation, resolve sequence dependencies
+            insert second on each workstation, ...
+    """
+    workstations = []
+    for w in range(workstations):
+        on_workstation = get_indices_for_workstation(result, w)
+        workstations.append(on_workstation)
+    idx = 0
+    while any(len(w) > idx for w in workstations):
+        for i in range(len(workstations)):
+            if len(workstations[i]) > idx:
+                pass
+        idx += 1
+    """
+        Option 2:
+            insert first operation of first job, insert all jobs before on workstation
+            ...
+    """
+    """
+        Option 3:
+            insert all to workstation
+            resolve all dependencies starting from first on each workstation, right shift all on workstation after adjustments, move on to second on each workstation, ...
+    """
     # workstation dependencies
     for w in range(workstations):
         on_workstation = get_indices_for_workstation(result, w)
@@ -181,7 +205,7 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
                 result[idx+1] = max(result[idx+1], result[prev_idx+1] + result[prev_idx+3])
                 # right shift all on workstation
                 right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
-    return result    
+    return result
 
 orders = [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
 workstations = 4
