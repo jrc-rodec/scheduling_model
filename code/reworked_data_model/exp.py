@@ -98,7 +98,7 @@ print(on_one)
 print(loop_count)
 print(len(offspring))"""
 
-def select_next_generation(population, population_fitness, offsprings, offspring_fitness):
+"""def select_next_generation(population, population_fitness, offsprings, offspring_fitness):
     elitism_rate = int(len(population)/4)
     population_size = 10
     next_generation = []
@@ -121,4 +121,95 @@ offsprings = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
 offspring_fitness = [39, 37, 35, 33, 31, 29, 27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7, 5, 3, 1]
 next_population, next_population_fitness = select_next_generation(population, population_fitness, offsprings, offspring_fitness)
 print(next_population)
-print(next_population_fitness)
+print(next_population_fitness)"""
+
+#result = [0, 36, 0, 223, 1, 55, 0, 140, 3, 39, 0, 160, 7, 10, 0, 145, 0, 38, 0, 214, 1, 54, 0, 87, 4, 12, 0, 178, 4, 54, 0, 120, 0, 13, 0, 87, 6, 8, 0, 105, 5, 23, 0, 153, 7, 5, 0, 165, 0, 40, 0, 87, 2, 57, 0, 173, 3, 38, 0, 136, 5, 35, 0, 170, 0, 16, 0, 145, 4, 5, 0, 65, 1, 61, 0, 85, 5, 34, 0, 165, 3, 6, 0, 145, 3, 7, 0, 150, 6, 10, 0, 180, 3, 40, 0, 50, 2, 3, 0, 145, 4, 4, 0, 124, 6, 9, 0, 178, 7, 6, 0, 230, 3, 5, 0, 245, 5, 24, 0, 224, 4, 11, 0, 178, 6, 25, 0, 150, 2, 40, 0, 150, 2, 42, 0, 180, 6, 17, 0, 50, 7, 9, 0, 170, 2, 41, 0, 257, 5, 26, 0, 224, 6, 22, 0, 178, 7, 12, 0, 150, 1, 37, 0, 150, 3, 9, 0, 180, 6, 15, 0, 40, 5, 32, 0, 170, 1, 0, 0, 357, 4, 7, 0, 268, 6, 20, 0, 178, 4, 56, 0, 230]
+#result = [0, 1, 0 10, 0, 0, 0, 15, 0, 2, 0, 10, 1, 4, 0, 10, 1, 0, 0, 5, 1, 2, 0, 10, 1, 3, 0, 15, 1, 1, 0, 10]
+import random
+def create_random_result(jobs : int = 10, workstations : int = 4):
+    result = []
+    count = [0] * workstations
+    for i in range(jobs):
+        w = random.randint(0, workstations-1)
+        idx = 0
+        if i > 0:
+            idx = random.choice(range(0, len(result), 4))#int(random.randint(0, len(result)) / 4)
+        #result.extend([w, count[w], 0, random.randint(10, 30)])
+        result.insert(idx, w)
+        result.insert(idx+1, count[w])
+        result.insert(idx+2, 0)
+        result.insert(idx+3, random.randint(10, 30))
+        count[w] += 1
+    return result
+
+def get_indices_for_workstation(values, workstation):
+    on_workstation = []
+    for i in range(0, len(values), 4):
+        if values[i] == workstation:
+            on_workstation.append(i)
+    return on_workstation
+
+def right_shift(values : list[int], sequence_values : list[int], job_orders : list[int], workstation):
+    on_workstation = get_indices_for_workstation(values, workstation)
+    on_workstation.sort(key=lambda x: sequence_values[x+1])
+    for i in range(len(on_workstation)):
+        if i > 0:
+            idx = on_workstation[i]
+            prev_idx = on_workstation[i-1]
+            values[idx+1] = max(values[idx+1], values[prev_idx+1]+values[prev_idx+3])
+            # find and resolve sequence dependencies
+            
+
+def determine_start_times(values : list[int], job_orders : list[int], workstations):
+    result = values.copy()
+   
+    # workstation dependencies
+    for w in range(workstations):
+        on_workstation = get_indices_for_workstation(result, w)
+        on_workstation.sort(key=lambda x: result[x+1])
+        for i in range(len(on_workstation)):
+            if i == 0:
+                result[on_workstation[i]+1] = 0
+            else:
+                result[on_workstation[i]+1] = max(result[on_workstation[i]+1], result[on_workstation[i-1]+1] + result[on_workstation[i-1]+3])
+    # job sequence dependencies
+    for i in range(len(job_orders)):
+        if i > 0:
+            if job_orders[i] == job_orders[i-1]:
+                idx = i * 4
+                prev_idx = (i-1) * 4
+                result[idx+1] = max(result[idx+1], result[prev_idx+1] + result[prev_idx+3])
+                # right shift all on workstation
+                right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
+    return result    
+
+orders = [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
+workstations = 4
+values = create_random_result(len(orders), workstations)
+result = determine_start_times(values, orders, workstations)
+print(values)
+print(result)
+
+import plotly.figure_factory as ff
+from visualization import get_colors_distinctipy
+def visualize_schedule(values, job_orders, workstations):
+    data = []
+    tasks = []
+    for workstation in range(workstations):
+        label = f'w{workstation}'
+        on_workstation = get_indices_for_workstation(values, workstation)
+        for idx in on_workstation:
+            data.append(
+                dict(Task=label, Start=values[idx+1], Finish=values[idx+1]+values[idx+3], Resource=f'Order {job_orders[int(idx/4)]}')
+            )
+    colors = {}
+    #rgb_values = get_colors(len(orders))
+    rgb_values = get_colors_distinctipy(len(orders))
+    for i in range(len(orders)):
+        colors[str(f'Order {i}')] = f'rgb({rgb_values[i][0] * 255}, {rgb_values[i][1] * 255}, {rgb_values[i][2] * 255})'
+    fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
+                        group_tasks=True)
+    fig.update_layout(xaxis_type='linear')
+    fig.show()
+
+visualize_schedule(result, orders, workstations)
