@@ -168,6 +168,21 @@ def update_idx(values, job_orders, workstation, idx):
 
 
 def determine_start_times(values : list[int], job_orders : list[int], workstations_amount):
+    #repair 
+
+    changes = True
+    while changes:
+        changes = False
+        for i in range(4, len(values), 4):
+            j = i
+            while j >= 0 and job_orders[int(j/4)] == job_orders[int(i/4)]:
+                if values[j] == values[i] and values[j+1] > values[i+1]:
+                    tmp = values[i+1]
+                    values[i+1] = values[j+1]
+                    values[j+1] = tmp
+                    changes = True
+                    print('repaired')
+                j -= 4
     result = values.copy()
     """
         Option 1:
@@ -225,7 +240,7 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
                         # right shift all on workstation
                         right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
                         #changes = True
-                    #changes = before != result[idx+1]
+                    changes = before != result[idx+1]
     return result
 
 orders = [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
