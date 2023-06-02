@@ -160,23 +160,36 @@ def right_shift(values : list[int], sequence_values : list[int], job_orders : li
             # find and resolve sequence dependencies
             
 
-def determine_start_times(values : list[int], job_orders : list[int], workstations):
+def update_idx(values, job_orders, workstation, idx):
+    w_prev = result[workstation[idx-1]+1] + result[workstation[idx-1]+3] if idx > 0 else 0 # end of previous operation on workstation
+    job_idx = int(workstation[idx] / 4)
+    s_prev = result[workstation[idx] - 3] + result[workstation[idx]-1] if job_idx > 0 and job_orders[job_idx] == job_orders[job_idx-1] else 0 # end of previous operation in sequence
+    result[workstation[idx]+1] = max(w_prev, s_prev)
+
+
+def determine_start_times(values : list[int], job_orders : list[int], workstations_amount):
     result = values.copy()
     """
         Option 1:
             insert first on each workstation, resolve sequence dependencies
             insert second on each workstation, ...
     """
-    workstations = []
-    for w in range(workstations):
+    """workstations = []
+    for w in range(workstations_amount):
         on_workstation = get_indices_for_workstation(result, w)
+        on_workstation.sort(key=lambda x: values[x+1])
         workstations.append(on_workstation)
     idx = 0
     while any(len(w) > idx for w in workstations):
         for i in range(len(workstations)):
             if len(workstations[i]) > idx:
-                pass
+                w_prev = result[workstations[i][idx-1]+1] + result[workstations[i][idx-1]+3] if idx > 0 else 0 # end of previous operation on workstation
+                job_idx = int(workstations[i][idx] / 4)
+                s_prev = result[workstations[i][idx] - 3] + result[workstations[i][idx]-1] if job_idx > 0 and job_orders[job_idx] == job_orders[job_idx-1] else 0 # end of previous operation in sequence
+                result[workstations[i][idx]+1] = max(w_prev, s_prev)
         idx += 1
+    
+    return result"""
     """
         Option 2:
             insert first operation of first job, insert all jobs before on workstation
@@ -187,24 +200,32 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
             insert all to workstation
             resolve all dependencies starting from first on each workstation, right shift all on workstation after adjustments, move on to second on each workstation, ...
     """
-    # workstation dependencies
-    for w in range(workstations):
-        on_workstation = get_indices_for_workstation(result, w)
-        on_workstation.sort(key=lambda x: result[x+1])
-        for i in range(len(on_workstation)):
-            if i == 0:
-                result[on_workstation[i]+1] = 0
-            else:
-                result[on_workstation[i]+1] = max(result[on_workstation[i]+1], result[on_workstation[i-1]+1] + result[on_workstation[i-1]+3])
-    # job sequence dependencies
-    for i in range(len(job_orders)):
-        if i > 0:
-            if job_orders[i] == job_orders[i-1]:
-                idx = i * 4
-                prev_idx = (i-1) * 4
-                result[idx+1] = max(result[idx+1], result[prev_idx+1] + result[prev_idx+3])
-                # right shift all on workstation
-                right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
+    changes = True
+    while changes:
+        changes = False
+        # workstation dependencies
+        
+        for w in range(workstations):
+            on_workstation = get_indices_for_workstation(result, w)
+            on_workstation.sort(key=lambda x: result[x+1])
+            for i in range(len(on_workstation)):
+                if i == 0:
+                    result[on_workstation[i]+1] = 0
+                else:
+                    result[on_workstation[i]+1] = max(result[on_workstation[i]+1], result[on_workstation[i-1]+1] + result[on_workstation[i-1]+3])
+        # job sequence dependencies
+        for i in range(len(job_orders)):
+            if i > 0:
+                if job_orders[i] == job_orders[i-1]:
+                    idx = i * 4
+                    before = result[idx+1]
+                    prev_idx = (i-1) * 4
+                    result[idx+1] = max(result[idx+1], result[prev_idx+1] + result[prev_idx+3])
+                    if before != result[idx+1]:
+                        # right shift all on workstation
+                        right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
+                        #changes = True
+                    #changes = before != result[idx+1]
     return result
 
 orders = [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
