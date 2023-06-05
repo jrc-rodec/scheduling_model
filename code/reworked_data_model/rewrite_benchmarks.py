@@ -86,7 +86,7 @@ sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edat
 """
     EXAMPLE USAGES:
 """
-source = 1
+"""source = 1
 
 # rewrite a specific benchmark
 id = 5
@@ -99,4 +99,17 @@ rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)
 # rewrite all benchmarks (with the same parameters)
 for i in range(len(sources)):
     source = i
-    rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)
+    rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)"""
+
+
+use_sources = ['2a_Hurink_sdata', '3_DPpaulli', '5_Kacem', '6_Fattahi']
+write_path = currentdir + '/benchmarks_with_workers/'
+for benchmark_source in use_sources:
+    full_path = read_path + benchmark_source + '/'
+    for i in range(len(os.listdir(full_path))):
+        file_content : list[str] = read_file(benchmark_source, i+1, read_path)
+        values = file_content[0].split(' ')
+        workstation_amount = int(values[1])
+        worker_amount = int(workstation_amount*1.5)
+        result = rewrite_benchmark(source=benchmark_source, id=i+1, lower_bound=0.9, upper_bound=1.1, worker_amount=worker_amount, path=read_path)
+        write_file(benchmark=result,path=write_path, file_name=f'{benchmark_source}_{i+1}_workers.fjs')
