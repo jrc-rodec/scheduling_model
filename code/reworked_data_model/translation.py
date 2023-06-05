@@ -267,6 +267,77 @@ class TimeWindowSequenceEncoder(Encoder):
                         values.extend([0, 0, 0]) # workstation, sequence value on workstation, time window size
         return values, jobs
     
+    def get_indices_for_workstation(self, values, workstation):
+        on_workstation = []
+        for i in range(0, len(values), 4):
+            if values[i] == workstation:
+                on_workstation.append(i)
+        return on_workstation
+
+    def right_shift(self, values : list[int], sequence_values : list[int], job_orders : list[int], workstation):
+        on_workstation = self.get_indices_for_workstation(values, workstation)
+        on_workstation.sort(key=lambda x: sequence_values[x+1])
+        for i in range(len(on_workstation)):
+            if i > 0:
+                idx = on_workstation[i]
+                prev_idx = on_workstation[i-1]
+                values[idx+1] = max(values[idx+1], values[prev_idx+1]+values[prev_idx+3])
+                # find and resolve sequence dependencies
+            else:
+                # NOTE: shouldn't do anything
+                values[on_workstation[i]+1] = max(values[on_workstation[i]+1], 0)
+
+    def determine_start_time_repaired(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]):
+        workstations = len(production_environment.get_workstation_list())
+        job_orders = [j.order.id for j in jobs]
+        #repair 
+        changes = True
+        while changes:
+            changes = False
+            for i in range(4, len(values), 4):
+                j = i
+                while j >= 0 and job_orders[int(j/4)] == job_orders[int(i/4)]:
+                    if values[j] == values[i] and values[j+1] > values[i+1]:
+                        tmp = values[i+1]
+                        values[i+1] = values[j+1]
+                        values[j+1] = tmp
+                        changes = True
+                        #print('repaired')
+                    j -= 4
+        result = values.copy()
+
+        changes = True
+        count = 0
+        while changes:
+            changes = False
+            # workstation dependencies
+            for w in range(workstations):
+                on_workstation = self.get_indices_for_workstation(result, w)
+                on_workstation.sort(key=lambda x: result[x+1])
+                for i in range(len(on_workstation)):
+                    if i == 0:
+                        result[on_workstation[i]+1] = max(result[on_workstation[i]+1], 0) if count > 0 else 0
+                    else:
+                        result[on_workstation[i]+1] = max(result[on_workstation[i]+1], result[on_workstation[i-1]+1] + result[on_workstation[i-1]+3])
+            # job sequence dependencies
+            for i in range(len(job_orders)):
+                if i > 0:
+                    if job_orders[i] == job_orders[i-1]:
+                        idx = i * 4
+                        before = result[idx+1]
+                        prev_idx = (i-1) * 4
+                        result[idx+1] = max(result[idx+1], result[prev_idx+1] + result[prev_idx+3])
+                        if before != result[idx+1]:
+                            # right shift all on workstation
+                            self.right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
+                            #changes = True
+                            count += 1
+                        changes = changes or before != result[idx+1]
+            if count > 10000:
+                #print('circular dependency')
+                changes = False
+        return result
+
     def get_start_times(self, values : list[int], production_environment : ProductionEnvironment, jobs : list[Job]) -> list[int]:
         result = values.copy()
         on_workstations = []
@@ -358,7 +429,8 @@ class TimeWindowSequenceEncoder(Encoder):
         schedule : Schedule = Schedule(start_time=0, assignments=dict(), objective_values=objective_values, solver=solver)
         job_idx : int = 0
         #solution = self.determine_start_times(values, production_environment, jobs)
-        solution = self.get_start_times(values, production_environment, jobs)
+        #solution = self.get_start_times(values, production_environment, jobs)
+        solution = self.determine_start_time_repaired(values, production_environment, jobs)
         for i in range(0, len(solution), 4):
             workstation_id : int = solution[i]
             workstation : Workstation = production_environment.get_workstation(workstation_id)

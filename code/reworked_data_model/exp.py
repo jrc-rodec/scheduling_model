@@ -158,6 +158,9 @@ def right_shift(values : list[int], sequence_values : list[int], job_orders : li
             prev_idx = on_workstation[i-1]
             values[idx+1] = max(values[idx+1], values[prev_idx+1]+values[prev_idx+3])
             # find and resolve sequence dependencies
+        else:
+            # NOTE: shouldn't do anything
+            values[on_workstation[i]+1] = max(values[on_workstation[i]+1], 0)
             
 
 def update_idx(values, job_orders, workstation, idx):
@@ -169,7 +172,7 @@ def update_idx(values, job_orders, workstation, idx):
 
 def determine_start_times(values : list[int], job_orders : list[int], workstations_amount):
     #repair 
-
+    original = values.copy()
     changes = True
     while changes:
         changes = False
@@ -216,6 +219,7 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
             resolve all dependencies starting from first on each workstation, right shift all on workstation after adjustments, move on to second on each workstation, ...
     """
     changes = True
+    count = 0
     while changes:
         changes = False
         # workstation dependencies
@@ -225,7 +229,7 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
             on_workstation.sort(key=lambda x: result[x+1])
             for i in range(len(on_workstation)):
                 if i == 0:
-                    result[on_workstation[i]+1] = 0
+                    result[on_workstation[i]+1] = max(result[on_workstation[i]+1], 0) if count > 0 else 0
                 else:
                     result[on_workstation[i]+1] = max(result[on_workstation[i]+1], result[on_workstation[i-1]+1] + result[on_workstation[i-1]+3])
         # job sequence dependencies
@@ -240,7 +244,11 @@ def determine_start_times(values : list[int], job_orders : list[int], workstatio
                         # right shift all on workstation
                         right_shift(result, values, job_orders, result[idx]) # NOTE: only shifting after sequence number would be more efficient, ignore for now
                         #changes = True
-                    changes = before != result[idx+1]
+                        count += 1
+                    changes = changes or before != result[idx+1]
+        if count > 10000:
+            print('circular dependency')
+            changes = False
     return result
 
 orders = [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
