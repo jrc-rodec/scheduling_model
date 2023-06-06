@@ -271,8 +271,8 @@ def visualize_schedule(values, job_orders, workstations):
                 dict(Task=label, Start=values[idx+1], Finish=values[idx+1]+values[idx+3], Resource=f'Order {job_orders[int(idx/4)]}')
             )
     colors = {}
-    #rgb_values = get_colors(len(orders))
-    rgb_values = get_colors_distinctipy(len(orders))
+    # rgb_values = get_colors(len(orders))
+    rgb_values = get_colors_distinctipy(len(job_orders))
     for i in range(len(orders)):
         colors[str(f'Order {i}')] = f'rgb({rgb_values[i][0] * 255}, {rgb_values[i][1] * 255}, {rgb_values[i][2] * 255})'
     fig = ff.create_gantt(data, colors=colors, index_col='Resource', show_colorbar=True,
