@@ -340,8 +340,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = TimeWindowSequenceEncoder()
-source = '6_Fattahi'
-benchmark_id = 10
+source = '3_DPpaulli'
+benchmark_id = 18
 production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate(source, benchmark_id)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)

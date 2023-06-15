@@ -26,7 +26,7 @@ class FJSSPInstancesTranslator(DataTranslator):
         elif source.startswith('2d'):
             target_file = f'HurinkVdata{benchmark_id}.fjs'
         elif source.startswith('3_'):
-            target_file = f'DPaulli{benchmark_id}a.fjs'
+            target_file = f'DPpaulli{benchmark_id}.fjs'
         elif source.startswith('4_'):
             target_file = f'ChambersBarnes{benchmark_id}.fjs'
         elif source.startswith('5_'):
@@ -333,7 +333,7 @@ class TimeWindowSequenceEncoder(Encoder):
                             #changes = True
                             count += 1
                         changes = changes or before != result[idx+1]
-            if count > 10000:
+            if count > 100:
                 #print('circular dependency')
                 changes = False
         return result
