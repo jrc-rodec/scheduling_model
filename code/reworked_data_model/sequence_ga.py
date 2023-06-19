@@ -341,17 +341,17 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 encoder = TimeWindowSequenceEncoder()
 source = '6_Fattahi'
-benchmark_id = 16
+benchmark_id = 20
 production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate(source, benchmark_id)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 10000
+solver.max_generations = 50000
 solver.add_objective(Makespan())
-population_size = 50
-offspring_amount = 100
+population_size = 75
+offspring_amount = 150
 
 solver.mutate_workers = False
 solver.mutate_duration = False
