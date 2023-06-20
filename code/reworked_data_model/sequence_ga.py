@@ -31,6 +31,7 @@ class TimeWindowSequenceGA(Solver):
             for i in range(0, len(individual), 4):
                 if random.random() < p:
                     workstations = self.production_environment.get_available_workstations_for_task(self.jobs[int(i/4)].task)
+                    # TODO: workstation other than the current one, except if only 1 is available
                     individual[i] = int(random.choice(workstations).id)
                     workstation = individual[i]
 
@@ -348,7 +349,7 @@ solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 50000
+solver.max_generations = 20000
 solver.add_objective(Makespan())
 population_size = 75
 offspring_amount = 150
@@ -356,7 +357,7 @@ offspring_amount = 150
 solver.mutate_workers = False
 solver.mutate_duration = False
 solver.allow_overlap = False
-solver.split_genes = False
+solver.split_genes = True
 solver.elitism = False
 solver.include_random_individuals = 0#population_size / 10
 solver.replace_duplicates = True
