@@ -8,3 +8,4 @@ code/.vs/
 /code/outcmaes/
 *.log
 code/reworked_data_model/changed_benchmarks/
+*.pyc

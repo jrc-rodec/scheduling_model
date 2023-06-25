@@ -35,8 +35,8 @@ def read_files_1():
     filenames = []
     instances = []
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    targetdir = currentdir + '\\external_test_data\\1\\SFJW\\'
-    mfjwdir = currentdir + '\\external_test_data\\1\\MFJW\\'
+    targetdir = currentdir + '\\..\\external_test_data\\1\\SFJW\\'
+    mfjwdir = currentdir + '\\..\\external_test_data\\1\\MFJW\\'
     for i in range(1, 10):
         filenames.append(f'{targetdir}SFJW-0{i}.txt')
     filenames.append(f'{targetdir}SFJW-10.txt')

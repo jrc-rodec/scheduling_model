@@ -98,8 +98,10 @@ class TimeWindowSequenceGA(Solver):
     def one_point_crossover(self, parent_a, parent_b):
         crossover_point = random.randint(0, len(parent_a)-2)
         if not self.split_genes:
-            crossover_point %= 4
-            crossover_point = max(3, crossover_point-1) # NOTE: review
+            #crossover_point %= 4
+            #crossover_point = max(3, crossover_point-1) # NOTE: review
+            crossover_point = random.randint(1, int(len(parent_a)/4)-1)
+            crossover_point *= 4
         offspring = []
         offspring.extend(parent_a[:crossover_point])
         offspring.extend(parent_b[crossover_point:])
@@ -144,8 +146,8 @@ class TimeWindowSequenceGA(Solver):
         parent_b = self.select()
         while parent_a == parent_b:
             parent_b = self.select() # NOTE: maybe needs changing
-        offspring = self.recombination_method(parent_a, parent_b)
-        #offspring = self.one_point_crossover(parent_a, parent_b)
+        #offspring = self.recombination_method(parent_a, parent_b)
+        offspring = self.one_point_crossover(parent_a, parent_b)
         return offspring
 
     def repair(self, offspring):
@@ -349,10 +351,10 @@ solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 20000
+solver.max_generations = 30000
 solver.add_objective(Makespan())
-population_size = 75
-offspring_amount = 150
+population_size = 50
+offspring_amount = 100
 
 solver.mutate_workers = False
 solver.mutate_duration = False
@@ -361,7 +363,7 @@ solver.split_genes = True
 solver.elitism = False
 solver.include_random_individuals = 0#population_size / 10
 solver.replace_duplicates = True
-solver.tournament_size = population_size / 4
+solver.tournament_size = population_size / 8
 
 solver.run(population_size, offspring_amount)
 
