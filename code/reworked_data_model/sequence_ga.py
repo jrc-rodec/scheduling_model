@@ -361,7 +361,7 @@ solver.mutate_duration = False
 solver.allow_overlap = False
 solver.split_genes = True
 solver.elitism = False
-solver.include_random_individuals = 0#population_size / 10
+solver.include_random_individuals = population_size / 10
 solver.replace_duplicates = True
 solver.tournament_size = population_size / 8
 
