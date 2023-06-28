@@ -142,10 +142,13 @@ class TimeWindowSequenceGA(Solver):
 
     def recombine(self):
         # for testing, just single point crossover
-        parent_a = self.select()
-        parent_b = self.select()
+        #parent_a = self.select()
+        parent_a = self.select_roulette()
+        #parent_b = self.select()
+        parent_b = self.select_roulette()
         while parent_a == parent_b:
-            parent_b = self.select() # NOTE: maybe needs changing
+            #parent_b = self.select() # NOTE: maybe needs changing
+            parent_b = self.select_roulette() # NOTE: maybe needs changing
         #offspring = self.recombination_method(parent_a, parent_b)
         offspring = self.one_point_crossover(parent_a, parent_b)
         return offspring
@@ -176,13 +179,21 @@ class TimeWindowSequenceGA(Solver):
         participants = random.choices(range(0, len(self.population)), k=participant_amount)
         winner = sorted(participants, key=lambda x: self.population_fitness[x])[0]
         return self.population[winner]
-        for _ in range(participant_amount):
-            participants.append(random.randint(0, len(self.population)-1))
-        winner = participants[0]
-        for i in range(1, len(participants)):
-            if self.population_fitness[participants[i]] < self.population_fitness[winner]:
-                winner = participants[i]
-        return self.population[winner]
+
+    def select_roulette(self) -> list[int]:
+        fitness_sum = 0
+        for fitness in self.population_fitness:
+            fitness_sum += fitness # NOTE: only use first
+        probabilities = [0.0] * len(self.population_fitness)
+        previous_probability = 0.0
+        for i in range(len(probabilities)):
+            probabilities[i] = previous_probability + (self.population_fitness[i] / fitness_sum)
+            previous_probability = probabilities[i]
+        n = random.random()
+        for i in range(len(probabilities)):
+            if n < probabilities[i]:
+                return self.population[i]
+        return self.population[-1]
 
     def evaluate(self, solution : list[int]):
         if str(solution) in self.memory:
@@ -361,7 +372,7 @@ solver.mutate_duration = False
 solver.allow_overlap = False
 solver.split_genes = True
 solver.elitism = False
-solver.include_random_individuals = population_size / 10
+solver.include_random_individuals = 0#population_size / 10
 solver.replace_duplicates = True
 solver.tournament_size = population_size / 8
 
