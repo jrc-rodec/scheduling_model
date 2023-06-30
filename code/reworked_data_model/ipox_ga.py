@@ -25,6 +25,29 @@ class IPOXGA:
             population.append(self.create_individual())
         return population
     
+    def mutate(self, individual : list[int]):
+        p = 1 / len(individual)
+        for i in range(len(individual)):
+            if random.random() < p:
+                if i % 2 == 0:
+                    # job id
+                    swap = random.randint(0, len(individual) - 1)
+                    swap -= swap % 2
+                    while swap == i:
+                        swap = random.randint(0, len(individual) - 1)
+                        swap -= swap % 2
+                    temp = individual[i]
+                    temp_w = individual[i+1]
+                    individual[i] = individual[swap]
+                    individual[i+1] = individual[swap + 1]
+                    individual[swap] = temp
+                    individual[swap+1] = temp_w
+                else: 
+                    # workstation assignment
+                    options = [x for x in self.workstation_options[int((i-1)/2)] if x != individual[i]]
+                    if len(options) > 0:
+                        individual = random.choice(options)
+
     def recombine(self, parent_a, parent_b) -> tuple[list[int], list[int]]:
         child_a = [0] * 2 * len(self.job_orders)
         child_b = [0] * 2 * len(self.job_orders)
