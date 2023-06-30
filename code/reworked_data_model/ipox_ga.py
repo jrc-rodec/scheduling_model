@@ -41,26 +41,23 @@ class IPOXGA:
         split = [0 if random.random() < 0.5 else 1 for _ in range(len(self.jobs))]
         set_a = [self.jobs[j] for j in range(len(self.jobs)) if split[self.jobs[j]] == 0]
         set_b = [self.jobs[j] for j in range(len(self.jobs)) if split[self.jobs[j]] == 1]
-        alt_index = 0
+        a_index = 0
+        b_index = 0
+        parent_a_values = [x for x in parent_a if x in set_a]
+        parent_b_values = [x for x in parent_b if x in set_b]
         for i in range(0, len(parent_a), 2):
             if parent_a[i] in set_a:
                 child_a[i] = parent_a[i]
             else:
-                # else fill with parent b
-                for j in range(alt_index, len(parent_b), 2):
-                    alt_index = j
-                    if parent_b[j] in set_b:
-                        child_a[i] = parent_b[j]
-        alt_index = 0
-        for i in range(0, len(parent_b), 2):
+                child_a[i] = parent_b_values[b_index]
+                b_index += 1
             if parent_b[i] in set_b:
                 child_b[i] = parent_b[i]
             else:
-                # else fill with parent a
-                for j in range(alt_index, len(parent_a), 2):
-                    alt_index = j
-                    if parent_a[j] in set_a:
-                        child_b[i] = parent_a[j]
+                child_b[i] = parent_a_values[a_index]
+                a_index += 1
+        return child_a, child_b
+
 
     def run(self, population_size : int, offspring_amount : int, generations : int):
         population = self.create_population(population_size)
@@ -73,39 +70,34 @@ print(len(b))
 split = [0 if random.random() < 0.5 else 1 for _ in range(len(b))]
 set_a = [b[j] for j in range(len(b)) if split[b[j]] == 0]
 set_b = [b[j] for j in range(len(b)) if split[b[j]] == 1]
-print(set_a)
-print(set_b)
+
 parent_a = [1, 0, 1, 4, 3, 4, 2, 2, 4]
 parent_b = [4, 3, 1, 1, 0, 2, 4, 2, 4]
-child_a = [0] * len(parent_a)
-child_b = [0] * len(parent_a)
+child_a = [-1] * len(parent_a)
+child_b = [-1] * len(parent_a)
 split = [0 if random.random() < 0.5 else 1 for _ in range(len(b))]
 set_a = [b[j] for j in range(len(b)) if split[b[j]] == 0]
 set_b = [b[j] for j in range(len(b)) if split[b[j]] == 1]
-alt_index = 0
+print(set_a)
+print(set_b)
+a_index = 0
+b_index = 0
+parent_a_values = [x for x in parent_a if x in set_a]
+parent_b_values = [x for x in parent_b if x in set_b]
+print(parent_a_values)
+print(parent_b_values)
 for i in range(0, len(parent_a)):
     if parent_a[i] in set_a:
         child_a[i] = parent_a[i]
     else:
-        # else fill with parent b
-        for j in range(alt_index, len(parent_b)):
-            alt_index = j
-            if parent_b[j] in set_b:
-                child_a[i] = parent_b[j]
-                break
-alt_index = 0
-for i in range(0, len(parent_b)):
+        child_a[i] = parent_b_values[b_index]
+        b_index += 1
     if parent_b[i] in set_b:
         child_b[i] = parent_b[i]
     else:
-        # else fill with parent a
-        for j in range(alt_index, len(parent_a)):
-            alt_index = j
-            if parent_a[j] in set_a:
-                child_b[i] = parent_a[j]
-                break
-
-print(parent_a)
-print(child_a)
-print(child_b)
-print(parent_b)
+        child_b[i] = parent_a_values[a_index]
+        a_index += 1
+print(f'Parent A: {parent_a}')
+print(f'Child A: {child_a}')
+print(f'Child B: {child_b}')
+print(f'Parent B: {parent_b}')
