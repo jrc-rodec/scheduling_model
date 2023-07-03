@@ -68,6 +68,7 @@ class IPOXGA:
         b_index = 0
         parent_a_values = [x for x in parent_a if x in set_a]
         parent_b_values = [x for x in parent_b if x in set_b]
+        #TODO: workstations?
         for i in range(0, len(parent_a), 2):
             if parent_a[i] in set_a:
                 child_a[i] = parent_a[i]
