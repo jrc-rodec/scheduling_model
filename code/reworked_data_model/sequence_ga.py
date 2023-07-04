@@ -142,13 +142,13 @@ class TimeWindowSequenceGA(Solver):
 
     def recombine(self):
         # for testing, just single point crossover
-        #parent_a = self.select()
-        parent_a = self.select_roulette()
-        #parent_b = self.select()
-        parent_b = self.select_roulette()
+        parent_a = self.select()
+        #parent_a = self.select_roulette()
+        parent_b = self.select()
+        #parent_b = self.select_roulette()
         while parent_a == parent_b:
-            #parent_b = self.select() # NOTE: maybe needs changing
-            parent_b = self.select_roulette() # NOTE: maybe needs changing
+            parent_b = self.select() # NOTE: maybe needs changing
+            #parent_b = self.select_roulette() # NOTE: maybe needs changing
         offspring = self.recombination_method(parent_a, parent_b)
         #offspring = self.one_point_crossover(parent_a, parent_b)
         return offspring
@@ -183,7 +183,7 @@ class TimeWindowSequenceGA(Solver):
     def select_roulette(self) -> list[int]:
         fitness_sum = 0
         for fitness in self.population_fitness:
-            fitness_sum += fitness # NOTE: only use first
+            fitness_sum += fitness if fitness != float('inf') else 100000 # NOTE: only use first
         probabilities = [0.0] * len(self.population_fitness)
         previous_probability = 0.0
         for i in range(len(probabilities)):
@@ -226,7 +226,6 @@ class TimeWindowSequenceGA(Solver):
             encountered_dict[i] = 0
         for i in open_list:
             encountered_dict[i] += 1
-        counter = 0
         while feasible and len(open_list) > 0:
             current = open_list.pop(0)
             # add current node to closed list
@@ -234,7 +233,10 @@ class TimeWindowSequenceGA(Solver):
             job_index = int(current/4)
             if job_index < len(self.jobs)-1 and self.jobs[job_index] == self.jobs[job_index+1]:
                 # a follow up operation exists
-                pass
+                if current+4 not in closed_list:
+                    if current+4 not in open_list:
+                        open_list.insert(0, current+4)
+                    encountered_dict[current+4] += 1
             # find smallest sequence number bigger than current's sequence number on the same workstation
             min = float('inf')
             for i in range(0, len(solution), 4):
@@ -246,10 +248,7 @@ class TimeWindowSequenceGA(Solver):
                         open_list.insert(0, min) #BFS
                         #open_list.append(min) #DFS
                     encountered_dict[min] += 1
-            feasible = not any([x > 2 for x in encountered_dict.values()])    
-            counter += 1
-            if counter > 100000:
-                print('STUCK')            
+            feasible = not any([x > 2 for x in encountered_dict.values()])             
         # search all with next start sequence, add to openlist, until next start sequence > max sequence value
         # if any new node already in closed list (or open list?) -> cycle found
         if self.allow_overlap:
@@ -412,7 +411,7 @@ solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 5000
+solver.max_generations = 500
 solver.add_objective(Makespan())
 population_size = 50
 offspring_amount = 100
