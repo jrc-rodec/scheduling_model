@@ -149,8 +149,8 @@ class TimeWindowSequenceGA(Solver):
         while parent_a == parent_b:
             #parent_b = self.select() # NOTE: maybe needs changing
             parent_b = self.select_roulette() # NOTE: maybe needs changing
-        #offspring = self.recombination_method(parent_a, parent_b)
-        offspring = self.one_point_crossover(parent_a, parent_b)
+        offspring = self.recombination_method(parent_a, parent_b)
+        #offspring = self.one_point_crossover(parent_a, parent_b)
         return offspring
 
     def repair(self, offspring):
@@ -201,8 +201,55 @@ class TimeWindowSequenceGA(Solver):
             return self.memory[str(solution)][0] # NOTE: just use the first values for now
         feasible = True # TODO 
         # check for circular dependencies
-        # add all with start sequnce 0 to openlist
-        # add current node to closed list
+        # collect all starting operations for each workstation
+        workstations = [x.id for x in self.production_environment.get_workstation_list()]
+        starter_indices = [0] * len(workstations)
+        for i in range(len(workstations)):
+            min = float('inf')
+            for j in range(0, len(solution), 4):
+                if solution[j] == workstations[i]:
+                    if min == float('inf') or solution[j+1] < solution[min+1]:
+                        min = j
+            starter_indices[i] = min
+        # add all starting operations with no incoming dependency to the open list
+        open_list = []
+        for index in starter_indices:
+            if index != float('inf'):
+                job_index = int(index/4)
+                if job_index == 0 or self.jobs[job_index] != self.jobs[job_index-1] and index not in open_list:
+                    open_list.append(index)
+        if len(open_list) == 0:
+            feasible = False
+        closed_list = []
+        encountered_dict : dict[int, int] = dict()
+        for i in range(0, len(solution), 4):
+            encountered_dict[i] = 0
+        for i in open_list:
+            encountered_dict[i] += 1
+        counter = 0
+        while feasible and len(open_list) > 0:
+            current = open_list.pop(0)
+            # add current node to closed list
+            closed_list.append(current)
+            job_index = int(current/4)
+            if job_index < len(self.jobs)-1 and self.jobs[job_index] == self.jobs[job_index+1]:
+                # a follow up operation exists
+                pass
+            # find smallest sequence number bigger than current's sequence number on the same workstation
+            min = float('inf')
+            for i in range(0, len(solution), 4):
+                if i != current and (min == float('inf') or solution[current] == solution[i] and solution[i+1] > solution[current+1] and solution[i+1] < solution[min+1]):
+                    min = i
+            if min != float('inf'):
+                if min not in closed_list:
+                    if min not in open_list:
+                        open_list.insert(0, min) #BFS
+                        #open_list.append(min) #DFS
+                    encountered_dict[min] += 1
+            feasible = not any([x > 2 for x in encountered_dict.values()])    
+            counter += 1
+            if counter > 100000:
+                print('STUCK')            
         # search all with next start sequence, add to openlist, until next start sequence > max sequence value
         # if any new node already in closed list (or open list?) -> cycle found
         if self.allow_overlap:
@@ -365,7 +412,7 @@ solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 1000
+solver.max_generations = 5000
 solver.add_objective(Makespan())
 population_size = 50
 offspring_amount = 100
