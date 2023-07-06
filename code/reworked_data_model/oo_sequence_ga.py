@@ -1,4 +1,5 @@
 import random
+import time
 
 class Individual:
     
@@ -125,7 +126,7 @@ class GA:
         winner = sorted(participants, key=lambda x: population[x].fitness)[0]
         return population[winner]
 
-    def evaluate(self, individual : Individual) -> None:
+    def evaluate(self, individual : Individual, fill_gaps : bool = False) -> None:
         jobs = []
         for x in Individual.required_operations:
             if x not in jobs:
@@ -155,42 +156,45 @@ class GA:
                 # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
                 offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
                 min_start_job = end_times[start_index-1]
-            end_times[start_index] = end_on_workstations[workstation]+duration+offset # NOTE: wouldn't be here
-            end_on_workstations[workstation] = end_times[start_index] # NOTE: wouldn't be here
-            use_gap = None
-            for gap in gaps_on_workstations[workstation]:
-                if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
-                    # found a gap
-                    use_gap = gap
-                    break
-            """
-            if use_gap:
-                # should not have any impact on the end time
-                # however, check for new, smaller gap
-                index = gaps_on_workstations[workstation].index(use_gap)
-                if len(gaps_on_workstations[workstation]) > index+1:
-                    # should be sorted
-                    if use_gap[1] + duration < gaps_on_workstations[workstation][index+1][0]:
-                        gaps_on_workstations[workstation][index] = (use_gap[1], gaps_on_workstations[workstation][index+1][0])
+            if fill_gaps:
+                use_gap = None
+                for gap in gaps_on_workstations[workstation]:
+                    if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
+                        # found a gap
+                        use_gap = gap
+                        break
+                if use_gap:
+                    # should not have any impact on the end time
+                    # however, check for new, smaller gap
+                    index = gaps_on_workstations[workstation].index(use_gap)
+                    if len(gaps_on_workstations[workstation]) > index+1:
+                        # should be sorted
+                        if use_gap[1] + duration < gaps_on_workstations[workstation][index+1][0]:
+                            gaps_on_workstations[workstation][index] = (use_gap[1], gaps_on_workstations[workstation][index+1][0])
+                        else:
+                            gaps_on_workstations[workstation].remove(use_gap) # no new gap, just remove the gap from the list
                     else:
-                        gaps_on_workstations[workstation].remove(use_gap) # no new gap, just remove the gap from the list
+                            gaps_on_workstations[workstation].remove(use_gap)
+                else:
+                    if offset > 0:
+                        # register the created gap on the workstation, insert sorted
+                        insert_at = 0
+                        found = False
+                        for i in range(len(gaps_on_workstations[workstation])):
+                            if gaps_on_workstations[workstation][i][0] < end_on_workstations[workstation]:
+                                insert_at = i
+                                found = True
+                                break
+                        if found:
+                            gaps_on_workstations[workstation].insert(insert_at, (end_on_workstations[workstation], end_on_workstations[workstation]+offset))
+                        else:
+                            gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) 
+                    end_times[start_index] = end_on_workstations[workstation]+duration+offset
+                    end_on_workstations[workstation] = end_times[start_index]
             else:
-                if offset > 0:
-                    # register the created gap on the workstation, insert sorted
-                    insert_at = 0
-                    found = False
-                    for i in range(len(gaps_on_workstations[workstation])):
-                        if gaps_on_workstations[workstation][i][0] < end_on_workstations[workstation]:
-                            insert_at = i
-                            found = True
-                            break
-                    if found:
-                        gaps_on_workstations[workstation].insert(insert_at, (end_on_workstations[workstation], end_on_workstations[workstation]+offset))
-                    else:
-                        gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) 
                 end_times[start_index] = end_on_workstations[workstation]+duration+offset
                 end_on_workstations[workstation] = end_times[start_index]
-            """
+            
         individual.fitness = max(end_times)
 
 
@@ -205,7 +209,7 @@ class GA:
                     break
             individuals.insert(insert_at, individual)
 
-    def _update_history(self, overall_best_history, generation_best_history, average_population_history, current_best, current_population) -> None:
+    def _update_history(self, overall_best_history, generation_best_history, average_population_history, p_history, current_best, current_population, p) -> None:
         overall_best_history.append(current_best.fitness)
         generation_best = float('inf')
         generation_average = 0
@@ -215,26 +219,51 @@ class GA:
             generation_average += individual.fitness # NOTE: might be float('inf')
         generation_best_history.append(generation_best)
         average_population_history.append(generation_average/len(current_population))
+        p_history.append(p)
         
-    def run(self, population_size : int, offspring_amount : int, max_generations : int, selection : str = 'roulette_wheel', tournament_size : int = 0, elitism : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, output_interval : int = 100):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, elitism : bool = False, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, output_interval : int = 100):
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
         average_population_history : list[float] = []
+        p_history : list[float] = []
         current_best : Individual = None
         for _ in range(population_size):
             individual = Individual()
-            self.evaluate(individual)
+            self.evaluate(individual, fill_gaps)
             if not current_best or individual.fitness < current_best.fitness:
                 current_best = individual
             population.append(individual)
-        for i in range(max_generations):
-            self._update_history(overall_best_history, generation_best_history, average_population_history, current_best, population)
-            if i % output_interval == 0:
-                print(f'Generation {i}: Overall Best: {overall_best_history[-1]}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]}')
+        generation = 0
+        starting_p = p = 1 / (len(current_best.sequence) + len(current_best.workstations)) # mutation probability
+        starting_tourament_size = tournament_size
+        start_time = time.time()
+        gen_stop = (max_generations and generation >= max_generations)
+        time_stop = (run_for and False)
+        fitness_stop = (stop_at and current_best.fitness <= stop_at)
+        stop = gen_stop or time_stop or fitness_stop
+        while not stop:
+        #for i in range(max_generations):
+            self._update_history(overall_best_history, generation_best_history, average_population_history, p_history, current_best, population, p)
+            if generation % output_interval == 0:
+                print(f'Generation {generation}: Overall Best: {overall_best_history[-1]}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]}')
             offsprings = []
             # recombine and mutate, evaluate
-            for i in range(0, offspring_amount, 2):
+            # check if mutation probability should be adjusted
+            if adjust_parameters and generation > 0 and generation % 100 == 0:
+                if sum(overall_best_history[generation - 100:generation])/100 == overall_best_history[-1]:
+                    p = min(p*2, 0.4)
+                    if tournament_size:
+                        tournament_size = max(2, int(tournament_size/2))
+                        #print(f'Lowered tournament size to {tournament_size}')
+                    #print(f'Raised p to {p}')
+                else:
+                    p = max(starting_p, p/4)
+                    if tournament_size:
+                        tournament_size = min(starting_tourament_size, tournament_size*2)
+                        #print(f'Reset tournament size to {tournament_size}')
+                    #print(f'Lowered p to {p}')
+            for j in range(0, offspring_amount, 2):
                 if selection == 'roulette_wheel':
                     parent_a = self.roulette_wheel_selection(population)
                     parent_b = self.roulette_wheel_selection(population)
@@ -249,12 +278,12 @@ class GA:
                     print('Unknown selection parameter')
                 offspring_a, offspring_b = self.recombine(parent_a, parent_b)
                 if len(offsprings) < offspring_amount: # NOTE: should always be true
-                    offspring_a.mutate()
-                    self.evaluate(offspring_a)
+                    offspring_a.mutate(p)
+                    self.evaluate(offspring_a, fill_gaps)
                     self._insert_individual(offspring_a, offsprings)
                 if len(offsprings) < offspring_amount: # NOTE: might be false for odd amounts of offsprings
-                    offspring_b.mutate()
-                    self.evaluate(offspring_b)
+                    offspring_b.mutate(p)
+                    self.evaluate(offspring_b, fill_gaps)
                     self._insert_individual(offspring_b, offsprings)
                 selection_pool = []
                 selection_pool.extend(offsprings) # already sorted
@@ -264,11 +293,22 @@ class GA:
                 population = selection_pool[:population_size - random_individuals]
                 while len(population) < population_size:
                     random_individual = Individual()
-                    self.evaluate(random_individual)
+                    self.evaluate(random_individual, fill_gaps)
                     population.append(random_individual)
                 if population[0].fitness < current_best.fitness:
                     current_best = population[0]
-        return current_best, [overall_best_history, generation_best_history, average_population_history]
+                    if adjust_parameters:
+                        p = max(starting_p, p/4)
+                        if tournament_size:
+                            tournament_size = min(starting_tourament_size, tournament_size*2)
+            generation += 1
+            gen_stop = (max_generations and generation >= max_generations)
+            time_stop = (run_for and time.time() - start_time >= run_for)
+            fitness_stop = (stop_at and current_best.fitness <= stop_at)
+            stop = gen_stop or time_stop or fitness_stop
+        print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {current_best.fitness}')
+        print(f'Max Generation defined: {max_generations} | Max Generation reached: {gen_stop}\nRuntime defined: {run_for} | Runtime finished: {time_stop}\nStopping Fitness defined: {stop_at} | Stopping Fitness reached: {fitness_stop}')
+        return current_best, [overall_best_history, generation_best_history, average_population_history, p_history]
 
 # jobs : list[int], workstations_per_operation : list[list[int]], base_durations : list[list[int]]
 job_operations = [0, 0, 1, 1, 1, 2, 2] # 7 operations
@@ -308,25 +348,32 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 encoder = SequenceGAEncoder()
 source = '6_Fattahi'
-instance = 10
+instance = 18
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 25
-offspring_amount = 50
-max_generations = 1000
+population_size = 50
+offspring_amount = 75
+# stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
+# if a criteria is not in use, initialize it with None
+max_generations = None
+run_for = 600 # seconds, NOTE: starts counting after population initialization
+stop_at = None # target fitness
 elitism = False
 allow_duplicate_parents = False
+fill_gaps = True
+adjust_parameters = True
 selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
-tournament_size = int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
+tournament_size = None#int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
 random_individual_per_generation_amount = 0#int(population_size / 10)
-result, history = ga.run(population_size, offspring_amount, max_generations, selection, tournament_size, elitism=False, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, output_interval=max_generations/20)
+output_interval = 100#max_generations/20
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, output_interval=output_interval)
 print(result)
 
-schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment)
+schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)
 
 visualize_schedule(schedule, production_environment, orders)
 
@@ -334,11 +381,18 @@ import matplotlib.pyplot as plt
 best_history = history[0]
 generation_history = history[1]
 average_history = history[2]
+labels = ['Overall Best', 'Generation Best', 'Average']
+
 
 plt.plot(best_history)
 #plt.scatter(range(max_generations), generation_history, s=5, marker='s', color='g')
 plt.plot(generation_history, c='g', linewidth=0.5)
 #plt.scatter(range(max_generations), average_history, s=1, marker='^', color='r')
 plt.plot(average_history, c='r', linewidth=0.1)
-plt.legend(['Overall Best', 'Generation Best', 'Average'])
+if adjust_parameters:
+    #NOTE: put into own plot
+    p_history = history[3]
+    labels.append('Mutation Probability')
+    plt.plot(p_history, c='m', linewidth=1.0)
+plt.legend(labels)
 plt.show()

@@ -578,7 +578,7 @@ class SequenceGAEncoder(Encoder):
         return workstations_per_operation, base_durations, jobs
         
 
-    def decode(self, job_sequence : list[int], workstation_assignments : list[int], worker_assignments : list[int], durations : list[int], job_operations, production_environment : ProductionEnvironment, solver = None) -> Schedule:
+    def decode(self, job_sequence : list[int], workstation_assignments : list[int], worker_assignments : list[int], durations : list[int], job_operations, production_environment : ProductionEnvironment, fill_gaps : bool = False, solver = None) -> Schedule:
         schedule = Schedule()
         schedule.solver = solver
         jobs = []
@@ -588,6 +588,9 @@ class SequenceGAEncoder(Encoder):
         next_operations = [0] * len(jobs)
         end_on_workstations = [0] * len(list(production_environment.get_workstation_list()))
         end_times = [-1] * len(job_operations)
+        gaps_on_workstations :list[list[tuple[int, int]]]= []
+        for i in range(len(list(production_environment.get_workstation_list()))):
+            gaps_on_workstations.append([])
         for i in range(len(job_sequence)):
             job = job_sequence[i]
             operation = next_operations[job]
@@ -605,14 +608,35 @@ class SequenceGAEncoder(Encoder):
             if operation > 0:
                 # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
                 offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
-            
+                min_start_job = end_times[start_index-1]
             start_time = end_on_workstations[workstation] + offset
-            
-            end_times[start_index] = end_on_workstations[workstation]+duration+offset
+            if fill_gaps:
+                use_gap = None
+                for gap in gaps_on_workstations[workstation]:
+                    if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
+                        # found a gap
+                        use_gap = gap
+                        break
+                if use_gap:
+                    # find start time
+                    # find end time
+                    # check for new, smaller gap
+                    index = gaps_on_workstations[workstation].index(use_gap)
+                    if len(gaps_on_workstations[workstation]) > index+1:
+                        # should be sorted
+                        if use_gap[1] + duration < gaps_on_workstations[workstation][index+1][0]:
+                            gaps_on_workstations[workstation][index] = (use_gap[1], gaps_on_workstations[workstation][index+1][0])
+                        else:
+                            gaps_on_workstations[workstation].remove(use_gap) # no new gap, just remove the gap from the list
+                    else:
+                            # last end on workstation = start
+                            gaps_on_workstations[workstation].remove(use_gap)
+                    start_time = use_gap[0]
+
+            end_time = start_time + duration
+            end_times[start_index] = max(end_times[start_index], end_time)
             end_on_workstations[workstation] = end_times[start_index]
             
-            end_time = end_times[start_index]
-
             w = production_environment.get_workstation(workstation)
             j = Job(f'J{job}O{operation}', production_environment.get_order(job))
 
