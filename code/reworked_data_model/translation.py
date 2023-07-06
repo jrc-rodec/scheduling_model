@@ -557,3 +557,65 @@ class GurobiWithWorkersEncoder(Encoder):
                 end_time = csol[j,k]
                 schedule.add_assignment(workstation, job, start_time, end_time, resources=[])
         return schedule
+    
+class SequenceGAEncoder(Encoder):
+
+    def encode(self, production_environment : ProductionEnvironment, orders : list[Order]) -> tuple[list[list[int]], list[list[int]], list[int]]:
+        workstations_per_operation : list[list[int]] = []
+        base_durations : list[list[int]] = []
+        jobs : list[int] = []
+        tasks = production_environment.get_task_list()
+        workstations_available = list(production_environment.get_workstation_list())
+        for task in tasks:
+            workstations_per_operation.append([])
+            workstations = production_environment.get_available_workstations_for_task(task)
+            workstations_per_operation[task.id] = [w.id for w in workstations]
+            base_durations.append([0] * len(workstations_available))
+            for workstation in workstations:
+                base_durations[-1][workstation.id] = workstation.get_duration(task)
+        for order in orders:
+            jobs.extend([order.id for _ in order.resources[0][0].recipes[0].tasks])
+        return workstations_per_operation, base_durations, jobs
+        
+
+    def decode(self, job_sequence : list[int], workstation_assignments : list[int], worker_assignments : list[int], durations : list[int], job_operations, production_environment : ProductionEnvironment, solver = None) -> Schedule:
+        schedule = Schedule()
+        schedule.solver = solver
+        jobs = []
+        for x in job_operations:
+            if x not in jobs:
+                jobs.append(x)
+        next_operations = [0] * len(jobs)
+        end_on_workstations = [0] * len(list(production_environment.get_workstation_list()))
+        end_times = [-1] * len(job_operations)
+        for i in range(len(job_sequence)):
+            job = job_sequence[i]
+            operation = next_operations[job]
+            start_index = 0
+            for j in range(len(job_operations)):
+                if job_operations[j] == job:
+                    start_index = j
+                    break
+                start_index = j
+            start_index += operation
+            next_operations[job] += 1
+            workstation = workstation_assignments[start_index]
+            duration = durations[start_index]
+            offset = 0
+            if operation > 0:
+                # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
+                offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
+            
+            start_time = end_on_workstations[workstation] + offset
+            
+            end_times[start_index] = end_on_workstations[workstation]+duration+offset
+            end_on_workstations[workstation] = end_times[start_index]
+            
+            end_time = end_times[start_index]
+
+            w = production_environment.get_workstation(workstation)
+            j = Job(f'J{job}O{operation}', production_environment.get_order(job))
+
+            schedule.add_assignment(w, j, start_time, end_time, resources=[])
+            end_on_workstations[workstation] = end_time
+        return schedule

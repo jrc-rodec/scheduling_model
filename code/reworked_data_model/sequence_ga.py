@@ -3,7 +3,8 @@ from model import ProductionEnvironment, Schedule, Job, Order
 from translation import Encoder
 import random
 import copy
-
+import igraph
+    
 class TimeWindowSequenceGA(Solver):
 
     def __init__(self, production_environment : ProductionEnvironment, encoder : Encoder = None):
@@ -194,63 +195,62 @@ class TimeWindowSequenceGA(Solver):
             if n < probabilities[i]:
                 return self.population[i]
         return self.population[-1]
+    
+    def is_feasible(self, values):
+        workstations = list(self.production_environment.get_workstation_list())
+        starter_indices = [0] * len(workstations)
+        for i in range(len(workstations)):
+            min = float('inf')
+            for j in range(0, len(values), 4):
+                if values[j] == workstations[i].id:
+                    if min == float('inf') or values[j+1] < values[min+1]:
+                        min = j
+            starter_indices[i] = min
+        open_list = []
+        edges = []
+        for index in starter_indices:
+            if index != float('inf'):
+                job_index = int(index/4)
+                if job_index == 0 or self.jobs[job_index].order.id != self.jobs[job_index-1].order.id and index not in open_list:
+                    open_list.append(index)
+        closed_list = []
+        feasible = False
+        if len(open_list) > 0:
+            feasible = True
+            while len(open_list) > 0:
+                current = open_list.pop(0)
+                # add current node to closed list
+                closed_list.append(current)
+                job_index = int(current/4)
+                if job_index < len(self.jobs)-1 and self.jobs[job_index].order.id == self.jobs[job_index+1].order.id:
+                    # a follow up operation exists
+                    edges.append((job_index, job_index+1))
+                    if current+4 not in closed_list:
+                        if current+4 not in open_list:
+                            #open_list.insert(0, current+4) #DFS
+                            open_list.append(current+4) #BFS
+
+                # find smallest sequence number bigger than current's sequence number on the same workstation
+                min = float('inf')
+                for i in range(0, len(values), 4):
+                    if i != current and (values[current] == values[i] and values[i+1] > values[current+1] and (min == float('inf') or values[i+1] < values[min+1])):
+                        min = i
+                if min != float('inf'):
+                    edges.append((job_index, int(min/4)))
+                    if min not in closed_list:
+                        if min not in open_list:
+                            #open_list.insert(0, min) #DFS
+                            open_list.append(min) #BFS
+
+        graph = igraph.Graph(directed=True, n=len(self.jobs), edges=edges)
+        return feasible and graph.is_acyclic()
 
     def evaluate(self, solution : list[int]):
         if str(solution) in self.memory:
             self.memory_access += 1
             return self.memory[str(solution)][0] # NOTE: just use the first values for now
-        feasible = True # TODO 
-        # check for circular dependencies
-        # collect all starting operations for each workstation
-        workstations = [x.id for x in self.production_environment.get_workstation_list()]
-        starter_indices = [0] * len(workstations)
-        for i in range(len(workstations)):
-            min = float('inf')
-            for j in range(0, len(solution), 4):
-                if solution[j] == workstations[i]:
-                    if min == float('inf') or solution[j+1] < solution[min+1]:
-                        min = j
-            starter_indices[i] = min
-        # add all starting operations with no incoming dependency to the open list
-        open_list = []
-        for index in starter_indices:
-            if index != float('inf'):
-                job_index = int(index/4)
-                if job_index == 0 or self.jobs[job_index] != self.jobs[job_index-1] and index not in open_list:
-                    open_list.append(index)
-        if len(open_list) == 0:
-            feasible = False
-        closed_list = []
-        encountered_dict : dict[int, int] = dict()
-        for i in range(0, len(solution), 4):
-            encountered_dict[i] = 0
-        for i in open_list:
-            encountered_dict[i] += 1
-        while feasible and len(open_list) > 0:
-            current = open_list.pop(0)
-            # add current node to closed list
-            closed_list.append(current)
-            job_index = int(current/4)
-            if job_index < len(self.jobs)-1 and self.jobs[job_index] == self.jobs[job_index+1]:
-                # a follow up operation exists
-                if current+4 not in closed_list:
-                    if current+4 not in open_list:
-                        open_list.insert(0, current+4)
-                    encountered_dict[current+4] += 1
-            # find smallest sequence number bigger than current's sequence number on the same workstation
-            min = float('inf')
-            for i in range(0, len(solution), 4):
-                if i != current and (min == float('inf') or solution[current] == solution[i] and solution[i+1] > solution[current+1] and solution[i+1] < solution[min+1]):
-                    min = i
-            if min != float('inf'):
-                if min not in closed_list:
-                    if min not in open_list:
-                        open_list.insert(0, min) #BFS
-                        #open_list.append(min) #DFS
-                    encountered_dict[min] += 1
-            feasible = not any([x > 2 for x in encountered_dict.values()])             
-        # search all with next start sequence, add to openlist, until next start sequence > max sequence value
-        # if any new node already in closed list (or open list?) -> cycle found
+        feasible = self.is_feasible(solution)
+        #feasible = True
         if self.allow_overlap:
             pass
         else:
@@ -403,15 +403,15 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = TimeWindowSequenceEncoder()
-source = '4_ChambersBarnes'
-benchmark_id = 6
+source = '6_Fattahi'
+benchmark_id = 20
 production_environment : ProductionEnvironment = FJSSPInstancesTranslator().translate(source, benchmark_id)
 orders = generate_one_order_per_recipe(production_environment)
 solver = TimeWindowSequenceGA(production_environment, encoder)
 values, jobs = encoder.encode(production_environment, orders)
 solver.initialize(jobs)
 
-solver.max_generations = 500
+solver.max_generations = 10000
 solver.add_objective(Makespan())
 population_size = 50
 offspring_amount = 100
@@ -420,9 +420,9 @@ solver.mutate_workers = False
 solver.mutate_duration = False
 solver.allow_overlap = False
 solver.split_genes = True
-solver.elitism = False
+solver.elitism = True
 solver.include_random_individuals = 0#population_size / 10
-solver.replace_duplicates = True
+solver.replace_duplicates = False
 solver.tournament_size = population_size / 8
 
 solver.run(population_size, offspring_amount)
@@ -452,7 +452,6 @@ evaluator.add_objective(Profit())
 evaluator.add_objective(UnfulfilledOrders())
 objective_values = evaluator.evaluate(schedule, jobs)
 parameters = f'max_generations:{solver.max_generations},population_size:{population_size},offspring_amount:{offspring_amount}'
-
 
 from result_writer import write_result
 write_result(schedule, f'{source}_{benchmark_id}', solver.name, objective_values, parameters, result)

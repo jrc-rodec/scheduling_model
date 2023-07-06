@@ -358,9 +358,13 @@ class Schedule(Entitiy):
         return None
     
     def add_assignment(self, workstation : Workstation, job : Job, start_time : int, end_time : int, resources : list[tuple]) -> None:
-        if str(workstation.id) not in self.assignments:
-            self.assignments[str(workstation.id)] = []
-        self.assignments[str(workstation.id)].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
+        if isinstance(workstation, int):
+            w = str(workstation)
+        else:
+            w = str(workstation.id)
+        if w not in self.assignments:
+            self.assignments[w] = []
+        self.assignments[w].append(Assignment(job=job, start_time=start_time, end_time=end_time, resources=resources))
         pass
 
     def get_assignments_for_order_recipe(self, job : Job) -> list[Assignment]:
@@ -601,6 +605,8 @@ class ProductionEnvironment:
         return self.schedules.get(str(id))
     
     def get_order(self, id : str) -> Order:
+        if isinstance(self.orders, list):
+            return self.orders[int(id)]
         return self.orders.get(str(id))
     
     def get_setup_group(self, id : str) -> SetupGroup:
