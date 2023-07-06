@@ -155,7 +155,9 @@ class GA:
                 # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
                 offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
                 min_start_job = end_times[start_index-1]
-            use_gap = None
+            end_times[start_index] = end_on_workstations[workstation]+duration+offset
+            end_on_workstations[workstation] = end_times[start_index]
+            """use_gap = None
             for gap in gaps_on_workstations[workstation]:
                 if gap[0] >= min_start_job and gap[1] - gap[0] >= duration:
                     # found a gap
@@ -176,7 +178,7 @@ class GA:
                     gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) # register the created gap on the workstation
                 end_times[start_index] = end_on_workstations[workstation]+duration+offset
                 end_on_workstations[workstation] = end_times[start_index]
-            gaps_on_workstations[workstation].sort(key=lambda x: x[0]) # NOTE: slow
+            gaps_on_workstations[workstation].sort(key=lambda x: x[0]) # NOTE: slow"""
         individual.fitness = max(end_times)
 
 
@@ -293,8 +295,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '4_ChambersBarnes'
-instance = 6
+source = '6_Fattahi'
+instance = 10
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
