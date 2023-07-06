@@ -155,14 +155,15 @@ class GA:
                 # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
                 offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
                 min_start_job = end_times[start_index-1]
-            end_times[start_index] = end_on_workstations[workstation]+duration+offset
-            end_on_workstations[workstation] = end_times[start_index]
-            """use_gap = None
+            end_times[start_index] = end_on_workstations[workstation]+duration+offset # NOTE: wouldn't be here
+            end_on_workstations[workstation] = end_times[start_index] # NOTE: wouldn't be here
+            use_gap = None
             for gap in gaps_on_workstations[workstation]:
-                if gap[0] >= min_start_job and gap[1] - gap[0] >= duration:
+                if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
                     # found a gap
                     use_gap = gap
                     break
+            """
             if use_gap:
                 # should not have any impact on the end time
                 # however, check for new, smaller gap
@@ -175,10 +176,21 @@ class GA:
                         gaps_on_workstations[workstation].remove(use_gap) # no new gap, just remove the gap from the list
             else:
                 if offset > 0:
-                    gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) # register the created gap on the workstation
+                    # register the created gap on the workstation, insert sorted
+                    insert_at = 0
+                    found = False
+                    for i in range(len(gaps_on_workstations[workstation])):
+                        if gaps_on_workstations[workstation][i][0] < end_on_workstations[workstation]:
+                            insert_at = i
+                            found = True
+                            break
+                    if found:
+                        gaps_on_workstations[workstation].insert(insert_at, (end_on_workstations[workstation], end_on_workstations[workstation]+offset))
+                    else:
+                        gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) 
                 end_times[start_index] = end_on_workstations[workstation]+duration+offset
                 end_on_workstations[workstation] = end_times[start_index]
-            gaps_on_workstations[workstation].sort(key=lambda x: x[0]) # NOTE: slow"""
+            """
         individual.fitness = max(end_times)
 
 
