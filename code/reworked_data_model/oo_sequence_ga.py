@@ -3,7 +3,7 @@ import time
 
 class Individual:
     
-    required_operations :list[int] = []
+    required_operations : list[int] = []
     available_workstations : list[list[int]] = []
     available_workers : list[list[int]] = []
     base_durations : list[list[int]] = [] # NOTE: if 0, operation can't be processed on workstation
@@ -89,7 +89,7 @@ class Individual:
 class GA:
 
     def __init__(self, jobs : list[int], workstations_per_operation : list[list[int]], base_durations : list[list[int]]):
-        Individual.required_operations = jobs # TODO
+        Individual.required_operations = jobs
         Individual.available_workstations = workstations_per_operation
         Individual.base_durations = base_durations
 
@@ -221,7 +221,7 @@ class GA:
         average_population_history.append(generation_average/len(current_population))
         p_history.append(p)
         
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, elitism : bool = False, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, output_interval : int = 100):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : bool = False, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, output_interval : int = 100):
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
@@ -236,33 +236,29 @@ class GA:
             population.append(individual)
         generation = 0
         starting_p = p = 1 / (len(current_best.sequence) + len(current_best.workstations)) # mutation probability
-        starting_tourament_size = tournament_size
         start_time = time.time()
         gen_stop = (max_generations and generation >= max_generations)
         time_stop = (run_for and False)
         fitness_stop = (stop_at and current_best.fitness <= stop_at)
         stop = gen_stop or time_stop or fitness_stop
+        last_update = 0
         while not stop:
         #for i in range(max_generations):
             self._update_history(overall_best_history, generation_best_history, average_population_history, p_history, current_best, population, p)
             if generation % output_interval == 0:
-                print(f'Generation {generation}: Overall Best: {overall_best_history[-1]}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]}')
+                print(f'Generation {generation}: Overall Best: {overall_best_history[-1]}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]} - Current Runtime: {time.time() - start_time}s')
             offsprings = []
             # recombine and mutate, evaluate
             # check if mutation probability should be adjusted
-            if adjust_parameters and generation > 0 and generation % 100 == 0:
-                if sum(overall_best_history[generation - 100:generation])/100 == overall_best_history[-1]:
-                    p = min(p*2, 0.4)
-                    if tournament_size:
-                        tournament_size = max(2, int(tournament_size/2))
-                        #print(f'Lowered tournament size to {tournament_size}')
-                    #print(f'Raised p to {p}')
+            if adjust_parameters and generation > 0 and generation - last_update >= update_interval:
+                # TODO: add progress rate and update interval as parameter
+                last_update = generation
+                if sum(overall_best_history[generation - update_interval:generation])/update_interval == overall_best_history[-1]:
+                    p = min(p*p_increase_rate, max_p)
                 else:
-                    p = max(starting_p, p/4)
-                    if tournament_size:
-                        tournament_size = min(starting_tourament_size, tournament_size*2)
-                        #print(f'Reset tournament size to {tournament_size}')
-                    #print(f'Lowered p to {p}')
+                    # should never happen anyway since parameters are adjusted in case of new overall best
+                    p = starting_p
+                    #p = max(starting_p, p/4)
             for j in range(0, offspring_amount, 2):
                 if selection == 'roulette_wheel':
                     parent_a = self.roulette_wheel_selection(population)
@@ -298,9 +294,9 @@ class GA:
                 if population[0].fitness < current_best.fitness:
                     current_best = population[0]
                     if adjust_parameters:
-                        p = max(starting_p, p/4)
-                        if tournament_size:
-                            tournament_size = min(starting_tourament_size, tournament_size*2)
+                        last_update = generation
+                        p = starting_p
+                        #p = max(starting_p, p/4)
             generation += 1
             gen_stop = (max_generations and generation >= max_generations)
             time_stop = (run_for and time.time() - start_time >= run_for)
@@ -347,8 +343,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '6_Fattahi'
-instance = 18
+source = '4_ChambersBarnes'
+instance = 6
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -359,18 +355,23 @@ population_size = 50
 offspring_amount = 75
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
-max_generations = None
+max_generations = 20000
 run_for = 600 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
+
 elitism = False
 allow_duplicate_parents = False
 fill_gaps = True
 adjust_parameters = True
-selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
-tournament_size = None#int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
+update_interval = 50 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
+p_increase_rate = 1.05 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
+max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
+selection = 'tournament' # 'roulette_wheel' or 'tournament'
+tournament_size = int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
 random_individual_per_generation_amount = 0#int(population_size / 10)
 output_interval = 100#max_generations/20
-result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, output_interval=output_interval)
+
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, output_interval=output_interval)
 print(result)
 
 schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)
@@ -383,16 +384,21 @@ generation_history = history[1]
 average_history = history[2]
 labels = ['Overall Best', 'Generation Best', 'Average']
 
-
-plt.plot(best_history)
-#plt.scatter(range(max_generations), generation_history, s=5, marker='s', color='g')
-plt.plot(generation_history, c='g', linewidth=0.5)
-#plt.scatter(range(max_generations), average_history, s=1, marker='^', color='r')
-plt.plot(average_history, c='r', linewidth=0.1)
 if adjust_parameters:
-    #NOTE: put into own plot
+    fig, axs = plt.subplots(2)
+else:
+    fig, ax = plt.subplots(1)
+    axs = [ax]
+
+axs[0].set_title('Fitness History')
+axs[0].plot(best_history)
+axs[0].plot(generation_history, c='g', linewidth=0.1)
+axs[0].plot(average_history, c='r', linewidth=0.1)
+axs[0].legend(labels)
+
+if adjust_parameters:
     p_history = history[3]
-    labels.append('Mutation Probability')
-    plt.plot(p_history, c='m', linewidth=1.0)
-plt.legend(labels)
+    axs[1].set_title('Mutation Probability History')
+    axs[1].plot(p_history, c='m', linewidth=1.0)
+    axs[1].legend(['Mutation Probability'])
 plt.show()
