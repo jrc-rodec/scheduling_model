@@ -8,7 +8,12 @@ class Individual:
     available_workers : list[list[int]] = []
     base_durations : list[list[int]] = [] # NOTE: if 0, operation can't be processed on workstation
 
-    def __init__(self, parent_a = None, parent_b = None, parent_split : list[int] = None):
+    # required for initialization with dissimilarity function
+    initialization_attempts = 100
+    distance_adjustment_rate = 0.75
+    min_distance_success = []
+
+    def __init__(self, parent_a = None, parent_b = None, parent_split : list[int] = None, population : list = None):
         self.fitness = float('inf')
         self.workers = [0] * len(Individual.required_operations)
         if parent_a and parent_b:
@@ -53,6 +58,24 @@ class Individual:
                 self.workers = parent_b.workers.copy()
                 self.durations = parent_b.durations.copy()
                 self.fitness = parent_b.fitness
+        elif population and len(population) > 0:
+            self.sequence : list[int] = Individual.required_operations.copy()
+            dissimilarity = float('inf')
+            min_distance = self._get_max_dissimilarity()
+            attempts = 0
+            while dissimilarity == float('inf') or dissimilarity < min_distance:
+                if attempts > Individual.initialization_attempts:
+                    min_distance = int(min_distance * Individual.distance_adjustment_rate)
+                random.shuffle(self.sequence)
+                self.workstations = [random.choice(x) for x in Individual.available_workstations]
+                for other in population:
+                    dissimilarity = min(self.get_dissimilarity(other), dissimilarity)
+                attempts += 1
+            self.workers : list[int] = [0] * len(self.sequence) # NOTE: not in use
+            self.durations : list[int] = [] # NOTE: not in use
+            for i in range(len(self.workstations)):
+                self.durations.append(Individual.base_durations[i][self.workstations[i]])
+            Individual.min_distance_success.append(min_distance)
         else:
             # randomize
             self.sequence : list[int] = []
@@ -83,6 +106,31 @@ class Individual:
                     self.workstations[i] = random.choice([x for x in self.available_workstations[i] if x != self.workstations[i]])
                     self.durations[i] = (Individual.base_durations[i][self.workstations[i]])
     
+    def _get_max_dissimilarity(self):
+        return len(self.sequence) + sum([len(x) for x in Individual.available_workstations])
+
+    def get_dissimilarity(self, other):
+        dissimilarity = 0
+        
+        for i in range(len(self.sequence)):
+            if self.workstations[i] != other.workstations[i]:
+                dissimilarity += len(Individual.available_workstations[i])
+                
+            if self.sequence[i] != other.sequence[i]:
+                dissimilarity += 1
+        return dissimilarity
+
+    def __eq__(self, other):
+        for i in range(self.sequence):
+            if self.sequence[i] != other.sequence[i]:
+                return False
+        for i in range(self.workstations):
+            if self.workstations[i] != other.workstations[i]:
+                return False
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __str__(self):
         return f'Fitness: {self.fitness} | Sequence: {self.sequence} | Workstation Assignments: {self.workstations} | Workers: {self.workers} | Durations: {self.durations}'
 
@@ -221,7 +269,7 @@ class GA:
         average_population_history.append(generation_average/len(current_population))
         p_history.append(p)
         
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : bool = False, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, output_interval : int = 100):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : bool = False, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100):
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
@@ -229,11 +277,16 @@ class GA:
         p_history : list[float] = []
         current_best : Individual = None
         for _ in range(population_size):
-            individual = Individual()
+            if random_initialization:
+                individual = Individual()
+            else:
+                individual = Individual(population=population)
             self.evaluate(individual, fill_gaps)
             if not current_best or individual.fitness < current_best.fitness:
                 current_best = individual
             population.append(individual)
+        print(Individual.min_distance_success)
+        print(population[0]._get_max_dissimilarity())
         generation = 0
         starting_p = p = 1 / (len(current_best.sequence) + len(current_best.workstations)) # mutation probability
         start_time = time.time()
@@ -288,7 +341,10 @@ class GA:
                         self._insert_individual(individual, selection_pool) # insert sorted
                 population = selection_pool[:population_size - random_individuals]
                 while len(population) < population_size:
-                    random_individual = Individual()
+                    if random_initialization:
+                        random_individual = Individual()
+                    else:
+                        random_individual = Individual(population=population)
                     self.evaluate(random_individual, fill_gaps)
                     population.append(random_individual)
                 if population[0].fitness < current_best.fitness:
@@ -343,35 +399,36 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '4_ChambersBarnes'
-instance = 6
+source = '6_Fattahi'
+instance = 20
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 50
-offspring_amount = 75
+population_size = 100
+offspring_amount = 150
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
 max_generations = 20000
 run_for = 600 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
 
-elitism = False
+elitism = True
 allow_duplicate_parents = False
 fill_gaps = True
+random_initialization = False # False = use dissimilarity function
 adjust_parameters = True
-update_interval = 50 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
-p_increase_rate = 1.05 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
+update_interval = 500 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
+p_increase_rate = 1.2 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
-selection = 'tournament' # 'roulette_wheel' or 'tournament'
+selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
 tournament_size = int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
-random_individual_per_generation_amount = 0#int(population_size / 10)
-output_interval = 100#max_generations/20
+random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation
+output_interval = 100#max_generations/20 # frequency of terminal output (per generations)
 
-result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, output_interval=output_interval)
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
 print(result)
 
 schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)
