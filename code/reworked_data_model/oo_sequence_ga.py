@@ -121,10 +121,10 @@ class Individual:
         return dissimilarity
 
     def __eq__(self, other):
-        for i in range(self.sequence):
+        for i in range(len(self.sequence)):
             if self.sequence[i] != other.sequence[i]:
                 return False
-        for i in range(self.workstations):
+        for i in range(len(self.workstations)):
             if self.workstations[i] != other.workstations[i]:
                 return False
     
@@ -334,25 +334,25 @@ class GA:
                     offspring_b.mutate(p)
                     self.evaluate(offspring_b, fill_gaps)
                     self._insert_individual(offspring_b, offsprings)
-                selection_pool = []
-                selection_pool.extend(offsprings) # already sorted
-                if elitism:
-                    for individual in population:
-                        self._insert_individual(individual, selection_pool) # insert sorted
-                population = selection_pool[:population_size - random_individuals]
-                while len(population) < population_size:
-                    if random_initialization:
-                        random_individual = Individual()
-                    else:
-                        random_individual = Individual(population=population)
-                    self.evaluate(random_individual, fill_gaps)
-                    population.append(random_individual)
-                if population[0].fitness < current_best.fitness:
-                    current_best = population[0]
-                    if adjust_parameters:
-                        last_update = generation
-                        p = starting_p
-                        #p = max(starting_p, p/4)
+            selection_pool = []
+            selection_pool.extend(offsprings) # already sorted
+            if elitism:
+                for individual in population:
+                    self._insert_individual(individual, selection_pool) # insert sorted
+            population = selection_pool[:population_size - random_individuals]
+            while len(population) < population_size:
+                if random_initialization:
+                    random_individual = Individual()
+                else:
+                    random_individual = Individual(population=population)
+                self.evaluate(random_individual, fill_gaps)
+                population.append(random_individual)
+            if population[0].fitness < current_best.fitness:
+                current_best = population[0]
+                if adjust_parameters:
+                    last_update = generation
+                    p = starting_p
+                    #p = max(starting_p, p/4)
             generation += 1
             gen_stop = (max_generations and generation >= max_generations)
             time_stop = (run_for and time.time() - start_time >= run_for)
@@ -417,7 +417,7 @@ stop_at = None # target fitness
 
 elitism = True
 allow_duplicate_parents = False
-fill_gaps = True
+fill_gaps = False
 random_initialization = False # False = use dissimilarity function
 adjust_parameters = True
 update_interval = 500 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
