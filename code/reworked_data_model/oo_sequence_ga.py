@@ -411,19 +411,19 @@ population_size = 100
 offspring_amount = 150
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
-max_generations = 20000
+max_generations = 30000
 run_for = 600 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
 
 elitism = True
 allow_duplicate_parents = False
-fill_gaps = False
+fill_gaps = True
 random_initialization = False # False = use dissimilarity function
-adjust_parameters = True
-update_interval = 500 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
+adjust_parameters = False
+update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.2 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
-selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
+selection = 'tournament' # 'roulette_wheel' or 'tournament'
 tournament_size = int(population_size / 10) # NOTE: only relevant if selection = 'tournament'
 random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation
 output_interval = 100#max_generations/20 # frequency of terminal output (per generations)
@@ -459,3 +459,6 @@ if adjust_parameters:
     axs[1].plot(p_history, c='m', linewidth=1.0)
     axs[1].legend(['Mutation Probability'])
 plt.show()
+
+from visualization import visualizer_for_schedule
+visualizer_for_schedule(schedule, job_operations)
