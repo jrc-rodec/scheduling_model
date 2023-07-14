@@ -140,6 +140,10 @@ class GA:
         Individual.required_operations = jobs
         Individual.available_workstations = workstations_per_operation
         Individual.base_durations = base_durations
+        self.jobs = []
+        for x in jobs:
+            if x not in self.jobs:
+                self.jobs.append(x)
 
     def recombine(self, parent_a : Individual, parent_b : Individual) -> tuple[Individual, Individual]:
         jobs = []
@@ -175,11 +179,12 @@ class GA:
         return population[winner]
 
     def evaluate(self, individual : Individual, fill_gaps : bool = False) -> None:
-        jobs = []
+        """jobs = []
         for x in Individual.required_operations:
             if x not in jobs:
                 jobs.append(x)
-        next_operations = [0] * len(jobs)
+        next_operations = [0] * len(jobs)"""
+        next_operations = [0] * len(self.jobs)
         end_on_workstations = [0] * len(Individual.base_durations[0])
         end_times = [-1] * len(Individual.required_operations)
         gaps_on_workstations :list[list[tuple[int, int]]]= []
