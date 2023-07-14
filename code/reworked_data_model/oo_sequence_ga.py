@@ -177,6 +177,66 @@ class GA:
         participants = random.choices(range(0, len(population)), k=tournament_size)
         winner = sorted(participants, key=lambda x: population[x].fitness)[0]
         return population[winner]
+    
+    def adjust_individual(self, individual : Individual) -> None:
+        # find gaps and change orders
+        gaps_on_workstations = []
+        for workstation in range(len(Individual.base_durations[0])):
+            gaps_on_workstations.append([])
+        next_operations = [0] * len(self.jobs)
+        end_on_workstations = [0] * len(Individual.base_durations[0])
+        end_times = [-1] * len(Individual.required_operations)
+        for i in range(len(individual.sequence)):
+            job = individual.sequence[i]
+            operation = next_operations[job]
+            start_index = 0
+            for j in range(len(Individual.required_operations)):
+                if Individual.required_operations[j] == job:
+                    start_index = j
+                    break
+                start_index = j
+            start_index += operation
+            next_operations[job] += 1
+            workstation = individual.workstations[start_index]
+            duration = individual.durations[start_index]
+            offset = 0
+            min_start_job = 0
+            if operation > 0:
+                offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
+                min_start_job = end_times[start_index-1]
+
+                
+            use_gap = None
+            for gap in gaps_on_workstations[workstation]:
+                if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
+                    use_gap = gap
+                    # TODO: find index of operation to swap with
+                    break
+            if use_gap:
+                index = gaps_on_workstations[workstation].index(use_gap)
+                if len(gaps_on_workstations[workstation]) > index+1:
+                    if use_gap[1] + duration < gaps_on_workstations[workstation][index+1][0]:
+                        gaps_on_workstations[workstation][index] = (use_gap[1], gaps_on_workstations[workstation][index+1][0])
+                    else:
+                        gaps_on_workstations[workstation].remove(use_gap)
+                else:
+                    gaps_on_workstations[workstation].remove(use_gap)
+            else:
+                if offset > 0:
+                    insert_at = 0
+                    found = False
+                    for j in range(len(gaps_on_workstations[workstation])):
+                        if gaps_on_workstations[workstation][j][0] < end_on_workstations[workstation]:
+                            insert_at = j
+                            found = True
+                            break
+                    if found:
+                        gaps_on_workstations[workstation].insert(insert_at, (end_on_workstations[workstation], end_on_workstations[workstation]+offset))
+                    else:
+                        gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) 
+                end_times[start_index] = end_on_workstations[workstation]+duration+offset
+                end_on_workstations[workstation] = end_times[start_index]
+
 
     def evaluate(self, individual : Individual, fill_gaps : bool = False) -> None:
         """jobs = []
@@ -428,6 +488,7 @@ stop_at = None # target fitness
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
 fill_gaps = True # optimization for the schedule construction
+adjust_optimized_individuals = False # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
 adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process

@@ -35,16 +35,32 @@ class OuterGA:
         self.orders = orders
         self.durations = durations
         self.results : dict[list[int], tuple[list[int], list[float]]] = dict()
+        self.crossover = 'uniform'
 
     def recombine(self, parent_a : list[int], parent_b : list[int]):
-        # uniform crossover
-        child : list[int] = [0] * len(parent_a)
-        for i in range(len(parent_a)):
-            if random.random() < 0.5:
-                child[i] = parent_a[i]
-            else:
-                child[i] = parent_b[i]
-        return child
+        if self.crossover == 'uniform':
+            # uniform crossover
+            child : list[int] = [0] * len(parent_a)
+            for i in range(len(parent_a)):
+                if random.random() < 0.5:
+                    child[i] = parent_a[i]
+                else:
+                    child[i] = parent_b[i]
+            return child
+        elif self.crossover == 'one_point':
+            # on point crossover
+            split_point = random.randint(0, len(parent_a)-1)
+            child : list[int] = parent_a[:split_point]
+            child.extend(parent_b[split_point:])
+            return child
+        else:
+            # two point crossover
+            split_point_a = random.randint(0, len(parent_a) -2)
+            split_point_b = random.randint(split_point_a, len(parent_a)-1)
+            child : list[int] = parent_a[:split_point_a]
+            child.extend(parent_b[split_point_a:split_point_b])
+            child.extend(parent_a[split_point_b:])
+            return child
 
     def mutate(self, individual : list[int]) -> None:
         p = 1 / len(individual)
@@ -141,7 +157,7 @@ class OuterGA:
                     population.append(individual)
                     individual_fitness = self.evaluate(individual)
                     population_fitness.append(individual_fitness)
-        return population[0], self.results[str(population[0])][0], population_fitness[0]
+        return self.best, self.results[str(self.best)][0], self.results[str(self.best)][1]#population_fitness[0]
     
 class InnerGA:
 
@@ -228,7 +244,7 @@ class InnerGA:
             end_on_workstations[workstation] = end_times[start_index]
         return max(end_times)
 
-    def run(self, population_size : int = 50, offspring_amount : int = 100, generations : int = 100, tournament_size : int = 5, elitism : int = 1):
+    def run(self, population_size : int = 25, offspring_amount : int = 50, generations : int = 100, tournament_size : int = 2, elitism : int = 2):
         self.tournament_size = tournament_size
         population : list[list[int]] = []
         population_fitness : list[float] = []
@@ -318,7 +334,8 @@ production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 
 ga = OuterGA(workstations_per_operation, job_operations, base_durations)
-workstations, sequence, fitness = ga.run(len(job_operations), 50, 100, 25, elitism=True)
+ga.crossover = 'two_point' # uniform, one_point or two_point
+workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 25, elitism=True)
 
 print(workstations)
 print(sequence)
