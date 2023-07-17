@@ -14,7 +14,7 @@
 # ex.: PSO, CMA-ES
 # or: use starting time directly
 # ex.: PSO, GA, Gurobi
-
+from multiprocessing import Process, Queue
 import random
 
 class OuterHarmonySearch:
@@ -92,6 +92,30 @@ class OuterGA:
         result, fitness = inner_ga.run()
         self.results[str(individual)] = (result, fitness)
         return fitness
+    
+    def evaluate_parallel(self, individual : list[int], queue) -> None:
+        #if self.results.get(str(individual)):
+        #    return self.results[str(individual)][1] # fitness
+        inner_ga = InnerGA(individual, self.orders, self.durations) # durations could get fixed at this point
+        result, fitness = inner_ga.run()
+        #self.results[str(individual)] = (result, fitness)
+        queue.put((result, fitness))
+    
+    def evaluate_population(self, population : list[list[int]]) -> list[float]:
+        fitness = []
+        processes = []
+        for i in range(len(population)):
+            q = Queue()
+            p = Process(target=self.evaluate_parallel, args=(population[i], q))
+            processes.append((p, q))
+            p.start()
+        for i in range(len(population)):
+            result = processes[i][1].get()
+            processes[i][0].join()
+            self.results[str(population[i])] = result
+            fitness.append(result[1])
+        return fitness
+        
 
     def create_individual(self, n_genes : int) -> list[int]:
         individual : list[int] = [0] * n_genes
@@ -112,12 +136,18 @@ class OuterGA:
         population_fitness : list[list[float]] = [[float('inf')]] * population_size
         self.best : list[int] = []
         self.best_fitness : list[float] = float('inf')#[float('inf')]
-        for i in range(len(population)):
+        population_fitness = self.evaluate_population(population)
+        """for i in range(len(population)):
             fitness : list[float] = self.evaluate(population[i])
             population_fitness[i] = fitness
             if fitness < self.best_fitness:
                 self.best = population[i]
-                self.best_fitness = fitness
+                self.best_fitness = fitness"""
+        best_idx = 0
+        for i in range(len(population_fitness)):
+            if population_fitness[i] < self.best_fitness:
+                self.best = population[i]
+                self.best_fitness = population_fitness[i]
         for generation in range(generations):
             # create offsprings
             if generation%(generations/10) == 0 or True:
@@ -243,8 +273,91 @@ class InnerGA:
             end_times[start_index] = end_on_workstations[workstation]+duration+offset
             end_on_workstations[workstation] = end_times[start_index]
         return max(end_times)
+    
+    def adjust_individual(self, individual):
+        class Gap:
+            def __init__(self, start, end, before_operation):
+                self.start = start
+                self.end = end
+                self.preceeds_operation = before_operation
+        gaps : list[list[Gap]] = []
+        available_workstations = []
+        for w in self.workstations:
+            if w not in available_workstations:
+                available_workstations.append(w)
+        n_workstations = len(self.durations[0])
+        for _ in range(n_workstations):
+            gaps.append([])
+        end_times_on_workstations : list[int] = [0] * n_workstations
+        end_times_of_operations : list[int] = [0] * len(self.job_operations)
+        next_operation = [0] * len(self.jobs)
+        # build schedule
+        for i in range(len(individual)):
+            job = individual[i]
+            operation = next_operation[job]
+            operation_index = 0
+            for j in range(len(self.job_operations)):
+                if self.job_operations[j] == job:
+                    operation_index = j
+                    break
+                operation_index = j
+            operation_index += operation
+            workstation = self.workstations[operation_index]
+            next_operation[job] += 1
+            duration = self.durations[operation_index][workstation]
+            inserted : bool = False
+            for gap in gaps[workstation]:
+                if gap.end - gap.start >= duration:
+                    # found a gap, check job seqeunce
+                    if operation_index == 0 or (self.job_operations[operation_index-1] == self.job_operations[operation_index] and end_times_of_operations[operation_index-1] <= gap.end - duration): # AND pre_operation finishes before gap.end - duration
+                        # gap can be used
+                        inserted = True
+                        start = 0 if operation_index == 0 else min(gap.start, end_times_of_operations[operation_index-1])
+                        end = start + duration
+                        if gap.end - end > 0:
+                            # new gap
+                            new_gap = Gap(end, gap.end, operation_index)
+                            gaps[workstation].append(new_gap)
+                        end_times_of_operations[operation_index] = end
+                        # swap operations in sequence vector
+                        job_swap = self.job_operations[gap.preceeds_operation]
+                        swap_operation_index = 0
+                        swap_start_index = 0
+                        for j in range(len(self.job_operations)):
+                            if self.job_operations[j] == job_swap:
+                                swap_start_index = j
+                                break
+                            swap_start_index = j
+                        swap_operation_index = gap.preceeds_operation - swap_start_index
+                        count = 0
+                        swap_individual_index = 0
+                        for j in range(len(individual)):
+                            if individual[j] == job_swap:
+                                if count == swap_operation_index:
+                                    swap_individual_index = j
+                                    break
+                                count += 1
+                                swap_individual_index = j
+                        tmp = individual[swap_individual_index]
+                        individual[swap_individual_index] = individual[i]
+                        individual[i] = tmp
+                        # remove old gap
+                        gaps[workstation].remove(gap)
+                        # done
+                        break
+            if not inserted:
+                job_min_start = 0
+                if operation_index != 0 and self.job_operations[operation_index-1] == self.job_operations[operation_index]:
+                    job_min_start = end_times_of_operations[operation_index-1]
+                if job_min_start > end_times_on_workstations[workstation]:
+                    # new gap
+                    gaps[workstation].append(Gap(job_min_start, job_min_start + duration, operation_index))
+                    end_times_on_workstations[workstation] = job_min_start + duration
+                else:
+                    end_times_on_workstations[workstation] += duration
+                end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
-    def run(self, population_size : int = 25, offspring_amount : int = 50, generations : int = 100, tournament_size : int = 2, elitism : int = 2):
+    def run(self, population_size : int = 10, offspring_amount : int = 20, generations : int = 100, tournament_size : int = 2, elitism : int = 2, fill_gaps : bool = True):
         self.tournament_size = tournament_size
         population : list[list[int]] = []
         population_fitness : list[float] = []
@@ -253,6 +366,8 @@ class InnerGA:
         for _ in range(population_size):
             individual = self.job_operations.copy()
             random.shuffle(individual)
+            if fill_gaps:
+                self.adjust_individual(individual)
             fitness = self.evaluate(individual)
             population.append(individual)
             population_fitness.append(fitness)
@@ -268,6 +383,9 @@ class InnerGA:
                 while (parent_a == parent_b):
                     parent_b = self.select(population, population_fitness)
                 offspring_a, offspring_b = self.recombine(parent_a, parent_b)
+                self.mutate(offspring_a)
+                if fill_gaps:
+                    self.adjust_individual(offspring_a)
                 offsprings.append(offspring_a)
                 fitness = self.evaluate(offspring_a)
                 if fitness < overall_best_fitness:
@@ -275,6 +393,9 @@ class InnerGA:
                     overall_best = offspring_a
                 offspring_fitness.append(fitness)
                 if len(offsprings) < offspring_amount:
+                    self.mutate(offspring_b)
+                    if fill_gaps:
+                        self.adjust_individual(offspring_b)
                     offsprings.append(offspring_b)
                     fitness = self.evaluate(offspring_b)
                     if fitness < overall_best_fitness:
@@ -313,65 +434,65 @@ class InnerAISA:
 class InnerGurobi:
     
         pass
+if __name__ == '__main__':
+    from translation import SequenceGAEncoder, FJSSPInstancesTranslator
+    from evaluation import Makespan
+    from visualization import visualize_schedule
+    from model import Order, ProductionEnvironment
+    def generate_one_order_per_recipe(production_environment : ProductionEnvironment) -> list[Order]:
+        orders : list[Order] = []
+        for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
+            orders.append(Order(delivery_time=1000, latest_acceptable_time=1000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
+        return orders
 
-from translation import SequenceGAEncoder, FJSSPInstancesTranslator
-from evaluation import Makespan
-from visualization import visualize_schedule
-from model import Order, ProductionEnvironment
-def generate_one_order_per_recipe(production_environment : ProductionEnvironment) -> list[Order]:
-    orders : list[Order] = []
-    for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
-        orders.append(Order(delivery_time=1000, latest_acceptable_time=1000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
-    return orders
 
+    encoder = SequenceGAEncoder()
+    source = '6_Fattahi'
+    instance = 20 # 20 -> aim for < 1276
+    production_environment = FJSSPInstancesTranslator().translate(source, instance)
+    orders = generate_one_order_per_recipe(production_environment)
+    production_environment.orders = orders
+    workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 
-encoder = SequenceGAEncoder()
-source = '6_Fattahi'
-instance = 20 # 20 -> aim for < 1276
-production_environment = FJSSPInstancesTranslator().translate(source, instance)
-orders = generate_one_order_per_recipe(production_environment)
-production_environment.orders = orders
-workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
+    ga = OuterGA(workstations_per_operation, job_operations, base_durations)
+    ga.crossover = 'two_point' # uniform, one_point or two_point
+    workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 25, elitism=True)
 
-ga = OuterGA(workstations_per_operation, job_operations, base_durations)
-ga.crossover = 'two_point' # uniform, one_point or two_point
-workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 25, elitism=True)
+    print(workstations)
+    print(sequence)
+    print(fitness)
 
-print(workstations)
-print(sequence)
-print(fitness)
+    durations = []
+    for i in range(len(job_operations)):
+        durations.append(base_durations[i][workstations[i]])
+    schedule = encoder.decode(sequence, workstations, [], durations, job_operations, production_environment, False)
 
-durations = []
-for i in range(len(job_operations)):
-    durations.append(base_durations[i][workstations[i]])
-schedule = encoder.decode(sequence, workstations, [], durations, job_operations, production_environment, False)
+    visualize_schedule(schedule, production_environment, orders)
 
-visualize_schedule(schedule, production_environment, orders)
+    """import matplotlib.pyplot as plt
+    best_history = history[0]
+    generation_history = history[1]
+    average_history = history[2]
+    labels = ['Overall Best', 'Generation Best', 'Average']
 
-"""import matplotlib.pyplot as plt
-best_history = history[0]
-generation_history = history[1]
-average_history = history[2]
-labels = ['Overall Best', 'Generation Best', 'Average']
+    if adjust_parameters:
+        fig, axs = plt.subplots(2)
+    else:
+        fig, ax = plt.subplots(1)
+        axs = [ax]
 
-if adjust_parameters:
-    fig, axs = plt.subplots(2)
-else:
-    fig, ax = plt.subplots(1)
-    axs = [ax]
+    axs[0].set_title('Fitness History')
+    axs[0].plot(best_history)
+    axs[0].plot(generation_history, c='g', linewidth=0.1)
+    axs[0].plot(average_history, c='r', linewidth=0.1)
+    axs[0].legend(labels)
 
-axs[0].set_title('Fitness History')
-axs[0].plot(best_history)
-axs[0].plot(generation_history, c='g', linewidth=0.1)
-axs[0].plot(average_history, c='r', linewidth=0.1)
-axs[0].legend(labels)
+    if adjust_parameters:
+        p_history = history[3]
+        axs[1].set_title('Mutation Probability History')
+        axs[1].plot(p_history, c='m', linewidth=1.0)
+        axs[1].legend(['Mutation Probability'])
+    plt.show()"""
 
-if adjust_parameters:
-    p_history = history[3]
-    axs[1].set_title('Mutation Probability History')
-    axs[1].plot(p_history, c='m', linewidth=1.0)
-    axs[1].legend(['Mutation Probability'])
-plt.show()"""
-
-from visualization import visualizer_for_schedule
-visualizer_for_schedule(schedule, job_operations)
+    from visualization import visualizer_for_schedule
+    visualizer_for_schedule(schedule, job_operations)
