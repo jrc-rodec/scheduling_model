@@ -143,7 +143,6 @@ class OuterGA:
             if fitness < self.best_fitness:
                 self.best = population[i]
                 self.best_fitness = fitness"""
-        best_idx = 0
         for i in range(len(population_fitness)):
             if population_fitness[i] < self.best_fitness:
                 self.best = population[i]
@@ -165,9 +164,10 @@ class OuterGA:
                 self.mutate(offspring)
                 offsprings.append(offspring)
                 # evaluate offsprings
-                offspring_fitness : list[float] = self.evaluate(offspring)
-                offsprings_fitness.append(offspring_fitness)
+                #offspring_fitness : list[float] = self.evaluate(offspring)
+                #offsprings_fitness.append(offspring_fitness)
             # select new population
+            offsprings_fitness = self.evaluate_population(offsprings)
             selection_pool : list[tuple[list[int], list[float]]] = []
             selection_pool.extend(zip(offsprings, offsprings_fitness))
             if elitism:
@@ -357,7 +357,7 @@ class InnerGA:
                     end_times_on_workstations[workstation] += duration
                 end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
-    def run(self, population_size : int = 10, offspring_amount : int = 20, generations : int = 100, tournament_size : int = 2, elitism : int = 2, fill_gaps : bool = True):
+    def run(self, population_size : int = 25, offspring_amount : int = 50, generations : int = 100, tournament_size : int = 2, elitism : int = 2, fill_gaps : bool = True):
         self.tournament_size = tournament_size
         population : list[list[int]] = []
         population_fitness : list[float] = []
@@ -456,7 +456,7 @@ if __name__ == '__main__':
 
     ga = OuterGA(workstations_per_operation, job_operations, base_durations)
     ga.crossover = 'two_point' # uniform, one_point or two_point
-    workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 25, elitism=True)
+    workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 50, elitism=True)
 
     print(workstations)
     print(sequence)
