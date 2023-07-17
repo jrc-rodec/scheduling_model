@@ -178,65 +178,88 @@ class GA:
         winner = sorted(participants, key=lambda x: population[x].fitness)[0]
         return population[winner]
     
-    def adjust_individual(self, individual : Individual) -> None:
-        # find gaps and change orders
-        gaps_on_workstations = []
-        for workstation in range(len(Individual.base_durations[0])):
-            gaps_on_workstations.append([])
-        next_operations = [0] * len(self.jobs)
-        end_on_workstations = [0] * len(Individual.base_durations[0])
-        end_times = [-1] * len(Individual.required_operations)
+    def adjust_individual(self, individual : Individual):
+        class Gap:
+            def __init__(self, start, end, before_operation):
+                self.start = start
+                self.end = end
+                self.preceeds_operation = before_operation
+        gaps : list[list[Gap]] = []
+        available_workstations = []
+        n_workstations = len(Individual.base_durations[0])
+        for w in range(n_workstations):
+            if w not in available_workstations:
+                available_workstations.append(w)
+        for _ in range(n_workstations):
+            gaps.append([])
+        end_times_on_workstations : list[int] = [0] * n_workstations
+        end_times_of_operations : list[int] = [0] * len(Individual.required_operations)
+        next_operation = [0] * len(self.jobs)
+        # build schedule
         for i in range(len(individual.sequence)):
             job = individual.sequence[i]
-            operation = next_operations[job]
-            start_index = 0
+            operation = next_operation[job]
+            operation_index = 0
             for j in range(len(Individual.required_operations)):
                 if Individual.required_operations[j] == job:
-                    start_index = j
+                    operation_index = j
                     break
-                start_index = j
-            start_index += operation
-            next_operations[job] += 1
-            workstation = individual.workstations[start_index]
-            duration = individual.durations[start_index]
-            offset = 0
-            min_start_job = 0
-            if operation > 0:
-                offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
-                min_start_job = end_times[start_index-1]
-
-                
-            use_gap = None
-            for gap in gaps_on_workstations[workstation]:
-                if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
-                    use_gap = gap
-                    # TODO: find index of operation to swap with
-                    break
-            if use_gap:
-                index = gaps_on_workstations[workstation].index(use_gap)
-                if len(gaps_on_workstations[workstation]) > index+1:
-                    if use_gap[1] + duration < gaps_on_workstations[workstation][index+1][0]:
-                        gaps_on_workstations[workstation][index] = (use_gap[1], gaps_on_workstations[workstation][index+1][0])
-                    else:
-                        gaps_on_workstations[workstation].remove(use_gap)
+                operation_index = j
+            operation_index += operation
+            workstation = individual.workstations[operation_index]
+            next_operation[job] += 1
+            duration = individual.durations[operation_index]
+            inserted : bool = False
+            for gap in gaps[workstation]:
+                if gap.end - gap.start >= duration:
+                    # found a gap, check job seqeunce
+                    if operation_index == 0 or (Individual.required_operations[operation_index-1] == Individual.required_operations[operation_index] and end_times_of_operations[operation_index-1] <= gap.end - duration): # AND pre_operation finishes before gap.end - duration
+                        # gap can be used
+                        inserted = True
+                        start = 0 if operation_index == 0 else min(gap.start, end_times_of_operations[operation_index-1])
+                        end = start + duration
+                        if gap.end - end > 0:
+                            # new gap
+                            new_gap = Gap(end, gap.end, operation_index)
+                            gaps[workstation].append(new_gap)
+                        end_times_of_operations[operation_index] = end
+                        # swap operations in sequence vector
+                        job_swap = Individual.required_operations[gap.preceeds_operation]
+                        swap_operation_index = 0
+                        swap_start_index = 0
+                        for j in range(len(Individual.required_operations)):
+                            if Individual.required_operations[j] == job_swap:
+                                swap_start_index = j
+                                break
+                            swap_start_index = j
+                        swap_operation_index = gap.preceeds_operation - swap_start_index
+                        count = 0
+                        swap_individual_index = 0
+                        for j in range(len(individual.sequence)):
+                            if individual.sequence[j] == job_swap:
+                                if count == swap_operation_index:
+                                    swap_individual_index = j
+                                    break
+                                count += 1
+                                swap_individual_index = j
+                        tmp = individual.sequence[swap_individual_index]
+                        individual.sequence[swap_individual_index] = individual.sequence[i]
+                        individual.sequence[i] = tmp
+                        # remove old gap
+                        gaps[workstation].remove(gap)
+                        # done
+                        break
+            if not inserted:
+                job_min_start = 0
+                if operation_index != 0 and Individual.required_operations[operation_index-1] == Individual.required_operations[operation_index]:
+                    job_min_start = end_times_of_operations[operation_index-1]
+                if job_min_start > end_times_on_workstations[workstation]:
+                    # new gap
+                    gaps[workstation].append(Gap(job_min_start, job_min_start + duration, operation_index))
+                    end_times_on_workstations[workstation] = job_min_start + duration
                 else:
-                    gaps_on_workstations[workstation].remove(use_gap)
-            else:
-                if offset > 0:
-                    insert_at = 0
-                    found = False
-                    for j in range(len(gaps_on_workstations[workstation])):
-                        if gaps_on_workstations[workstation][j][0] < end_on_workstations[workstation]:
-                            insert_at = j
-                            found = True
-                            break
-                    if found:
-                        gaps_on_workstations[workstation].insert(insert_at, (end_on_workstations[workstation], end_on_workstations[workstation]+offset))
-                    else:
-                        gaps_on_workstations[workstation].append((end_on_workstations[workstation], end_on_workstations[workstation]+offset)) 
-                end_times[start_index] = end_on_workstations[workstation]+duration+offset
-                end_on_workstations[workstation] = end_times[start_index]
-
+                    end_times_on_workstations[workstation] += duration
+                end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
     def evaluate(self, individual : Individual, fill_gaps : bool = False) -> None:
         """jobs = []
@@ -334,7 +357,7 @@ class GA:
         average_population_history.append(generation_average/len(current_population))
         p_history.append(p)
         
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : int = 0, fill_gaps : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : int = 0, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100):
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
@@ -346,6 +369,8 @@ class GA:
                 individual = Individual()
             else:
                 individual = Individual(population=population)
+            if adjust_optimized_individuals:
+                self.adjust_individual(individual)
             self.evaluate(individual, fill_gaps)
             if not current_best or individual.fitness < current_best.fitness:
                 current_best = individual
@@ -394,10 +419,14 @@ class GA:
                 offspring_a, offspring_b = self.recombine(parent_a, parent_b)
                 if len(offsprings) < offspring_amount: # NOTE: should always be true
                     offspring_a.mutate(p)
+                    if adjust_optimized_individuals:
+                        self.adjust_individual(offspring_a)
                     self.evaluate(offspring_a, fill_gaps)
                     self._insert_individual(offspring_a, offsprings)
                 if len(offsprings) < offspring_amount: # NOTE: might be false for odd amounts of offsprings
                     offspring_b.mutate(p)
+                    if adjust_optimized_individuals:
+                        self.adjust_individual(offspring_b)
                     self.evaluate(offspring_b, fill_gaps)
                     self._insert_individual(offspring_b, offsprings)
             selection_pool = []
@@ -405,10 +434,6 @@ class GA:
             
             for i in range(elitism):
                 self._insert_individual(population[i], selection_pool) # population should be sorted at this point, insert sorted into selection pool
-            
-            """if elitism:
-                for individual in population:
-                    self._insert_individual(individual, selection_pool) # insert sorted"""
             population = selection_pool[:population_size - random_individuals]
             while len(population) < population_size:
                 if random_initialization:
@@ -416,7 +441,8 @@ class GA:
                 else:
                     random_individual = Individual(population=population)
                 self.evaluate(random_individual, fill_gaps)
-                population.append(random_individual)
+                self._insert_individual(random_individual, population)
+                #population.append(random_individual)
             if population[0].fitness < current_best.fitness:
                 current_best = population[0]
                 if adjust_parameters:
@@ -477,8 +503,8 @@ production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 100
-offspring_amount = 150
+population_size = 30
+offspring_amount = 60
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
 max_generations = 20000
@@ -487,8 +513,8 @@ stop_at = None # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
-fill_gaps = True # optimization for the schedule construction
-adjust_optimized_individuals = False # change optimized individuals order of operations
+fill_gaps = False # optimization for the schedule construction
+adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
 adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
@@ -501,7 +527,7 @@ tournament_size = max(2, int(population_size / 10)) # NOTE: only relevant if sel
 random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation, these are also affected by the random_initialization parameter
 output_interval = max_generations/20 if max_generations else 100 # frequency of terminal output (in generations)
 
-result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=False, fill_gaps=fill_gaps, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=False, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
 print(result)
 
 schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)

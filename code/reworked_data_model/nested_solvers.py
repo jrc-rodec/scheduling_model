@@ -447,8 +447,8 @@ if __name__ == '__main__':
 
 
     encoder = SequenceGAEncoder()
-    source = '6_Fattahi'
-    instance = 20 # 20 -> aim for < 1276
+    source = '4_ChambersBarnes'
+    instance = 6 # 20 -> aim for < 1276
     production_environment = FJSSPInstancesTranslator().translate(source, instance)
     orders = generate_one_order_per_recipe(production_environment)
     production_environment.orders = orders
