@@ -343,6 +343,7 @@ class GA:
                 if individual.fitness < individuals[i].fitness:
                     insert_at = i
                     break
+                insert_at = i
             individuals.insert(insert_at, individual)
 
     def _update_history(self, overall_best_history, generation_best_history, average_population_history, p_history, current_best, current_population, p) -> None:
@@ -364,6 +365,7 @@ class GA:
         average_population_history : list[float] = []
         p_history : list[float] = []
         current_best : Individual = None
+        start_time = time.time()
         for _ in range(population_size):
             if random_initialization:
                 individual = Individual()
@@ -380,7 +382,7 @@ class GA:
         population.sort(key=lambda x: x.fitness)
         generation = 0
         starting_p = p = 1 / (len(current_best.sequence) + len(current_best.workstations)) # mutation probability
-        start_time = time.time()
+        
         gen_stop = (max_generations and generation >= max_generations)
         time_stop = (run_for and False)
         fitness_stop = (stop_at and current_best.fitness <= stop_at)
@@ -495,29 +497,29 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '6_Fattahi'
-instance = 20
+source = '1_Brandimarte'
+instance = 2
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 30
-offspring_amount = 60
+population_size = 50
+offspring_amount = 100
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
-max_generations = 20000
+max_generations = 50000
 run_for = 600 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
-allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
+allow_duplicate_parents = True # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
 fill_gaps = False # optimization for the schedule construction
 adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
-adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
+adjust_parameters = False # decides whether or not the mutation rate should be adjusted during the optimization process
 update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
