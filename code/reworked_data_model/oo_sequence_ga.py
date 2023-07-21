@@ -60,16 +60,20 @@ class Individual:
                 self.fitness = parent_b.fitness
         elif population and len(population) > 0:
             self.sequence : list[int] = Individual.required_operations.copy()
-            dissimilarity = float('inf')
+            #dissimilarity = float('inf')
+            dissimilarity = []
             min_distance = self._get_max_dissimilarity()
             attempts = 0
-            while dissimilarity == float('inf') or dissimilarity < min_distance:
+            #while dissimilarity == float('inf') or dissimilarity < min_distance:
+            while len(dissimilarity) == 0 or sum(dissimilarity)/len(dissimilarity) < min_distance:
                 if attempts > Individual.initialization_attempts:
                     min_distance = int(min_distance * Individual.distance_adjustment_rate)
+                    attempts = 0
                 random.shuffle(self.sequence)
                 self.workstations = [random.choice(x) for x in Individual.available_workstations]
                 for other in population:
-                    dissimilarity = min(self.get_dissimilarity(other), dissimilarity)
+                    #dissimilarity = min(self.get_dissimilarity(other), dissimilarity)
+                    dissimilarity.append(self.get_dissimilarity(other))
                 attempts += 1
             self.workers : list[int] = [0] * len(self.sequence) # NOTE: not in use
             self.durations : list[int] = [] # NOTE: not in use
@@ -497,8 +501,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '1_Brandimarte'
-instance = 2
+source = '4_ChambersBarnes'
+instance = 7
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -519,7 +523,7 @@ fill_gaps = False # optimization for the schedule construction
 adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
-adjust_parameters = False # decides whether or not the mutation rate should be adjusted during the optimization process
+adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
 update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
