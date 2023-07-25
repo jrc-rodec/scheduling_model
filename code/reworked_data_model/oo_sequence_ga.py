@@ -501,8 +501,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 
 encoder = SequenceGAEncoder()
-source = '4_ChambersBarnes'
-instance = 7
+source = '6_Fattahi'
+instance = 20
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -523,7 +523,7 @@ fill_gaps = False # optimization for the schedule construction
 adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
-adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
+adjust_parameters = False # decides whether or not the mutation rate should be adjusted during the optimization process
 update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True

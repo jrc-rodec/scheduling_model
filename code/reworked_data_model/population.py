@@ -2,57 +2,6 @@ import random
 import math
 import matplotlib.pyplot as plt
 
-"""max_values = [100, 100]
-
-def get_max_dissimilarity():
-    return sum(max_values)#len(self.sequence) + sum([len(x) for x in Individual.available_workstations])
-
-def get_dissimilarity(self, other):
-    dissimilarity = 0
-    for i in range(len(self)):
-        if self[i] != other[i]:
-            dissimilarity += abs(self[i] - other[i])
-    return dissimilarity
-
-def create_random_solution():
-    individual = []
-    for j in range(len(max_values)):
-        individual.append(random.randint(0, max_values[j]))
-    return individual
-
-min_distance_success = []
-
-max_attempts = 100
-distance_adjustment_rate = 0.75
-population = []
-population_size = 10
-population.append(create_random_solution())
-
-while len(population) < population_size:
-    attempts = 0
-    dissimilarity = []
-    min_distance = get_max_dissimilarity()
-    while len(dissimilarity) == 0 or (sum(dissimilarity)/len(dissimilarity)) < min_distance:
-        if attempts > max_attempts:
-            min_distance = int(min_distance * distance_adjustment_rate)
-            attempts = 0
-        individual = create_random_solution()
-        for other in population:
-            dissimilarity.append(get_dissimilarity(individual, other))
-        attempts += 1
-    population.append(individual)
-    min_distance_success.append(min_distance)
-
-x_values = [x[0] for x in population]
-y_values = [x[1] for x in population]
-print(min_distance_success)
-print(population)
-
-
-
-plt.scatter(x_values, y_values)
-plt.show()
-"""
 class Individual:
 
     def __init__(self, population_size, gene_values, evaluation_method):
@@ -139,6 +88,7 @@ class Individual:
                 self.population[i] = self.randomize_individual()
 
     def recombine(self, parent_a, parent_b):
+        #self.population = []
         #split_point = random.randint(0, len(parent_a.population))
         #self.population = parent_a.population[:split_point]
         #self.population.extend(parent_b.population[split_point:])
@@ -208,13 +158,13 @@ class PopulationGenerator:
             overall_best_history.append(overall_best.fitness)
         return overall_best, history, overall_best_history
 
-population_size = 40
+"""population_size = 40
 values = [[0, 1, 2], [3, 4, 5], [2, 4, 5], [0, 2, 5, 6], [1, 3], [4, 5, 6], [0, 1, 2, 3, 4], [5, 6], [3, 4, 6]]
 #values = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
 population_generator = PopulationGenerator(population_size, values)
 max_dissimilarity = population_generator.max_dissimilarity()
-print(f' Max Dissimilarity: {max_dissimilarity}')
-result, history, best_history = population_generator.run(50, 100, 10 * population_size, 10, 'min')
+print(f'Max Dissimilarity: {max_dissimilarity}')
+result, history, best_history = population_generator.run(50, 100, 10 * population_size, 5, 'min')
 
 print(result.population)
 print('Variance:')
@@ -228,7 +178,7 @@ result.evaluate_min()
 print(result.fitness)
 plt.plot(history)
 plt.plot(best_history)
-plt.show()
+plt.show()"""
 
 #x_values = [data[0] for data in result.population]
 #y_values = [data[1] for data in result.population]

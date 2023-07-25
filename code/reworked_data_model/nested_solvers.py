@@ -16,6 +16,7 @@
 # ex.: PSO, GA, Gurobi
 from multiprocessing import Process, Queue
 import random
+from population import PopulationGenerator
 
 class OuterHarmonySearch:
 
@@ -122,8 +123,46 @@ class OuterGA:
         for j in range(len(individual)):
             individual[j] = random.choice(self.workstation_options[j])
         return individual
+    
+    def get_dissimilarity(self, individual, population):
+        dissimilarity_sum = 0
+        for i in range(len(population)):
+            for j in range(len(individual)):
+                if population[i][j] != individual[j]:
+                    dissimilarity_sum += len(self.workstation_options[j])
+        return dissimilarity_sum / len(population)
+
+    def create_individual_dissimilarity(self, n_genes, population):
+        min_distance = self.get_max_dissimilarity()
+        attempts = 100
+        attempt = 0
+        dissimilarity = 0
+        individual = [0] * n_genes
+        while dissimilarity < min_distance:
+            if attempt > attempts:
+                attempt = 0
+                min_distance *= 0.75
+            for i in range(n_genes):
+                individual[i] = random.choice(self.workstation_options[i])
+            dissimilarity = self.get_dissimilarity(individual, population) if len(population) > 0 else float('inf')
+            attempt += 1
+        return individual
+
+    def create_population_dissimilarity(self, population_size, n_genes):
+        population = []
+        for i in range(population_size):
+            individual = self.create_individual_dissimilarity(n_genes, population)
+            population.append(individual)
+        return population
+
+    def get_max_dissimilarity(self):
+        return sum([len(x) for x in self.workstation_options])
 
     def create_population(self, population_size : int, n_genes : int) -> list[list[int]]:
+        #population_generator = PopulationGenerator(population_size, self.workstation_options)
+        #population_individual, _, _ = population_generator.run(50, 100, 10 * population_size, 5, 'min')
+        #population = [x for x in population_individual.population]
+        #return population
         # random for now
         population : list[list[int]] = []
         for i in range(population_size):
@@ -132,7 +171,7 @@ class OuterGA:
         return population
 
     def run(self, n_genes : int, population_size : int, offspring_amount : int, generations : int, require_unique_population : bool = False, allow_duplicate_parents : bool = False, elitism : bool = False) -> tuple[list[int], list[float]]:
-        population : list[list[int]] = self.create_population(population_size, n_genes)
+        population : list[list[int]] = self.create_population_dissimilarity(population_size, n_genes)#self.create_population(population_size, n_genes)
         population_fitness : list[list[float]] = [[float('inf')]] * population_size
         self.best : list[int] = []
         self.best_fitness : list[float] = float('inf')#[float('inf')]
@@ -183,7 +222,7 @@ class OuterGA:
                     population.append(selection_pool[i][0])
                     population_fitness.append(selection_pool[i][1])
                 else:
-                    individual = self.create_individual(n_genes)
+                    individual = self.create_individual_dissimilarity(n_genes, population)#self.create_individual(n_genes)
                     population.append(individual)
                     individual_fitness = self.evaluate(individual)
                     population_fitness.append(individual_fitness)
@@ -357,6 +396,31 @@ class InnerGA:
                     end_times_on_workstations[workstation] += duration
                 end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
+    def get_dissimilarity(self, individual, population):
+        dissimilarity_sum = 0
+        for i in range(len(population)):
+            for j in range(len(individual)):
+                if individual[j] != population[i][j]:
+                    dissimilarity_sum += 1
+        return dissimilarity_sum / len(population)
+
+    def create_individual_dissimilarity(self, population, fill_gaps):
+        min_distance = len(self.job_operations)
+        dissimilarity = 0
+        attempts = 100
+        attempt = 0
+        individual = self.job_operations.copy()
+        while dissimilarity < min_distance:
+            if attempt > attempts:
+                attempt = 0
+                min_distance *= 0.75
+            random.shuffle(individual)
+            if fill_gaps:
+                self.adjust_individual(individual)
+            dissimilarity = self.get_dissimilarity(individual, population) if len(population) > 0 else float('inf')
+            attempt += 1
+        return individual
+
     def run(self, population_size : int = 25, offspring_amount : int = 50, generations : int = 100, tournament_size : int = 2, elitism : int = 2, fill_gaps : bool = True):
         self.tournament_size = tournament_size
         population : list[list[int]] = []
@@ -364,10 +428,11 @@ class InnerGA:
         overall_best = []
         overall_best_fitness = float('inf')
         for _ in range(population_size):
-            individual = self.job_operations.copy()
+            """individual = self.job_operations.copy()
             random.shuffle(individual)
             if fill_gaps:
-                self.adjust_individual(individual)
+                self.adjust_individual(individual)"""
+            individual = self.create_individual_dissimilarity(population, fill_gaps)
             fitness = self.evaluate(individual)
             population.append(individual)
             population_fitness.append(fitness)
@@ -447,8 +512,8 @@ if __name__ == '__main__':
 
 
     encoder = SequenceGAEncoder()
-    source = '4_ChambersBarnes'
-    instance = 6 # 20 -> aim for < 1276
+    source = '6_Fattahi'#'4_ChambersBarnes'
+    instance = 20 # 20 -> aim for < 1276
     production_environment = FJSSPInstancesTranslator().translate(source, instance)
     orders = generate_one_order_per_recipe(production_environment)
     production_environment.orders = orders
@@ -456,7 +521,7 @@ if __name__ == '__main__':
 
     ga = OuterGA(workstations_per_operation, job_operations, base_durations)
     ga.crossover = 'two_point' # uniform, one_point or two_point
-    workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 50, elitism=True)
+    workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 50, elitism=False)
 
     print(workstations)
     print(sequence)
