@@ -266,11 +266,6 @@ class GA:
                 end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
     def evaluate(self, individual : Individual, fill_gaps : bool = False) -> None:
-        """jobs = []
-        for x in Individual.required_operations:
-            if x not in jobs:
-                jobs.append(x)
-        next_operations = [0] * len(jobs)"""
         next_operations = [0] * len(self.jobs)
         end_on_workstations = [0] * len(Individual.base_durations[0])
         end_times = [-1] * len(Individual.required_operations)
@@ -509,12 +504,12 @@ production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 50
-offspring_amount = 100
+population_size = 300
+offspring_amount = 600
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
-max_generations = 50000
-run_for = 600 # seconds, NOTE: starts counting after population initialization
+max_generations = 5000
+run_for = 1200 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
@@ -523,7 +518,7 @@ fill_gaps = False # optimization for the schedule construction
 adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
-adjust_parameters = False # decides whether or not the mutation rate should be adjusted during the optimization process
+adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
 update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
