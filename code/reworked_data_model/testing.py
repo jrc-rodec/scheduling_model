@@ -331,7 +331,7 @@ def milp_opt(mach,timelimit):
                 result[idx_r+2] = 0
                 result[idx_r+3] = job_op__duration[(j+1,o+1)]
                 idx_r += 4        
-        visualize_schedule(result, orders, nb_machines)
+        #visualize_schedule(result, orders, nb_machines)
 
     helper = sorted(sorted(ssol.items(), key = lambda item : item[0]), key = lambda item : item[1])
     sequence = [helper[k][0][0] for k in range(len(helper))]
@@ -734,7 +734,7 @@ if 1==0:
     #Small Size Data: SFJW-01.txt to SFJW-10.txt
     #f = open(r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\MO-FJSPW_BenchmarkDataInstances\SFJW\SFJW-10.txt')
     #Medium size Data: MFJW-01.txt to MFJW-07.txt
-    f = open(r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\MO-FJSPW_BenchmarkDataInstances\MFJW\MFJW-02.txt')
+    f = open(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\6_Fattahi\Fattahi20.fjs')
     
     lines = f.readlines()
     first_line = lines[0].split()
