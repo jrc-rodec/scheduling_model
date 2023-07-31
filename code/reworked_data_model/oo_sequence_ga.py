@@ -510,8 +510,8 @@ population_size = 300
 offspring_amount = 600
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
-max_generations = 10000
-run_for = 1200 # seconds, NOTE: starts counting after population initialization
+max_generations = 2000
+run_for = 600 # seconds, NOTE: starts counting after population initialization
 stop_at = None # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
@@ -520,12 +520,12 @@ fill_gaps = False # optimization for the schedule construction
 adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
-adjust_parameters = False # decides whether or not the mutation rate should be adjusted during the optimization process
+adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
 update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
 
-selection = 'tournament' # 'roulette_wheel' or 'tournament'
+selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
 tournament_size = max(2, int(population_size / 10)) # NOTE: only relevant if selection = 'tournament'
 random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation, these are also affected by the random_initialization parameter
 output_interval = max_generations/20 if max_generations else 100 # frequency of terminal output (in generations)
