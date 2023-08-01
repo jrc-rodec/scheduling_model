@@ -24,7 +24,136 @@ class OuterHarmonySearch:
 
 class OuterTabuSearch:
 
-    pass
+    def __init__(self, workstation_options : list[list[int]], orders : list[int], durations : list[list[int]]):
+        self.workstation_options = workstation_options
+        self.orders = orders
+        self.durations = durations
+        self.results : dict[list[int], tuple[list[int], list[float]]] = dict()
+        self.tabu_list = []
+
+    def get_dissimilarity(self, a, b):
+        dissimilarity = 0
+        for i in range(len(a)):
+            if a[i] != b[i]:
+                dissimilarity += len(self.workstation_options[i])
+        return dissimilarity
+
+    def get_average_dissimilarity(self, individual, population):
+        # average dissimilarity to all members of the population
+        dissimilarity = 0
+        for other in population:
+            for i in range(len(individual)):
+                dissimilarity += self.get_dissimilarity(individual, other)
+        return dissimilarity / len(population)
+
+    def create_individual_min_dissimilarity(self, n_genes, population):
+        # Try to produce close individuals, there's probably a better strategy for this
+        max_distance = self.get_max_dissimilarity()
+        min_distance = 1
+        attempts = 100
+        attempt = 0
+        dissimilarity = 0
+        individual = [0] * n_genes
+        while dissimilarity < min_distance:
+            if attempt > attempts:
+                attempt = 0
+                min_distance = min(2*min_distance, max_distance)
+            for i in range(n_genes):
+                individual[i] = random.choice(self.workstation_options[i])
+            dissimilarity = self.get_average_dissimilarity(individual, population) if len(population) > 0 else 0
+            attempt += 1
+        return individual
+    
+    def create_individual_max_dissimilarity(self, n_genes, population):
+        # NOTE: mutation would be fine
+        min_distance = self.get_max_dissimilarity()
+        attempts = 100
+        attempt = 0
+        dissimilarity = 0
+        individual = [0] * n_genes
+        while dissimilarity < min_distance:
+            if attempt > attempts:
+                attempt = 0
+                min_distance *= 0.75
+            for i in range(n_genes):
+                individual[i] = random.choice(self.workstation_options[i])
+            dissimilarity = self.get_average_dissimilarity(individual, population) if len(population) > 0 else float('inf')
+            attempt += 1
+        return individual
+
+    def create_population_dissimilarity(self, population_size, n_genes):
+        population = []
+        for i in range(population_size):
+            individual = self.create_individual_max_dissimilarity(n_genes, population)
+            population.append(individual)
+        return population
+    
+    def create_neighbourhood(self, individual, n, n_genes):
+        neighours = [individual]
+        for i in range(n):
+            individual = self.create_individual_min_dissimilarity(n_genes, neighours)
+            if individual not in self.tabu_list:
+                neighours.append(individual)
+        neighours.pop(0) # remove initial individual
+        return neighours # NOTE: could be empty -> stop criteria
+
+    def get_max_dissimilarity(self):
+        return sum([len(x) for x in self.workstation_options])
+    
+    def evaluate_parallel(self, individual : list[int], queue) -> None:
+        if self.results.get(str(individual)):
+            return self.results[str(individual)][1] # fitness
+        inner_ga = InnerGA(individual, self.orders, self.durations) # durations could get fixed at this point
+        result, fitness = inner_ga.run()
+        self.results[str(individual)] = (result, fitness)
+        queue.put((result, fitness))
+    
+    def evaluate_population(self, population : list[list[int]]) -> list[float]:
+        fitness = []
+        processes = []
+        for i in range(len(population)):
+            q = Queue()
+            p = Process(target=self.evaluate_parallel, args=(population[i], q))
+            processes.append((p, q))
+            p.start()
+        for i in range(len(population)):
+            result = processes[i][1].get()
+            processes[i][0].join()
+            self.results[str(population[i])] = result
+            fitness.append(result[1])
+        return fitness
+    
+    def get_best(self, fitness_list):
+        min = 0
+        for i in range(len(fitness_list)):
+            if fitness_list[i] < fitness_list[min]:
+                min = i
+        return min
+
+    def run(self, max_iteration = 100, max_population_size = 50, tabu_list_max_size = 100):
+        population = self.create_population_dissimilarity(max_population_size, len(self.workstation_options))
+        fitness = self.evaluate_population(population)
+        best_index = self.get_best(fitness)
+        best = best_candidate = population[best_index]
+        best_fitness = best_candidate_fitness = fitness[best_index]
+        self.tabu_list = []
+        self.tabu_list.append(best)
+        iteration = 0
+        while iteration < max_iteration:
+            print(f'Iteration: {iteration} - Current Best: {best_fitness}')
+            neighbours = self.create_neighbourhood(best_candidate, max_population_size, len(self.workstation_options))
+            fitness = self.evaluate_population(neighbours)
+            best_index = self.get_best(fitness)
+            best_candidate = neighbours[best_index]
+            best_candidate_fitness = fitness[best_index]
+            if best_candidate_fitness < best_fitness:
+                best = best_candidate
+                best_fitness = best_candidate_fitness
+            self.tabu_list.append(best_candidate)
+            if len(self.tabu_list) > tabu_list_max_size:
+                self.tabu_list.pop(0)
+            iteration += 1
+        return best, self.results[str(best)][0], self.results[str(best)][1]
 
 class OuterGA:
 
@@ -116,7 +245,6 @@ class OuterGA:
             self.results[str(population[i])] = result
             fitness.append(result[1])
         return fitness
-        
 
     def create_individual(self, n_genes : int) -> list[int]:
         individual : list[int] = [0] * n_genes
@@ -512,8 +640,8 @@ if __name__ == '__main__':
 
 
     encoder = SequenceGAEncoder()
-    source = '6_Fattahi'#'4_ChambersBarnes'
-    instance = 20 # 20 -> aim for < 1276
+    source = '5_Kacem'#'4_ChambersBarnes'
+    instance = 4 # 20 -> aim for < 1276
     production_environment = FJSSPInstancesTranslator().translate(source, instance)
     orders = generate_one_order_per_recipe(production_environment)
     production_environment.orders = orders
@@ -522,6 +650,9 @@ if __name__ == '__main__':
     ga = OuterGA(workstations_per_operation, job_operations, base_durations)
     ga.crossover = 'two_point' # uniform, one_point or two_point
     workstations, sequence, fitness = ga.run(len(job_operations), 50, 75, 50, elitism=False)
+
+    #ts = OuterTabuSearch(workstations_per_operation, job_operations, base_durations)
+    #workstations, sequence, fitness = ts.run()
 
     print(workstations)
     print(sequence)

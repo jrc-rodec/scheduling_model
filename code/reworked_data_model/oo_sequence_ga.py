@@ -95,15 +95,33 @@ class Individual:
             for i in range(len(self.workstations)):
                 self.durations.append(Individual.base_durations[i][self.workstations[i]])
     
-    def mutate(self, p : float = None):
+    def mutate(self, p : float = None, sequence_muatation : str = 'swap'):
         if not p:
             p = 1 / (len(self.sequence) + len(self.workstations)) # NOTE: currently only these 2 lists are in use
         for i in range(len(self.sequence)):
             if random.random() < p:
-                swap = random.choice([x for x in range(len(self.sequence)) if x != i])
-                tmp = self.sequence[swap]
-                self.sequence[swap] = self.sequence[i]
-                self.sequence[i] = tmp
+                if sequence_muatation == 'swap':
+                    swap = random.choice([x for x in range(len(self.sequence)) if x != i])
+                    tmp = self.sequence[swap]
+                    self.sequence[swap] = self.sequence[i]
+                    self.sequence[i] = tmp
+                elif sequence_muatation == 'insert':
+                    take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
+                    insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
+                    value = self.sequence.pop(take_from)
+                    self.sequence.insert(insert_at, value)
+                else:
+                    # mixed
+                    if random.random() < 0.5:
+                        swap = random.choice([x for x in range(len(self.sequence)) if x != i])
+                        tmp = self.sequence[swap]
+                        self.sequence[swap] = self.sequence[i]
+                        self.sequence[i] = tmp
+                    else:
+                        take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
+                        insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
+                        value = self.sequence.pop(take_from)
+                        self.sequence.insert(insert_at, value)
         for i in range(len(self.workstations)):
             if random.random() < p:
                 if len(Individual.available_workstations[i]) > 1: # otherwise, can't mutate
@@ -357,7 +375,7 @@ class GA:
         average_population_history.append(generation_average/len(current_population))
         p_history.append(p)
         
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : int = 0, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, elitism : int = 0, sequence_mutation : str = 'swap', fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100):
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
@@ -499,7 +517,7 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
 
 encoder = SequenceGAEncoder()
 source = '6_Fattahi'
-instance = 20
+instance = 10
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -521,16 +539,18 @@ adjust_optimized_individuals = True # change optimized individuals order of oper
 random_initialization = False # False = use dissimilarity function
 
 adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
-update_interval = 1000 # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
+update_interval = int(max_generations/10) # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
 p_increase_rate = 1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
 max_p = 1.0 # 1.0 -> turns into random search if there's no progress for a long time, NOTE: only relevant if adjust_parameters = True
 
-selection = 'roulette_wheel' # 'roulette_wheel' or 'tournament'
+sequence_mutation = 'mix' # swap, insert, or mix
+
+selection = 'tournament' # 'roulette_wheel' or 'tournament'
 tournament_size = max(2, int(population_size / 10)) # NOTE: only relevant if selection = 'tournament'
 random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation, these are also affected by the random_initialization parameter
 output_interval = max_generations/20 if max_generations else 100 # frequency of terminal output (in generations)
 
-result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=elitism, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, elitism=elitism, sequence_mutation=sequence_mutation, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
 print(result)
 
 schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)
