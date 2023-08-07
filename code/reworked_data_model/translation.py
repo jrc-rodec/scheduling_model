@@ -1,6 +1,6 @@
 import os 
 import inspect
-from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule, Order, Job, Solver
+from model import ProductionEnvironment, Workstation, Task, Resource, Recipe, SetupGroup, Schedule, Order, Job, Solver, reset_entities
 from get_data import get_data
 
 class DataTranslator:
@@ -9,6 +9,10 @@ class DataTranslator:
         pass
 
 class FJSSPInstancesTranslator(DataTranslator):
+
+    def reset(self):
+        reset_entities()
+
 
     def translate(self, source : str = '6_Fattahi', benchmark_id = 0) -> ProductionEnvironment:
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -37,6 +41,7 @@ class FJSSPInstancesTranslator(DataTranslator):
         file = open(path, 'r')
         file_content : list[str] = file.readlines()
         production_environment : ProductionEnvironment = ProductionEnvironment()
+        self.reset()
         system_information = file_content[0].split(' ') #[number of recipes, number of workstations, average workstations / operation (can be ignored)]
         for i in range(int(system_information[1])): # add workstations to the system
             production_environment.add_workstation_type(i, f'w_type_{i}')

@@ -100,9 +100,17 @@ class OuterTabuSearch:
     def get_max_dissimilarity(self):
         return sum([len(x) for x in self.workstation_options])
     
+    def get_min_makespan(self, individual : list[int]):
+        makespan = 0
+        for i in range(len(individual)):
+            makespan += self.durations[i][individual[i]]
+        return max(makespan)
+
     def evaluate_parallel(self, individual : list[int], queue) -> None:
         if self.results.get(str(individual)):
             return self.results[str(individual)][1] # fitness
+        if self.get_min_makespan(individual) > self.best_fitness:
+            return self.get_min_makespan(individual) # TODO: return some other value
         inner_ga = InnerGA(individual, self.orders, self.durations) # durations could get fixed at this point
         result, fitness = inner_ga.run()
         self.results[str(individual)] = (result, fitness)
@@ -134,26 +142,26 @@ class OuterTabuSearch:
         population = self.create_population_dissimilarity(max_population_size, len(self.workstation_options))
         fitness = self.evaluate_population(population)
         best_index = self.get_best(fitness)
-        best = best_candidate = population[best_index]
-        best_fitness = best_candidate_fitness = fitness[best_index]
+        self.best = best_candidate = population[best_index]
+        self.best_fitness = best_candidate_fitness = fitness[best_index]
         self.tabu_list = []
-        self.tabu_list.append(best)
+        self.tabu_list.append(self.best)
         iteration = 0
         while iteration < max_iteration:
-            print(f'Iteration: {iteration} - Current Best: {best_fitness}')
+            print(f'Iteration: {iteration} - Current Best: {self.best_fitness}')
             neighbours = self.create_neighbourhood(best_candidate, max_population_size, len(self.workstation_options))
             fitness = self.evaluate_population(neighbours)
             best_index = self.get_best(fitness)
             best_candidate = neighbours[best_index]
             best_candidate_fitness = fitness[best_index]
-            if best_candidate_fitness < best_fitness:
-                best = best_candidate
-                best_fitness = best_candidate_fitness
+            if best_candidate_fitness < self.best_fitness:
+                self.best = best_candidate
+                self.best_fitness = best_candidate_fitness
             self.tabu_list.append(best_candidate)
             if len(self.tabu_list) > tabu_list_max_size:
                 self.tabu_list.pop(0)
             iteration += 1
-        return best, self.results[str(best)][0], self.results[str(best)][1]
+        return self.best, self.results[str(self.best)][0], self.results[str(self.best)][1]
 
 class OuterGA:
 
@@ -230,6 +238,12 @@ class OuterGA:
         result, fitness = inner_ga.run()
         #self.results[str(individual)] = (result, fitness)
         queue.put((result, fitness))
+    
+    def get_min_makespan(self, individual : list[int]):
+        makespan = 0
+        for i in range(len(individual)):
+            makespan += self.durations[i][individual[i]]
+        return max(makespan)
     
     def evaluate_population(self, population : list[list[int]]) -> list[float]:
         fitness = []

@@ -59,15 +59,15 @@ for benchmark_source in sources:
         #workstations_per_operation, base_durations, job_operations = SequenceGAEncoder().encode(production_environment, orders)
 
         max_dissimilarity = get_approximate_max_dissimilarity(values[0], file_content[1:], values[2])
+        beta = average_workstations/workstation_amount
 
-
-        scores.append([f'{benchmark_source}{i+1}', average_workstations/workstation_amount, values[0], values[1], values[2], max_dissimilarity])
+        scores.append([f'{benchmark_source}{i+1}', values[0], values[1], values[2], "{:.4f}".format(max_dissimilarity), "{:.4f}".format(beta), "{:.4f}".format(max_dissimilarity * beta)])
         #scores.append((f'{benchmark_source}{i+1}', average_workstations/workstation_amount, f'{values[0]}x{values[1]}-{values[2]}'))
-scores.sort(key=lambda x: x[1])
+scores.sort(key=lambda x: float(x[6]))
 print(scores)
 
 import csv
 with open(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\beta_scores.csv', 'w', newline='') as file:
     writer = csv.writer(file, delimiter=',', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['Name', 'Beta-Value', 'Jobs', 'Machines', 'AverageMachines', 'MaxDissimilarity'])
+    writer.writerow(['Name', 'Jobs', 'Machines', 'AverageMachines', 'MaxDissimilarity', 'Beta-Value', 'C'])
     writer.writerows(scores)

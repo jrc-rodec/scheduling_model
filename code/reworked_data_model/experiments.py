@@ -1,0 +1,178 @@
+from oo_sequence_ga import GA
+
+from translation import SequenceGAEncoder, FJSSPInstancesTranslator
+from evaluation import Makespan
+from visualization import visualize_schedule
+from model import Order, ProductionEnvironment
+import time
+import os
+import inspect
+
+def generate_one_order_per_recipe(production_environment : ProductionEnvironment) -> list[Order]:
+    orders : list[Order] = []
+    for i in range(len(production_environment.resources.values())): # should be the same amount as recipes for now
+        orders.append(Order(delivery_time=1000, latest_acceptable_time=1000, resources=[(production_environment.get_resource(i), 1)], penalty=100.0, tardiness_fee=50.0, divisible=False, profit=500.0))
+    return orders
+
+def run_experiment(source, instance, parameters : dict):
+    production_environment = FJSSPInstancesTranslator().translate(source, instance)
+    orders = generate_one_order_per_recipe(production_environment)
+    production_environment.orders = orders
+    workstations_per_operation, base_durations, job_operations = SequenceGAEncoder().encode(production_environment, orders)
+    ga = GA(job_operations, workstations_per_operation, base_durations)
+    population_size = parameters['population_size'] if 'population_size' in parameters else 100
+    offspring_amount = parameters['offspring_amount'] if 'offspring_amount' in parameters else population_size
+    max_generations = parameters['max_generations'] if 'max_generations' in parameters else None
+    run_for = parameters['time_limit'] if 'time_limit' in parameters else None
+    stop_at = parameters['target_fitness'] if 'target_fitness' in parameters else None
+    random_initialization = parameters['random_initialization'] if 'random_initialization' in parameters else False
+    elitism = parameters['elitism'] if 'elitism' in parameters else 0
+    allow_duplicate_parents = parameters['duplicate_parents'] if 'duplicate_parents' in parameters else False
+    pruning = parameters['pruning'] if 'pruning' in parameters else False
+    fill_gaps = parameters['fill_gaps'] if 'fill_gaps' in parameters else False
+    adjust_individuals = parameters['adjust_individuals'] if 'adjust_individuals' in parameters else False
+    adjust_parameters = parameters['adjust_mutation'] if 'adjust_mutation' in parameters else False
+    update_interval = parameters['mutation_update_interval'] if adjust_parameters else 0
+    p_increase_rate = parameters['mutation_increase_rate'] if adjust_parameters else 0
+    max_p = parameters['max_mutation_rate'] if adjust_parameters else 0
+    restart_at_max_p = parameters['restart_at_max_mutation_rate'] if adjust_parameters else False
+    avoid_local_mins = parameters['avoid_local_mins'] if adjust_parameters else False
+    local_min_distance = parameters['local_min_distance'] if avoid_local_mins else 0.0
+    sequence_mutation = parameters['sequence_mutation'] if 'sequence_mutation' in parameters else 'mix'
+    selection = parameters['selection'] if 'selection' in parameters else 'tournament'
+    tournament_size = parameters['tournament_size'] if selection == 'tournament' else 0
+    random_individual_per_generation_amount = parameters['random_individuals'] if 'random_individuals' in parameters else 0
+    output_interval = parameters['output_interval'] if 'output_interval' in parameters else 1000
+    start_time = time.time()
+    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+    run_time = time.time() - start_time
+    return result, run_time
+
+def save_result(result, source, instance, run_time, parameters):
+    file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/testing.txt'
+    #maybe add values to dict and use dict writer
+    with open(file, 'a') as f:
+        f.write(f'{result.workstations};{result.sequence};{source};{instance};{run_time};{result.fitness};{result.function_evaluations};{parameters}\n')
+
+def run(source, instance, max_generation : int = 5000, time_limit : int = None, target_fitness : float = None, output : bool = False):
+    
+    parameters = {
+        'population_size': 300,
+        'offspring_amount': 600,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 30,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': False,
+        'adjust_individuals': True,
+        'adjust_mutation': True,
+        'mutation_update_interval': 100,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament',
+        'tournament_size': 30,
+        'random_individuals': 0,
+        'output_interval': 100 if output else 0
+    }
+
+    result, run_time = run_experiment(source, instance, parameters)
+    return result, run_time, parameters
+
+def run_lower_population_size(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False):
+    parameters = {
+        'population_size': 100,
+        'offspring_amount': 200,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 10,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': False,
+        'adjust_individuals': True,
+        'adjust_mutation': True,
+        'mutation_update_interval': 50,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament',
+        'tournament_size': 10,
+        'random_individuals': 0,
+        'output_interval': 100 if output else 0
+    }
+
+    result, run_time = run_experiment(source, instance, parameters)
+    return result, run_time, parameters
+
+if __name__ == '__main__':
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    read_path = currentdir + '/../external_test_data/FJSSPinstances/'
+
+    #sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
+    sources = ['6_Fattahi']
+    known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1088, 1196]
+    n_experiments = 10
+    scores = []
+    for benchmark_source in sources:
+        full_path = read_path + benchmark_source + '/'
+        for i in range(19, len(os.listdir(full_path))):
+            source = benchmark_source
+            instance = i+1
+            for j in range(n_experiments):
+                #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+                result, run_time, parameters = run_lower_population_size(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+                print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best[i]}, received: {result.fitness}.')
+                # save result and paramters
+                save_result(result, source, instance, run_time, parameters)
+
+#source = '6_Fattahi'
+#instance = 10
+
+#print(result)
+#print(parameters)
+
+"""
+-with elitism (different rates)
+-without elitism
+
+-with inclusion of random individuals (random initialization)
+-with inclusion of random individuals (dissimilarity initialization)
+-without inclusion of random individuals 
+
+-with individual adjustment
+-without individual adjustment
+-without individual adjustment, with gap filling algorithm
+
+-random initialization
+-dissimilarity initialization
+
+-with parameter (mutation strength) adjustment (different rates)
+-without parameter adjustment
+-with restarting
+-without restarting
+
+-with preempt # might be better for nested solvers
+-without preempt
+
+-sequence mutation swap
+-sequence mutation insert
+-sequence mutation mix
+
+-population sizes
+-offspring amounts
+
+-machine vector recombination methods (two_point, one_point, uniform)
+
+-selection doesn't seem to matter too much (maybe different tournament sizes?)
+"""
