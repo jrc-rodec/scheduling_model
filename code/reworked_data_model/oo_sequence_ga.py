@@ -1,6 +1,8 @@
 import random
 import time
 from multiprocessing import Process, Queue, freeze_support
+import copy
+import math
 
 class Individual:
     
@@ -137,7 +139,7 @@ class Individual:
         for i in range(len(self.workstations)):
             if random.random() < p:
                 if len(Individual.available_workstations[i]) > 1: # otherwise, can't mutate
-                    self.workstations[i] = random.choice([x for x in self.available_workstations[i] if x != self.workstations[i]])
+                    self.workstations[i] = random.choice([x for x in Individual.available_workstations[i] if x != self.workstations[i]])
                     self.durations[i] = (Individual.base_durations[i][self.workstations[i]])
     
     def _get_max_dissimilarity():
@@ -305,9 +307,9 @@ class GA:
                 end_times_of_operations[operation_index] = end_times_on_workstations[workstation]
 
     def evaluate(self, individual : Individual, fill_gaps : bool = False, pruning : bool = False) -> None:
-        if str(individual) in self.memory:
-            self.memory_access += 1
-            return self.memory[individual][1]
+        #if str(individual) in self.memory:
+        #    self.memory_access += 1
+        #    return self.memory[individual][1]
         if pruning:
             min_makespan = individual.min_makespan_of_workstation_assignment()
             if min_makespan > self.current_best.fitness:
@@ -386,7 +388,7 @@ class GA:
                 end_on_workstations[workstation] = end_times[start_index]
 
         individual.fitness = max(end_times)
-        self.memory[str(individual)] = max(end_times)
+        #self.memory[str(individual)] = max(end_times)
         self.function_evaluations+=1
 
     def _insert_individual(self, individual : Individual, individuals : list[Individual]) -> None:
@@ -442,8 +444,8 @@ class GA:
                 if adjust_optimized_individuals:
                     self.adjust_individual(individual)
                 self.evaluate(individual, fill_gaps)
-                if not self.current_best or individual.fitness < self.current_best.fitness:
-                    self.current_best = individual
+                """if not self.current_best or individual.fitness < self.current_best.fitness:
+                    self.current_best = individual"""
             if True or individual.feasible: # TODO: just for testing
                 # NOTE: can lead to smaller population
                 population.append(individual)
@@ -451,14 +453,79 @@ class GA:
             batch_size = int(len(population) / 20)
             for i in range(0, len(population)-batch_size, batch_size):
                 self.evaluate_parallel(population[i:i+batch_size], adjust_optimized_individuals)
-            population.sort(key=lambda individual: individual.fitness)
-            if not self.current_best or population[0].fitness < self.current_best.fitness:
-                self.current_best = population[0]
+        population.sort(key=lambda individual: individual.fitness)
+        if not self.current_best or population[0].fitness < self.current_best.fitness:
+            self.current_best = population[0]
         return population
+
+    def update_mutation_probability(self, p, generations_since_last_improvement, max_waiting_before_restart, max_p):
+        return p + ((generations_since_last_improvement * (1 / max_waiting_before_restart)) ** 4) * max_p
+
+    def update_mutation_probability_old(self, elitism, starting_p, p, p_increase_rate, max_p, generation_best_history, generation, update_interval, population, overall_best_history):
+        if elitism > 0: # NOTE: just experimental, shouldn't make a difference wihtout restarting
+            if sum(generation_best_history[generation - update_interval:generation])/update_interval == population[0].fitness:
+                return min(p*p_increase_rate, max_p)
+            else:
+                return starting_p
+        else:
+            if sum(overall_best_history[generation - update_interval:generation])/update_interval == overall_best_history[-1]: # TODO: change
+                return min(p*p_increase_rate, max_p)
+            else:
+                # should never happen anyway since parameters are adjusted in case of new overall best
+                return starting_p
+
+
+    def simulated_annealing(self, individual):
+
+        def mutate_machine_vector(individual):
+            p = 1 / len(individual.workstations)
+            for i in range(len(individual.workstations)):
+                if random.random() < p:
+                    individual.workstations[i] = random.choice([x for x in Individual.available_workstations[i] if x != individual.workstations[i]])
+                    individual.durations[i] = (Individual.base_durations[i][individual.workstations[i]])
+
+        def mutate_sequence_vector(individual):
+            p = 1 / len(individual.sequence)
+            for i in range(len(individual.sequence)):
+                if random.random() < p:
+                    # insert instead of swap for now
+                    take_from = random.choice([x for x in range(len(individual.sequence)) if x != i])
+                    insert_at = random.choice([x for x in range(len(individual.sequence)) if x != i and x != take_from])
+                    value = individual.sequence.pop(take_from)
+                    individual.sequence.insert(insert_at, value)
+
+        n_machine_muatations = 5
+        n_sequence_mutations = 20
+        initial_T = 20
+        alpha = 0.8
+        n_T = 7
+        T = initial_T
+        best = copy.deepcopy(individual)
+        for i in range(n_machine_muatations):
+            y = copy.deepcopy(individual)
+            if i > 0: # check already assigned machines first
+                mutate_machine_vector(y)
+            for j in range(n_T):
+                y_temp = copy.deepcopy(y)
+                self.evaluate(y_temp)
+                for k in range(n_sequence_mutations):
+                    z = copy.deepcopy(y)
+                    mutate_sequence_vector(z)
+                    self.evaluate(z)
+                    if z.fitness < y_temp.fitness:
+                        y_temp = z
+                if y_temp.fitness < y.fitness or random.random() < math.exp(-(y_temp.fitness - y.fitness)/T):
+                    y = y_temp
+                if y.fitness < best.fitness:
+                    best = y
+                T *= alpha
+            T = initial_T
+        return best
 
     def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False):
         self.infeasible_solutions = 0
         self.function_evaluations = 0
+        self.restarts = 0
         population : list[Individual] = []
         overall_best_history : list[float] = []
         generation_best_history : list[float] = []
@@ -471,6 +538,8 @@ class GA:
         Individual.avoid_local_mins = avoid_local_mins
         self.local_min_distance = Individual._get_max_dissimilarity() * local_min_distance # TODO: add as parameter
         population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
+        self.overall_best = population[0]
+        self.current_best = population[0]
         if len(population) == 0:
             pass # TODO: abort, no feasible population
         if output_interval > 0:
@@ -485,33 +554,38 @@ class GA:
         fitness_stop = (stop_at and self.current_best.fitness <= stop_at)
         stop = gen_stop or time_stop or fitness_stop
         last_update = 0
-
+        old_adaptation = False
         while not stop:
-            self._update_history(overall_best_history, generation_best_history, average_population_history, p_history, self.current_best, population, p)
+            self._update_history(overall_best_history, generation_best_history, average_population_history, p_history, self.overall_best, population, p)
             if output_interval > 0 and generation % output_interval == 0:
-                print(f'Generation {generation}: Overall Best: {overall_best_history[-1]}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]} - Current Runtime: {time.time() - start_time}s, Function Evaluations: {self.function_evaluations}, Restarts: {len(self.local_min)}, Infeasible Solutions: {self.infeasible_solutions}')
+                print(f'Generation {generation}: Overall Best: {self.overall_best.fitness}, Current Best: {self.current_best.fitness}, Generation Best: {generation_best_history[-1]}, Average Generation Fitness: {average_population_history[-1]} - Current Runtime: {time.time() - start_time}s, Function Evaluations: {self.function_evaluations}, Restarts: {len(self.local_min)}, Infeasible Solutions: {self.infeasible_solutions}')
             offsprings = []
             # recombine and mutate, evaluate
             # check if mutation probability should be adjusted
-            if adjust_parameters and generation > 0 and generation - last_update >= update_interval:
-                # TODO: add progress rate and update interval as parameter
+            if old_adaptation:
+                if adjust_parameters and generation > 0 and generation - last_update >= update_interval:
+                    last_update = generation
+                    p = self.update_mutation_probability_old(elitism, starting_p, p, p_increase_rate, max_p, generation_best_history, generation, update_interval, population, overall_best_history)
+            else:
+                if adjust_parameters and generation > 0 and last_update < generation-1:
+                    p = self.update_mutation_probability(starting_p, generation - last_update, update_interval, max_p) # TODO: change update interval to different parameter
+                
+            if restart_at_max_p and p >= max_p:
+                #NOTE: could start a local search for the best in the population (not current best known) at this point, maybe even prevent future populations to get too close to the general area (min dissimilarity distance to previous found best)
+                local_minimum = self.simulated_annealing(population[0])
+                if local_minimum.fitness < population[0].fitness:
+                    print(f'Found a better local minimum with simulated annealing with fitness {local_minimum.fitness}')
+                if local_minimum.fitness < self.overall_best.fitness:
+                    self.overall_best = local_minimum
+                self.local_min.append(local_minimum)
+                #self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
+                population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
+                self.current_best = population[0]
+                p = starting_p
+                p = self.update_mutation_probability(starting_p, len(self.local_min), update_interval, max_p)
                 last_update = generation
-                if elitism > 0: # NOTE: just experimental, shouldn't make a difference wihtout restarting
-                    if sum(generation_best_history[generation - update_interval:generation])/update_interval == population[0].fitness:
-                        p = min(p*p_increase_rate, max_p)
-                    else:
-                        p = starting_p
-                else:
-                    if sum(overall_best_history[generation - update_interval:generation])/update_interval == overall_best_history[-1]: # TODO: change
-                        p = min(p*p_increase_rate, max_p)
-                    else:
-                        # should never happen anyway since parameters are adjusted in case of new overall best
-                        p = starting_p
-                if restart_at_max_p and p == max_p:
-                    #NOTE: could start a local search for the best in the population (not current best known) at this point, maybe even prevent future populations to get too close to the general area (min dissimilarity distance to previous found best)
-                    self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
-                    population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
-                    p = starting_p
+                self.restarts += 1
+
             for j in range(0, offspring_amount, 2):
                 if selection == 'roulette_wheel':
                     parent_a = self.roulette_wheel_selection(population)
@@ -566,6 +640,8 @@ class GA:
                 self._insert_individual(random_individual, population)
             if population[0].fitness < self.current_best.fitness:
                 self.current_best = population[0]
+                if population[0].fitness < self.overall_best.fitness:
+                    self.overall_best = population[0]
                 if adjust_parameters:
                     last_update = generation
                     p = starting_p
@@ -575,11 +651,11 @@ class GA:
             fitness_stop = (stop_at and self.current_best.fitness <= stop_at)
             stop = gen_stop or time_stop or fitness_stop or len(population) == 0
         if output_interval > 0: # only produce output if needed
-            print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {self.current_best.fitness}')
+            print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {self.overall_best.fitness}')
             print(f'Max Generation defined: {max_generations} | Max Generation reached: {gen_stop}\nRuntime defined: {run_for} | Runtime finished: {time_stop}\nStopping Fitness defined: {stop_at} | Stopping Fitness reached: {fitness_stop}')
             if len(population) == 0:
                 print(f'Could not find any more feasible individuals!')
-        return self.current_best, [overall_best_history, generation_best_history, average_population_history, p_history]
+        return self.overall_best, [overall_best_history, generation_best_history, average_population_history, p_history]
 
 from evaluate_parallel import evaluate_and_adjust_parallel, evaluate_only_parallel
 if __name__ == '__main__':

@@ -46,13 +46,13 @@ def run_experiment(source, instance, parameters : dict):
     start_time = time.time()
     result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
     run_time = time.time() - start_time
-    return result, run_time
+    return result, run_time, ga.function_evaluations, ga.restarts
 
-def save_result(result, source, instance, run_time, parameters):
+def save_result(result, source, instance, run_time, parameters, fevals, restarts):
     file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/testing.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
-        f.write(f'{result.workstations};{result.sequence};{source};{instance};{run_time};{result.fitness};{result.function_evaluations};{parameters}\n')
+        f.write(f'{result.workstations};{result.sequence};{source};{instance};{run_time};{result.fitness};{fevals};{parameters};{restarts}\n')
 
 def run(source, instance, max_generation : int = 5000, time_limit : int = None, target_fitness : float = None, output : bool = False):
     
@@ -82,8 +82,8 @@ def run(source, instance, max_generation : int = 5000, time_limit : int = None, 
         'output_interval': 100 if output else 0
     }
 
-    result, run_time = run_experiment(source, instance, parameters)
-    return result, run_time, parameters
+    result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
+    return result, run_time, parameters, fevals, restarts
 
 def run_lower_population_size(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False):
     parameters = {
@@ -112,8 +112,38 @@ def run_lower_population_size(source, instance, max_generation : int = 5000, tim
         'output_interval': 100 if output else 0
     }
 
-    result, run_time = run_experiment(source, instance, parameters)
-    return result, run_time, parameters
+    result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
+    return result, run_time, parameters, fevals, restarts
+
+def run_lower_new_adaptation(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False):
+    parameters = {
+        'population_size': 50,
+        'offspring_amount': 200,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 10,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': False,
+        'adjust_individuals': True,
+        'adjust_mutation': True,
+        'mutation_update_interval': 200,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament',
+        'tournament_size': 10,
+        'random_individuals': 0,
+        'output_interval': 100 if output else 0
+    }
+
+    result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
+    return result, run_time, parameters, fevals, restarts
 
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -121,20 +151,20 @@ if __name__ == '__main__':
 
     #sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
     sources = ['6_Fattahi']
-    known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1088, 1196]
+    known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     n_experiments = 10
     scores = []
     for benchmark_source in sources:
         full_path = read_path + benchmark_source + '/'
-        for i in range(19, len(os.listdir(full_path))):
+        for i in range(0, len(os.listdir(full_path))):
             source = benchmark_source
             instance = i+1
             for j in range(n_experiments):
                 #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
-                result, run_time, parameters = run_lower_population_size(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+                result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best[i], output=False)
                 print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best[i]}, received: {result.fitness}.')
                 # save result and paramters
-                save_result(result, source, instance, run_time, parameters)
+                save_result(result, source, instance, run_time, parameters, fevals, restarts)
 
 #source = '6_Fattahi'
 #instance = 10
