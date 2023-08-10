@@ -542,9 +542,9 @@ class GA:
         self.current_best = population[0]
         if len(population) == 0:
             pass # TODO: abort, no feasible population
-        if output_interval > 0:
+        """if output_interval > 0:
             print(Individual.min_distance_success)
-            print(Individual._get_max_dissimilarity())
+            print(Individual._get_max_dissimilarity())"""
         population.sort(key=lambda x: x.fitness)
         generation = 0
         starting_p = p = 1 / (len(self.current_best.sequence) + len(self.current_best.workstations)) # mutation probability
@@ -573,12 +573,14 @@ class GA:
             if restart_at_max_p and p >= max_p:
                 #NOTE: could start a local search for the best in the population (not current best known) at this point, maybe even prevent future populations to get too close to the general area (min dissimilarity distance to previous found best)
                 local_minimum = self.simulated_annealing(population[0])
-                if local_minimum.fitness < population[0].fitness:
-                    print(f'Found a better local minimum with simulated annealing with fitness {local_minimum.fitness}')
+                """if local_minimum.fitness < population[0].fitness:
+                    print(f'Found a better local minimum with simulated annealing with fitness {local_minimum.fitness}')"""
                 if local_minimum.fitness < self.overall_best.fitness:
                     self.overall_best = local_minimum
                 self.local_min.append(local_minimum)
                 #self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
+                population_size = min(200, 2 * population_size)
+                offspring_amount = min(800, 2 * offspring_amount)
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p

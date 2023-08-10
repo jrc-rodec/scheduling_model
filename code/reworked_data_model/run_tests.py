@@ -22,8 +22,8 @@ production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
 
-population_size = 50
-offspring_amount = 200
+population_size = 5
+offspring_amount = 20
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
 max_generations = None
@@ -51,7 +51,7 @@ tournament_size = max(2, int(population_size / 10)) # NOTE: only relevant if sel
 random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation, these are also affected by the random_initialization parameter
 output_interval = max_generations/20 if max_generations else 100 # frequency of terminal output (in generations)
 parallel_evaluation = False
-result, history, fevals = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_known_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval, parallel_evaluation=parallel_evaluation)
+result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_known_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval, parallel_evaluation=parallel_evaluation)
 
 print(result)
 print(f'{ga.memory_access} duplicates')
