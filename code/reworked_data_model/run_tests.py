@@ -14,8 +14,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = SequenceGAEncoder()
-source = '6_Fattahi'
-instance = 20
+source = '0_BehnkeGeiger'
+instance = 58
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -28,7 +28,7 @@ offspring_amount = 20
 # if a criteria is not in use, initialize it with None
 max_generations = None
 run_for = 600 # seconds, NOTE: starts counting after population initialization
-stop_at = 1196 # target fitness
+stop_at = None # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation

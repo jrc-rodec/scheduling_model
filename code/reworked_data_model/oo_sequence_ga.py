@@ -481,7 +481,7 @@ class GA:
             p = 1 / len(individual.workstations)
             for i in range(len(individual.workstations)):
                 if random.random() < p:
-                    individual.workstations[i] = random.choice([x for x in Individual.available_workstations[i] if x != individual.workstations[i]])
+                    individual.workstations[i] = random.choice([x for x in Individual.available_workstations[i] if x != individual.workstations[i]]) if len(Individual.available_workstations[i]) > 1 else individual.workstations[i]
                     individual.durations[i] = (Individual.base_durations[i][individual.workstations[i]])
 
         def mutate_sequence_vector(individual):
