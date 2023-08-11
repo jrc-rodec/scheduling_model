@@ -14,8 +14,8 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = SequenceGAEncoder()
-source = '0_BehnkeGeiger'
-instance = 58
+source = '5_Kacem'
+instance = 4
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
@@ -28,13 +28,13 @@ offspring_amount = 20
 # if a criteria is not in use, initialize it with None
 max_generations = None
 run_for = 600 # seconds, NOTE: starts counting after population initialization
-stop_at = None # target fitness
+stop_at = 11 # target fitness
 
-elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> 0 = no elitism, population_size = full elitism
+elitism = None#int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> None = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
 pruning = False # checks if an individual even can be better than the known best before evaluating, returns 2 * min makespan as fitness NOTE: ignored if multiprocessed
 fill_gaps = False # optimization for the schedule construction NOTE: ignored if multiprocessed
-adjust_optimized_individuals = True # change optimized individuals order of operations
+adjust_optimized_individuals = False # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
 adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
@@ -58,6 +58,7 @@ print(f'{ga.memory_access} duplicates')
 print(f'{ga.function_evaluations} function evaluations (only counts unique and feasible solutions)')
 print(f'{ga.infeasible_solutions} infeasible solutions encountered.')
 
+"""
 schedule = encoder.decode(result.sequence, result.workstations, result.workers, result.durations, job_operations, production_environment, fill_gaps)
 
 visualize_schedule(schedule, production_environment, orders)
@@ -88,7 +89,7 @@ if adjust_parameters:
 plt.show(block=False)
 
 from visualization import visualizer_for_schedule
-visualizer_for_schedule(schedule, job_operations)
+visualizer_for_schedule(schedule, job_operations)"""
 
 if __name__ == '__main__':
     freeze_support() # NOTE: has to be the first thing to be executed

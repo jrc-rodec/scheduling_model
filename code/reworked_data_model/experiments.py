@@ -46,7 +46,7 @@ def run_experiment(source, instance, parameters : dict):
     start_time = time.time()
     result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
     run_time = time.time() - start_time
-    return result, run_time, ga.function_evaluations, ga.restarts
+    return result, run_time, ga.function_evaluations, ga.restarts, ga.generations
 
 def save_result(result, source, instance, run_time, parameters, fevals, restarts):
     file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/testing.txt'
@@ -145,27 +145,106 @@ def run_lower_new_adaptation(source, instance, max_generation : int = 5000, time
     result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
     return result, run_time, parameters, fevals, restarts
 
+def test_individual_adjustment(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False):
+    parameters = {
+        'population_size': 5,
+        'offspring_amount': 20,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 1,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': False,
+        'adjust_individuals': True,
+        'adjust_mutation': True,
+        'mutation_update_interval': 100,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament',
+        'tournament_size': 2,
+        'random_individuals': 0,
+        'output_interval': 100 if output else 0
+    }
+
+    result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
+    return result, run_time, parameters, fevals, restarts
+
+def save_adjustment_experiments(run_time, fevals, generations, restarts, source, instance, adjust):
+    file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
+    #maybe add values to dict and use dict writer
+    with open(file, 'a') as f:
+        f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{adjust}\n')
+
+
+def run_experiment_adjust_individual(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False, adjust : bool = True):
+    parameters = {
+        'population_size': 5,
+        'offspring_amount': 20,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 1,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': False,
+        'adjust_individuals': adjust,
+        'adjust_mutation': True,
+        'mutation_update_interval': 100,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament',
+        'tournament_size': 2,
+        'random_individuals': 0,
+        'output_interval': 100 if output else 0
+    }
+
+    result, run_time, fevals, restarts, generations = run_experiment(source, instance, parameters)
+    save_adjustment_experiments(run_time, fevals, generations, restarts, source, instance, parameters['adjust_individuals'])
+    #return result, run_time, parameters, fevals, restarts
+
+
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     read_path = currentdir + '/../external_test_data/FJSSPinstances/'
 
     #sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
-    sources = ['6_Fattahi']
-    known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
-    n_experiments = 10
+    sources = ['5_Kacem']
+    #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
+    known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
+    known_best = [11, 11, 11, 12]
+    n_experiments = 30
     scores = []
-    for benchmark_source in sources:
-        full_path = read_path + benchmark_source + '/'
-        for i in range(0, len(os.listdir(full_path))):
+    source = '5_Kacem'
+    instance = 4
+    known_best = 12
+    #for benchmark_source in sources:
+    full_path = read_path + source + '/'
+    for j in range(n_experiments):
+        #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+        #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
+        run_experiment_adjust_individual(source, instance, None, 600, known_best, False, True)
+    for j in range(n_experiments):
+        #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+        #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
+        run_experiment_adjust_individual(source, instance, None, 600, known_best, False, False)
+            #print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best}, received: {result.fitness}.')
+            # save result and paramters
+            #save_result(result, source, instance, run_time, parameters, fevals, restarts)
+"""        for i in range(3, len(os.listdir(full_path))):
             source = benchmark_source
             instance = i+1
-            for j in range(n_experiments):
-                #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
-                result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best[i], output=False)
-                print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best[i]}, received: {result.fitness}.')
-                # save result and paramters
-                save_result(result, source, instance, run_time, parameters, fevals, restarts)
-
+"""
 #source = '6_Fattahi'
 #instance = 10
 

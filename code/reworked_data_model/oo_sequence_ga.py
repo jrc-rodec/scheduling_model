@@ -577,14 +577,18 @@ class GA:
                     print(f'Found a better local minimum with simulated annealing with fitness {local_minimum.fitness}')"""
                 if local_minimum.fitness < self.overall_best.fitness:
                     self.overall_best = local_minimum
+                if local_minimum.fitness < self.current_best.fitness:
+                    generation_best_history[-1] = local_minimum.fitness
                 self.local_min.append(local_minimum)
                 #self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
                 population_size = min(200, 2 * population_size)
                 offspring_amount = min(800, 2 * offspring_amount)
+                elitism = int(population_size / 10) if elitism else None
+                tournament_size = int(len(population) / 10)
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p
-                p = self.update_mutation_probability(starting_p, len(self.local_min), update_interval, max_p)
+                #p = self.update_mutation_probability(starting_p, len(self.local_min), update_interval, max_p)
                 last_update = generation
                 self.restarts += 1
 
@@ -627,9 +631,9 @@ class GA:
                 offsprings.sort(key=lambda offspring: offspring.fitness)
             selection_pool = []
             selection_pool.extend(offsprings) # already sorted
-            
-            for i in range(elitism):
-                self._insert_individual(population[i], selection_pool) # population should be sorted at this point, insert sorted into selection pool
+            if elitism:
+                for i in range(elitism):
+                    self._insert_individual(population[i], selection_pool) # population should be sorted at this point, insert sorted into selection pool
             population = selection_pool[:population_size - random_individuals] if len(selection_pool) >= population_size else selection_pool[:len(selection_pool) - random_individuals] if len(selection_pool) - random_individuals > 0 else []
             while len(population) < population_size:
                 if random_initialization:
@@ -642,21 +646,22 @@ class GA:
                 self._insert_individual(random_individual, population)
             if population[0].fitness < self.current_best.fitness:
                 self.current_best = population[0]
-                if population[0].fitness < self.overall_best.fitness:
-                    self.overall_best = population[0]
                 if adjust_parameters:
                     last_update = generation
                     p = starting_p
+            if self.current_best.fitness < self.overall_best.fitness:
+                self.overall_best = population[0]
             generation += 1
             gen_stop = (max_generations and generation >= max_generations)
             time_stop = (run_for and time.time() - start_time >= run_for)
-            fitness_stop = (stop_at and self.current_best.fitness <= stop_at)
+            fitness_stop = (stop_at and self.overall_best.fitness <= stop_at)
             stop = gen_stop or time_stop or fitness_stop or len(population) == 0
         if output_interval > 0: # only produce output if needed
-            print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {self.overall_best.fitness}')
+            print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {self.overall_best.fitness} ({self.restarts} Restarts)')
             print(f'Max Generation defined: {max_generations} | Max Generation reached: {gen_stop}\nRuntime defined: {run_for} | Runtime finished: {time_stop}\nStopping Fitness defined: {stop_at} | Stopping Fitness reached: {fitness_stop}')
             if len(population) == 0:
                 print(f'Could not find any more feasible individuals!')
+        self.generations = generation
         return self.overall_best, [overall_best_history, generation_best_history, average_population_history, p_history]
 
 from evaluate_parallel import evaluate_and_adjust_parallel, evaluate_only_parallel
