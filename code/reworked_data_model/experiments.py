@@ -175,11 +175,11 @@ def test_individual_adjustment(source, instance, max_generation : int = 5000, ti
     result, run_time, fevals, restarts = run_experiment(source, instance, parameters)
     return result, run_time, parameters, fevals, restarts
 
-def save_adjustment_experiments(run_time, fevals, generations, restarts, source, instance, adjust):
-    file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
+def save_adjustment_experiments(fitness, run_time, fevals, generations, restarts, source, instance, adjust):
+    file = 'C:/Users/dhutt/Desktop/SCHEDULING_MODEL/code/reworked_data_model/results/comparison.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
-        f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{adjust}\n')
+        f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{fitness};{adjust}\n')
 
 
 def run_experiment_adjust_individual(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None, output : bool = False, adjust : bool = True):
@@ -189,7 +189,7 @@ def run_experiment_adjust_individual(source, instance, max_generation : int = 50
         'max_generations': max_generation,
         'time_limit': time_limit,
         'target_fitness': target_fitness,
-        'elitism': 1,
+        'elitism': None,
         'random_initialization': False,
         'duplicate_parents': False,
         'pruning': False,
@@ -203,16 +203,57 @@ def run_experiment_adjust_individual(source, instance, max_generation : int = 50
         'avoid_local_mins': True,
         'local_min_distance': 0.1,
         'sequence_mutation': 'mix',
-        'selection': 'tournament',
+        'selection': 'tournament', # 'tournament'
         'tournament_size': 2,
         'random_individuals': 0,
         'output_interval': 100 if output else 0
     }
 
     result, run_time, fevals, restarts, generations = run_experiment(source, instance, parameters)
-    save_adjustment_experiments(run_time, fevals, generations, restarts, source, instance, parameters['adjust_individuals'])
+    save_adjustment_experiments(result.fitness, run_time, fevals, generations, restarts, source, instance, parameters['adjust_individuals'])
     #return result, run_time, parameters, fevals, restarts
 
+def kacem_and_brandimarte(source, instance, adjust):
+    encoder = SequenceGAEncoder()
+    production_environment = FJSSPInstancesTranslator().translate(source, instance)
+    orders = generate_one_order_per_recipe(production_environment)
+    production_environment.orders = orders
+    workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
+    ga = GA(job_operations, workstations_per_operation, base_durations)
+
+    population_size = 5
+    offspring_amount = 20
+    # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
+    # if a criteria is not in use, initialize it with None
+    max_generations = None
+    run_for = 1800 # seconds, NOTE: starts counting after population initialization
+    stop_at = 927 # target fitness
+
+    elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> None = no elitism, population_size = full elitism
+    allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
+    pruning = False # checks if an individual even can be better than the known best before evaluating, returns 2 * min makespan as fitness NOTE: ignored if multiprocessed
+    fill_gaps = False # optimization for the schedule construction NOTE: ignored if multiprocessed
+    adjust_optimized_individuals = adjust # change optimized individuals order of operations
+    random_initialization = False # False = use dissimilarity function
+
+    adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
+    update_interval = 100#50#int(max_generations/20) # update after n generations without progress, NOTE: only relevant if adjust_parameters = True
+    p_increase_rate = 4.0#2.0#1.1 # multiply current p with p_increase_rate, NOTE: only relevant if adjust_parameters = True
+    max_p = 1.0#1.0 # 1.0 -> turns into random search if there's no progress for a long time without restarting, NOTE: only relevant if adjust_parameters = True
+    restart_at_max_p = True # create a completely new population if max_p is reached to prevent random search
+    avoid_known_local_mins = True
+    local_min_distance = 0.1
+    sequence_mutation = 'mix' # swap, insert, or mix
+
+    selection = 'tournament' # 'roulette_wheel' or 'tournament'
+    tournament_size = max(2, int(population_size / 10)) # NOTE: only relevant if selection = 'tournament'
+    random_individual_per_generation_amount = 0#int(population_size / 10) # amount of randomly created individuals included into each new generation, these are also affected by the random_initialization parameter
+    output_interval = max_generations/20 if max_generations else 100 # frequency of terminal output (in generations)
+    parallel_evaluation = False
+    start_time = time.time()
+    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_known_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_optimized_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=0, parallel_evaluation=parallel_evaluation)
+    run_time = time.time() - start_time
+    save_adjustment_experiments(result.fitness, run_time, ga.function_evaluations, ga.generations, ga.restarts, source, instance, adjust)
 
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -225,19 +266,28 @@ if __name__ == '__main__':
     known_best = [11, 11, 11, 12]
     n_experiments = 30
     scores = []
-    source = '5_Kacem'
-    instance = 4
-    known_best = 12
+    #source = '1_Brandimarte'
+    #instance = 1
+    #known_best = 40
+    selection = [('5_Kacem', 1, 11), ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('5_Kacem', 4, 12), ('4_ChambersBarnes', 6, 927)]
+    time_limit = 1800
+    selection = selection[6:]
     #for benchmark_source in sources:
-    full_path = read_path + source + '/'
-    for j in range(n_experiments):
-        #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
-        #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
-        run_experiment_adjust_individual(source, instance, None, 600, known_best, False, True)
-    for j in range(n_experiments):
-        #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
-        #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
-        run_experiment_adjust_individual(source, instance, None, 600, known_best, False, False)
+    #full_path = read_path + source + '/'
+    for instance in selection:
+        if instance[0] != '5_Kacem':
+            for j in range(n_experiments):
+                #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+                #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
+                #run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, True)
+                kacem_and_brandimarte(instance[0], instance[1], True)
+                print(f'{j} - {instance[0]}{instance[1]} - With Adjustment')
+        for j in range(n_experiments):
+            #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
+            #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
+            #run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, False)
+            kacem_and_brandimarte(instance[0], instance[1], False)
+            print(f'{j} - {instance[0]}{instance[1]} - Without Adjustment')
             #print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best}, received: {result.fitness}.')
             # save result and paramters
             #save_result(result, source, instance, run_time, parameters, fevals, restarts)

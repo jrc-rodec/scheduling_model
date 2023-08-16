@@ -581,10 +581,10 @@ class GA:
                     generation_best_history[-1] = local_minimum.fitness
                 self.local_min.append(local_minimum)
                 #self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
-                population_size = min(200, 2 * population_size)
-                offspring_amount = min(800, 2 * offspring_amount)
-                elitism = int(population_size / 10) if elitism else None
-                tournament_size = int(len(population) / 10)
+                population_size = min(200, 2 * population_size)#min(200, 2 * population_size)
+                offspring_amount = min(800, 2 * offspring_amount)#min(800, 2 * offspring_amount)
+                #elitism = max(1, int(population_size / 10)) if elitism else None
+                #tournament_size = max(int(len(population) / 10), 2)
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p
