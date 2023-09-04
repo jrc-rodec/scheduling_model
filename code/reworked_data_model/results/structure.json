@@ -1,0 +1,214 @@
+{
+    "environment": 
+    {
+        "resources":
+        [
+            {
+                "id": 0,
+                "name": "r1",
+                "stock": 100,
+                "price_per_unit": 10
+            },
+            {
+                "id": 1,
+                "name": "r2",
+                "stock": 50,
+                "price_per_unit": 5
+            },
+            {
+                "id": 2,
+                "name": "r3",
+                "stock": 0,
+                "price_per_unit": 2
+            }
+        ],
+        "workstations":
+        [ 
+            {
+                "id": 0,
+                "name": "m1"
+            },
+            {
+                "id": 1,
+                "name": "m2"
+            },
+            {
+                "id": 2,
+                "name": "m3"
+            }
+        ],
+        "worker":
+        [
+            {
+                "id": 0,
+                "name": "w1"
+            },
+            {
+                "id": 1,
+                "name": "w2"
+            },
+            {
+                "id": 2,
+                "name": "w3"
+            }
+        ],
+        "setup_groups":
+        [
+            {
+                "id": 0,
+                "setup_time": 5,
+                "dissasemble_time": 3
+            },
+            {
+                "id": 1,
+                "setup_time": 3,
+                "dissasemble_time": 2
+            },
+            {
+                "id": 2,
+                "setup_time": 4,
+                "dissasemble_time": 5
+            }
+        ],
+        "jobs":
+        [
+            {
+                "id": 0,
+                "operations":
+                [
+                    {
+                        "id": 0,
+                        "processing_times":
+                        [
+                            {
+                                "workstation_id": 0,
+                                "setup_group": 0,
+                                "duration": 25
+                            },
+                            {
+                                "workstation_id": 1,
+                                "setup_group": 1,
+                                "duration": 30
+                            }
+                        ],
+                        "resources": 
+                        [
+                            {
+                                "resource_id": 0,
+                                "amount": 10
+                            },
+                            {
+                                "resource_id": 1,
+                                "amount": 5
+                            }
+                        ]
+                    },
+                    {
+                        "id": 1,
+                        "processing_times":
+                        [
+                            {
+                                "workstation_id": 1,
+                                "setup_group": 2,
+                                "duration": 20
+                            }
+                        ],
+                        "resources": 
+                        [
+                            {
+                                "resource_id": 0,
+                                "amount": 5
+                            },
+                            {
+                                "resource_id": 2,
+                                "amount": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": 1,
+                "operations":
+                [
+                    {
+                        "id": 0,
+                        "processing_times":
+                        [
+                            {
+                                "workstation_id": 0,
+                                "setup_group": 1,
+                                "duration": 
+                                [
+                                    {
+                                        "worker_id": 0,
+                                        "duration": 10
+                                    }
+                                ]
+                            },
+                            {
+                                "workstation_id": 2,
+                                "setup_group": 1,
+                                "duration":
+                                [
+                                    {
+                                        "worker_id": 0,
+                                        "duration": 15
+                                    },
+                                    {
+                                        "worker_id": 1,
+                                        "duration": 13
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": 1,
+                        "processing_times":
+                        [
+                            {
+                                "workstation_id": 1,
+                                "setup_group": 2,
+                                "duration": 20
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "orders": 
+    [
+        {
+            "id": 0,
+            "jobs":
+            [
+                0, 1
+            ],
+            "delivery_time": 150,
+            "profit": 400,
+            "tardiness_penalty": 50
+        },
+        {
+            "id": 1,
+            "jobs":
+            [
+                0
+            ],
+            "delivery_time": 100,
+            "profit": 150,
+            "tardiness_penalty": 20
+        },
+        {
+            "id": 2,
+            "jobs":
+            [
+                1
+            ],
+            "delivery_time": 120,
+            "profit": 250,
+            "tardiness_penalty": 30
+        }
+    ]
+}
