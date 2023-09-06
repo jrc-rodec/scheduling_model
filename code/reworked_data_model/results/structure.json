@@ -7,19 +7,22 @@
                 "id": 0,
                 "name": "r1",
                 "stock": 100,
-                "price_per_unit": 10
+                "price_per_unit": 10,
+                "reusable": true
             },
             {
                 "id": 1,
                 "name": "r2",
                 "stock": 50,
-                "price_per_unit": 5
+                "price_per_unit": 5,
+                "reusable": false
             },
             {
                 "id": 2,
                 "name": "r3",
                 "stock": 0,
-                "price_per_unit": 2
+                "price_per_unit": 2,
+                "reusable": false
             }
         ],
         "workstations":
@@ -57,17 +60,17 @@
             {
                 "id": 0,
                 "setup_time": 5,
-                "dissasemble_time": 3
+                "disassemble_time": 3
             },
             {
                 "id": 1,
                 "setup_time": 3,
-                "dissasemble_time": 2
+                "disassemble_time": 2
             },
             {
                 "id": 2,
                 "setup_time": 4,
-                "dissasemble_time": 5
+                "disassemble_time": 5
             }
         ],
         "jobs":
