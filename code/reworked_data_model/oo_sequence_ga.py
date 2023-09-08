@@ -223,6 +223,14 @@ class GA:
         winner = sorted(participants, key=lambda x: population[x].fitness)[0]
         return population[winner]
     
+    def tournament_selection_random(self, population, tournament_size):
+        if tournament_size == 0:
+            tournament_size = int(len(population) / 10)
+        participants = random.choices(range(0, len(population)), k=tournament_size)
+        sorted_participants = sorted(participants, key=lambda x: population[x].fitness)
+        equal_winners = [x for x in sorted_participants if population[x].fitness == population[sorted_participants[0]].fitness]
+        return population[random.choice(equal_winners)]
+    
     def adjust_individual(self, individual : Individual):
         class Gap:
             def __init__(self, start, end, before_operation):
@@ -603,6 +611,10 @@ class GA:
                     parent_b = self.tournament_selection(population, tournament_size)
                     while not allow_duplicate_parents and parent_a == parent_b:
                         parent_b = self.tournament_selection(population, tournament_size)
+                    """parent_a = self.tournament_selection_random(population, tournament_size)
+                    parent_b = self.tournament_selection_random(population, tournament_size)
+                    while not allow_duplicate_parents and parent_a == parent_b:
+                        parent_b = self.tournament_selection_random(population, tournament_size)"""
                 else:
                     print('Unknown selection parameter')
                 offspring_a, offspring_b = self.recombine(parent_a, parent_b)

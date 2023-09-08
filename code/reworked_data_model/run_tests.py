@@ -14,27 +14,27 @@ def generate_one_order_per_recipe(production_environment : ProductionEnvironment
     return orders
 
 encoder = SequenceGAEncoder()
-source = '4_ChambersBarnes'
-instance = 6
+source = '5_Kacem'
+instance = 4
 production_environment = FJSSPInstancesTranslator().translate(source, instance)
 orders = generate_one_order_per_recipe(production_environment)
 production_environment.orders = orders
 workstations_per_operation, base_durations, job_operations = encoder.encode(production_environment, orders)
 ga = GA(job_operations, workstations_per_operation, base_durations)
-
+#('5_Kacem', 4, 12)
 population_size = 5
 offspring_amount = 20
 # stopping criteria - if more than one is defined, GA stops as soon as the first criteria is met
 # if a criteria is not in use, initialize it with None
 max_generations = None
 run_for = 1200 # seconds, NOTE: starts counting after population initialization
-stop_at = 927 # target fitness
+stop_at = 12 # target fitness
 
 elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> None = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
 pruning = False # checks if an individual even can be better than the known best before evaluating, returns 2 * min makespan as fitness NOTE: ignored if multiprocessed
 fill_gaps = False # optimization for the schedule construction NOTE: ignored if multiprocessed
-adjust_optimized_individuals = False # change optimized individuals order of operations
+adjust_optimized_individuals = True # change optimized individuals order of operations
 random_initialization = False # False = use dissimilarity function
 
 adjust_parameters = True # decides whether or not the mutation rate should be adjusted during the optimization process
