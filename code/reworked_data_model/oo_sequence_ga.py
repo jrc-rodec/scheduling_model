@@ -646,6 +646,7 @@ class GA:
             if elitism:
                 for i in range(elitism):
                     self._insert_individual(population[i], selection_pool) # population should be sorted at this point, insert sorted into selection pool
+            # TODO: shuffle same fitness portions of the selection pool
             population = selection_pool[:population_size - random_individuals] if len(selection_pool) >= population_size else selection_pool[:len(selection_pool) - random_individuals] if len(selection_pool) - random_individuals > 0 else []
             while len(population) < population_size:
                 if random_initialization:

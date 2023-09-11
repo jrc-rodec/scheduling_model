@@ -30,7 +30,7 @@ max_generations = None
 run_for = 1200 # seconds, NOTE: starts counting after population initialization
 stop_at = 12 # target fitness
 
-elitism = int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> None = no elitism, population_size = full elitism
+elitism = None#int(population_size/10) #population_size # maximum amount of individuals of the parent generation that can be transferred into the new generation -> None = no elitism, population_size = full elitism
 allow_duplicate_parents = False # decides whether or not the same parent can be used as parent_a and parent_b for the crossover operation
 pruning = False # checks if an individual even can be better than the known best before evaluating, returns 2 * min makespan as fitness NOTE: ignored if multiprocessed
 fill_gaps = False # optimization for the schedule construction NOTE: ignored if multiprocessed
