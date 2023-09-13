@@ -530,6 +530,18 @@ class GA:
             T = initial_T
         return best
 
+    def shuffle_population(self, population):
+        result_population = []
+        sub_lists = dict()
+        for individual in population:
+            if individual.fitness not in sub_lists:
+                sub_lists[individual.fitness] = []
+            sub_lists[individual.fitness].append(individual)
+        for sublist in sub_lists.values():
+            random.shuffle(sublist)
+            result_population.extend(sublist)
+        return sorted(result_population, key=lambda x: x.fitness)
+
     def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False):
         self.infeasible_solutions = 0
         self.function_evaluations = 0
@@ -596,7 +608,7 @@ class GA:
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p
-                #p = self.update_mutation_probability(starting_p, len(self.local_min), update_interval, max_p)
+                # p = self.update_mutation_probability(starting_p, len(self.local_min), update_interval, max_p)
                 last_update = generation
                 self.restarts += 1
 
@@ -647,6 +659,7 @@ class GA:
                 for i in range(elitism):
                     self._insert_individual(population[i], selection_pool) # population should be sorted at this point, insert sorted into selection pool
             # TODO: shuffle same fitness portions of the selection pool
+            #selection_pool = self.shuffle_population(selection_pool)
             population = selection_pool[:population_size - random_individuals] if len(selection_pool) >= population_size else selection_pool[:len(selection_pool) - random_individuals] if len(selection_pool) - random_individuals > 0 else []
             while len(population) < population_size:
                 if random_initialization:
