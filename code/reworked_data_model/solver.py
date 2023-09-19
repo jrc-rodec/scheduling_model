@@ -1369,7 +1369,7 @@ class GurobiSolver(Solver):
 
     def run(self):
         self.m.update()
-        self.m.display()
+        #self.m.display()
         self.m.optimize()
 
     def get_best(self):
@@ -1380,7 +1380,10 @@ class GurobiSolver(Solver):
 
         
     def get_best_fitness(self):
-        return 0
+        return self.m.getAttr('X', self.C)
+    
+    def get_lower_bound(self):
+        return self.m.LB
 
 class GurobiWithWorkerSolver(Solver):
     

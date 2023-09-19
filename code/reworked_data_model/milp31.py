@@ -12,7 +12,7 @@ import gurobipy as gp # Import des Gurobi-Pythonpakets
 # sequence based MILP for FJSSP
 
 #read and arrange Data
-f = open(r'C:\Users\dhutt\Desktop\SCHEDULING_MODEL\code\external_test_data\FJSSPinstances\0_BehnkeGeiger\Behnke58.fjs')
+f = open(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\4_ChambersBarnes\ChambersBarnes10.fjs')
 lines = f.readlines()
 first_line = lines[0].split()
 # Number of jobs
