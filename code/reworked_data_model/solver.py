@@ -1361,11 +1361,12 @@ class GurobiSolver(Solver):
                     for j, k in job_ops if j < nb_jobs
                     for jp, kp in job_ops if jp > j 
                     for i in machines if i in job_op_suitable[j,k] if i in job_op_suitable[jp,kp]), "l2")
-
+        
         self.m.addConstrs((Cmax>=C[j,nb_operations[j-1]] for j in jobs),"Cmax")
         self.X = X
         self.Y = Y
         self.C = C
+        self.Cmax = Cmax
 
     def run(self):
         self.m.update()
@@ -1377,7 +1378,6 @@ class GurobiSolver(Solver):
         ysol = self.m.getAttr('X', self.Y)
         csol = self.m.getAttr('X', self.C)
         return xsol, ysol, csol
-
         
     def get_best_fitness(self):
         return self.m.getAttr('X', self.C)
