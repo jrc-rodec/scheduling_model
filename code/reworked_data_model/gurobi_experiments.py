@@ -39,7 +39,7 @@ for instance in instances:
         #print(solver.get_best_fitness())
         #print(f'Optimal: {solver.m.Status == 2}') # NOTE: status 2 = optimal, status 9 = time limit reached
         #print(f'Time Limit Reached: {solver.m.Status == 9}')
-        xsol, ysol, csol = solver.get_best() # TODO: change signature
+        #xsol, ysol, csol = solver.get_best() # TODO: change signature
         #print(f'XSOL: {xsol}')
         #print(f'YSOL: {ysol}')
         #print(f'CSOL: {csol}')
@@ -48,6 +48,11 @@ for instance in instances:
         #values = solver.m.getVars()
         #print(solver.Cmax.X)
         #print(solver.Cmax.UB)
-        print(solver.m.Xn)
+        #print(solver.Cmax.X)
+        #print(solver.m.Xn)
+        #print(f'MAX BOUND: {solver.m.MaxBound}')
+        #print(f'MAX COEFF: {solver.m.MaxCoeff}')
+        #print(f'MIN COEFF: {solver.m.MinCoeff}')
+        #print(f'POOL OBJ BOUND: {solver.m.PoolObjBound}')
         #solver.m.write(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results.sol')
         write_result(instance[0], instance[1], instance[2], solver.m.Runtime, solver.m.Status == 2, solver.Cmax.X, solver.m.MIPGap) # TODO: best feasible fitness
