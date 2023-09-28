@@ -542,7 +542,19 @@ class GA:
             result_population.extend(sublist)
         return sorted(result_population, key=lambda x: x.fitness)
 
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False, population_size_scale : float = 0.1, tournament_size_scale : float = 0.1):
+    def determine_ud(self):
+        #base_durations
+        count = 0
+        unique_durations = []
+        for row in self.base_durations:
+            for duration in row:
+                if duration not in unique_durations:
+                    unique_durations.append(duration)
+                count += 1
+        return len(unique_durations)/count
+
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False, population_size_scale : float = 0.1, tournament_size_scale : float = 0.2, population_size_growth_per_restart : int = 2):
+        ud = self.determine_ud()
         self.infeasible_solutions = 0
         self.function_evaluations = 0
         self.restarts = 0
@@ -601,12 +613,12 @@ class GA:
                     generation_best_history[-1] = local_minimum.fitness
                 self.local_min.append(local_minimum)
                 #self.local_min.append(population[0]) # TODO: Maybe use local search algorithm here
-                population_size = min(200, 2 * population_size)#min(200, 2 * population_size)
-                offspring_amount = min(800, 2 * offspring_amount)#min(800, 2 * offspring_amount)
+                population_size = min(200, population_size_growth_per_restart * population_size)#min(200, 2 * population_size)
+                offspring_amount = min(800, population_size_growth_per_restart * offspring_amount)#min(800, 2 * offspring_amount)
                 #elitism = max(1, int(population_size / 10)) if elitism else None
                 #tournament_size = max(int(len(population) / 10), 2)
                 elitism = max(1, int((population_size * population_size_scale) + 0.5)) if elitism else None # NOTE: population_size_scale between 0 and 1 - if 0, elitism stays 1
-                tournament_size = max(1, int(tournament_size * tournament_size_scale) + 0.5) # NOTE: tournament_size_scale between 0 and 1 - if 0, tournament_size stays 1 -> random selection
+                tournament_size = max(1, int(population_size * tournament_size_scale * ud) + 0.5) # NOTE: tournament_size_scale between 0 and 1 - if 0, tournament_size stays 1 -> random selection
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p
