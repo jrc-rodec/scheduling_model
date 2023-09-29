@@ -176,7 +176,8 @@ def test_individual_adjustment(source, instance, max_generation : int = 5000, ti
     return result, run_time, parameters, fevals, restarts
 
 def save_adjustment_experiments(fitness, run_time, fevals, generations, restarts, source, instance, adjust):
-    file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
+    #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
+    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\tournament_testing.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
         f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{fitness};{adjust}\n')
@@ -299,12 +300,12 @@ if __name__ == '__main__':
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
     #known_best = [11, 11, 11, 12]
-    n_experiments = 30
+    n_experiments = 20
     scores = []
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection = [('5_Kacem', 1, 11), ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('5_Kacem', 4, 12), ('4_ChambersBarnes', 6, 927)]
+    selection = [('5_Kacem', 1, 11), ('5_Kacem', 4, 12), ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
     time_limit = 600
     #selection = selection[6:]
     #for benchmark_source in sources:
@@ -314,17 +315,17 @@ if __name__ == '__main__':
         for j in range(n_experiments):
             #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
             #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
-            #run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, True)
+            run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, True)
             #kacem_and_brandimarte(instance[0], instance[1], True)
-            run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, True)
+            #run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, True)
             print(f'{j} - {instance[0]}{instance[1]} - With Elitism')
-        for j in range(n_experiments):
+        #for j in range(n_experiments):
             #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
             #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
             #run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, False)
             #kacem_and_brandimarte(instance[0], instance[1], False)
-            run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, False)
-            print(f'{j} - {instance[0]}{instance[1]} - Without Elitism')
+            #run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, False)
+            #print(f'{j} - {instance[0]}{instance[1]} - Without Elitism')
             #print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best}, received: {result.fitness}.')
             # save result and paramters
             #save_result(result, source, instance, run_time, parameters, fevals, restarts)

@@ -546,7 +546,7 @@ class GA:
         #base_durations
         count = 0
         unique_durations = []
-        for row in self.base_durations:
+        for row in Individual.base_durations:
             for duration in row:
                 if duration not in unique_durations:
                     unique_durations.append(duration)
@@ -617,8 +617,8 @@ class GA:
                 offspring_amount = min(800, population_size_growth_per_restart * offspring_amount)#min(800, 2 * offspring_amount)
                 #elitism = max(1, int(population_size / 10)) if elitism else None
                 #tournament_size = max(int(len(population) / 10), 2)
-                elitism = max(1, int((population_size * population_size_scale) + 0.5)) if elitism else None # NOTE: population_size_scale between 0 and 1 - if 0, elitism stays 1
-                tournament_size = max(1, int(population_size * tournament_size_scale * ud) + 0.5) # NOTE: tournament_size_scale between 0 and 1 - if 0, tournament_size stays 1 -> random selection
+                elitism = max(1, int((population_size * population_size_scale * ud) + 0.5)) if elitism else None # NOTE: population_size_scale between 0 and 1 - if 0, elitism stays 1
+                tournament_size = max(1, int((population_size * tournament_size_scale * ud) + 0.5)) # NOTE: tournament_size_scale between 0 and 1 - if 0, tournament_size stays 1 -> random selection
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p
