@@ -177,7 +177,7 @@ def test_individual_adjustment(source, instance, max_generation : int = 5000, ti
 
 def save_adjustment_experiments(fitness, run_time, fevals, generations, restarts, source, instance, adjust):
     #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
-    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\tournament_testing.txt'
+    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\local_minimum_testing.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
         f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{fitness};{adjust}\n')
@@ -299,14 +299,14 @@ if __name__ == '__main__':
     #sources = ['5_Kacem']
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
-    #known_best = [11, 11, 11, 12]
+    #known_best = [11, 11, 7, 11]
     n_experiments = 20
     scores = []
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection = [('5_Kacem', 1, 11), ('5_Kacem', 4, 12), ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
-    time_limit = 600
+    selection = [('5_Kacem', 1, 11), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    time_limit = 900
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
@@ -327,7 +327,7 @@ if __name__ == '__main__':
             #run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, False)
             #print(f'{j} - {instance[0]}{instance[1]} - Without Elitism')
             #print(f'Finished Experiment {j+1} with Benchmark {source}{instance}, expected: {known_best}, received: {result.fitness}.')
-            # save result and paramters
+            # save result and parameters
             #save_result(result, source, instance, run_time, parameters, fevals, restarts)
 """        for i in range(3, len(os.listdir(full_path))):
             source = benchmark_source

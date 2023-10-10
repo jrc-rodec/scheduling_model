@@ -7,7 +7,7 @@ def write_result(source : str, instance : int, expected_result, runtime : float,
     with open(path, 'a') as f:
         f.write(f'{source};{instance};{runtime};{optimal};{expected_result};{fitness}\n')
 
-experiments = 5
+experiments = 1
 instances = [['5_Kacem', 1, 11], ['5_Kacem', 4, 12]]
 for instance in instances:
     for i in range(experiments):
@@ -26,7 +26,7 @@ for instance in instances:
         nb_machines, nb_jobs, nb_operations, job_ops_machs, durations, job_op_suitable, upper_bound, jobs = encoder.encode(production_environment, orders)
         solver = GurobiSolver(production_environment)
         solver.initialize(nb_jobs, nb_operations, nb_machines, job_ops_machs, durations, job_op_suitable, upper_bound)
-        solver.m.Params.TIME_LIMIT = 10 # time limit in seconds
+        solver.m.Params.TIME_LIMIT = 20 # time limit in seconds
         solver.run()
 
         #if solver.m.Status == 2:
@@ -47,12 +47,12 @@ for instance in instances:
         #print(f'Gap: {solver.m.MIPGap}')
         #values = solver.m.getVars()
         #print(solver.Cmax.X)
-        #print(solver.Cmax.UB)
-        #print(solver.Cmax.X)
-        #print(solver.m.Xn)
-        #print(f'MAX BOUND: {solver.m.MaxBound}')
-        #print(f'MAX COEFF: {solver.m.MaxCoeff}')
-        #print(f'MIN COEFF: {solver.m.MinCoeff}')
-        #print(f'POOL OBJ BOUND: {solver.m.PoolObjBound}')
+        print(solver.Cmax.UB)
+        print(solver.Cmax.X)
+        print(solver.m.Xn)
+        print(f'MAX BOUND: {solver.m.MaxBound}')
+        print(f'MAX COEFF: {solver.m.MaxCoeff}')
+        print(f'MIN COEFF: {solver.m.MinCoeff}')
+        print(f'POOL OBJ BOUND: {solver.m.PoolObjBound}')
         #solver.m.write(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results.sol')
         write_result(instance[0], instance[1], instance[2], solver.m.Runtime, solver.m.Status == 2, solver.Cmax.X, solver.m.MIPGap) # TODO: best feasible fitness
