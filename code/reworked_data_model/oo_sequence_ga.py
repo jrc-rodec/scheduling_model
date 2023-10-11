@@ -604,7 +604,7 @@ class GA:
                 
             if restart_at_max_p and p >= max_p:
                 #NOTE: could start a local search for the best in the population (not current best known) at this point, maybe even prevent future populations to get too close to the general area (min dissimilarity distance to previous found best)
-                local_minimum = population[0]#self.simulated_annealing(population[0])
+                local_minimum = self.simulated_annealing(population[0])
                 """if local_minimum.fitness < population[0].fitness:
                     print(f'Found a better local minimum with simulated annealing with fitness {local_minimum.fitness}')"""
                 if local_minimum.fitness < self.overall_best.fitness:

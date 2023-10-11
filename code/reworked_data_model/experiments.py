@@ -177,7 +177,7 @@ def test_individual_adjustment(source, instance, max_generation : int = 5000, ti
 
 def save_adjustment_experiments(fitness, run_time, fevals, generations, restarts, source, instance, adjust):
     #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
-    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\local_minimum_testing.txt'
+    file = r'C:\Users\dhutt\Desktop\SCHEDULING_MODEL\code\reworked_data_model\results\local_minimum_testing.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
         f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{fitness};{adjust}\n')
