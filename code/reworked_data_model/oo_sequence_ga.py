@@ -356,7 +356,7 @@ class GA:
                 # check end on prev workstation NOTE: if there is a previous operation of this job, start_index-1 should never be out of range
                 offset = max(0, end_times[start_index-1] - end_on_workstations[workstation])
                 min_start_job = end_times[start_index-1]
-            if fill_gaps:# and False: # NOTE technically all individuals should already be adjusted after creation
+            if fill_gaps and False: # NOTE technically all individuals should already be adjusted after creation
                 use_gap = None
                 for gap in gaps_on_workstations[workstation]:
                     if gap[0] >= min_start_job and gap[0] >= end_on_workstations[workstation] and gap[1] - gap[0] >= duration:
