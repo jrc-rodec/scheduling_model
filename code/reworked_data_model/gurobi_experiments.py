@@ -14,9 +14,7 @@ def write_result(source : str, instance : int, best_result, upper_bound : float,
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/../external_test_data/FJSSPinstances/'
-write_path = currentdir + '/changed_benchmarks/'
 use_sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata','2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
-write_path = currentdir + '/benchmarks_with_workers/'
 for benchmark_source in use_sources:
     full_path = read_path + benchmark_source + '/'
     for i in range(len(os.listdir(full_path))):
