@@ -7,7 +7,7 @@ import inspect
 
 #upper bound, lower bound, best solution (fitness),gap, status, # explored solution, laufzeit, gesamtlaufzeit, X+Y+C vektoren
 def write_result(source : str, instance : int, best_result, upper_bound : float, lower_bound : float, x, y, c, gap, status, n_explored_solutions, runtime, overall_runtime):
-    path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_experiment_results.txt'
+    path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results.txt'
     with open(path, 'a') as f:
         f.write(f'{source};{instance};{best_result};{upper_bound};{lower_bound};{gap};{status};{n_explored_solutions};{runtime};{overall_runtime};{x};{y};{c}\n')
 
