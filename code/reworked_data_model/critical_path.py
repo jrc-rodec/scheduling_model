@@ -43,7 +43,8 @@ def find_critical_path(sequence, assignments, durations):
     occurences = [0] * len(sequence)
     #... count occurences
     
-    p = create_p(occurences)
+    #p = create_p(occurences)
+    p = norm_probabilities(occurences)
 
 def create_p(occurences):
     shares = 0
@@ -53,6 +54,10 @@ def create_p(occurences):
     p = [0] * len(occurences)
     for i in range(len(occurences)):
         p[i] = (occurences[i]+1) * share
+
+def norm_probabilities(occurences):
+    s = sum(occurences)
+    return [x / s for x in occurences]
     
 
 sequence = [0, 1, 0, 1, 2, 1, 0]
