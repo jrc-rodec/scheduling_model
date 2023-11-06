@@ -56,8 +56,9 @@ def create_p(occurences):
         p[i] = (occurences[i]+1) * share
 
 def norm_probabilities(occurences):
-    s = sum(occurences)
-    return [x / s for x in occurences]
+    shares = [o + 1 for o in occurences]
+    s = sum(shares)
+    return [(x+1) / s for x in occurences]
     
 
 sequence = [0, 1, 0, 1, 2, 1, 0]
@@ -65,3 +66,5 @@ assignments = [1, 1, 0, 2, 3, 3, 4]
 #find_critical_path(sequence, assignments)
 occurences = [0, 0, 0, 1, 1, 2, 1, 1, 2, 0] # 4 + 8 + 6 = 18
 create_p(occurences)
+
+print(sum(norm_probabilities(occurences)))
