@@ -18,7 +18,7 @@ def write_end(file, duration):
     with open(file, 'a') as f:
         f.write(f'----------------------FINISHED ALL EXPERIMENTS AFTER {duration} SECONDS----------------------\n')
 
-output_path =  r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_experiment_results.txt'
+output_path =  r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results.txt'
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/../external_test_data/FJSSPinstances/'
 use_sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata','2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
