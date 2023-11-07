@@ -37,7 +37,36 @@ def find_critical_path(sequence, assignments, durations):
         end_points.append(machine[-1])
         if last > makespan:
             makespan = last
-    critical_path_end_points = [x for x in end_points if x[3] == makespan]
+    critical_path_end_points = []#[x for x in end_points if x[3] == makespan]
+    for i in range(len(end_points)):
+        if end_points[3] == makespan:
+            critical_path_end_points.append(i)
+    # move backwards
+    occurence = [0] * len(sequence) # count how often each operation appears in the critical paths
+    for i in range(len(critical_path_end_points)):
+        current = schedule[critical_path_end_points[i]][-1]
+        machine_index = len(schedule[critical_path_end_points[i]])-1
+        while current:
+            occurence[job_start_indices[current[0]] + current[1]] += 1
+            machine_pre = schedule[critical_path_end_points[i]][machine_index] if machine_index > 0 else None
+            if current[1] > 0:
+                machine = assignments[job_start_indices[current[0]]]
+                for operation in schedule[machine]:
+                    if operation[0] == current[0] and current[1]-1 == operation[1]:
+                        sequence_pre = operation
+                        break
+            else:
+                sequence_pre = None 
+            if machine_pre != None and sequence_pre != None:
+                current = machine_pre if machine_pre[3] > sequence_pre[3] else sequence_pre
+            elif machine_pre != None:
+                current = machine_pre
+            elif sequence_pre != None:
+                current = sequence_pre
+            else:
+                current = None
+            operation_index[current[0]] = max(0, operation_index[current[0]]-1)
+            machine_index = max(0, machine_index-1)
     
 
 sequence = [0, 1, 0, 1, 2, 1, 0]
