@@ -67,8 +67,34 @@ def find_critical_path(sequence, assignments, durations):
                 current = None
             operation_index[current[0]] = max(0, operation_index[current[0]]-1)
             machine_index = max(0, machine_index-1)
+    critical_path_end_points = [x for x in end_points if x[3] == makespan]
+
+
+    occurences = [0] * len(sequence)
+    #... count occurences
+    
+    #p = create_p(occurences)
+    p = norm_probabilities(occurences)
+
+def create_p(occurences):
+    shares = 0
+    for i in range(max(occurences)+1):
+        shares += occurences.count(i) * (i+1)
+    share = 1 / shares
+    p = [0] * len(occurences)
+    for i in range(len(occurences)):
+        p[i] = (occurences[i]+1) * share
+
+def norm_probabilities(occurences):
+    shares = [o + 1 for o in occurences]
+    s = sum(shares)
+    return [(x+1) / s for x in occurences]
     
 
 sequence = [0, 1, 0, 1, 2, 1, 0]
 assignments = [1, 1, 0, 2, 3, 3, 4]
-find_critical_path(sequence, assignments)
+#find_critical_path(sequence, assignments)
+occurences = [0, 0, 0, 1, 1, 2, 1, 1, 2, 0] # 4 + 8 + 6 = 18
+create_p(occurences)
+
+print(sum(norm_probabilities(occurences)))

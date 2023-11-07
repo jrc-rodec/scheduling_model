@@ -209,7 +209,7 @@ def run_experiment_adjust_individual(source, instance, max_generation : int = 50
         'avoid_local_mins': True,
         'local_min_distance': 0.1,
         'sequence_mutation': 'mix',
-        'selection': 'tournament', # 'tournament'
+        'selection': 'roulette_wheel', # 'tournament'
         'tournament_size': 2,
         'random_individuals': 0,
         'output_interval': 100 if output else 0
@@ -300,13 +300,13 @@ if __name__ == '__main__':
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
     #known_best = [11, 11, 7, 11]
-    n_experiments = 20
+    n_experiments = 5
     scores = []
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection = [('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
-    time_limit = 900
+    selection =  [('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    time_limit = 1200
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
