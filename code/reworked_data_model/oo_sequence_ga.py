@@ -553,7 +553,7 @@ class GA:
                 count += 1
         return len(unique_durations)/count
 
-    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False, population_size_scale : float = 0.1, tournament_size_scale : float = 0.2, population_size_growth_per_restart : int = 2):
+    def run(self, population_size : int, offspring_amount : int, max_generations : int = None, run_for : int = None, stop_at : float = None, stop_after : int = None, selection : str = 'roulette_wheel', tournament_size : int = 0, adjust_parameters : bool = False, update_interval : int = 50, p_increase_rate : float = 1.2, max_p : float = 0.4, restart_at_max_p : bool = False, avoid_local_mins : bool = True, local_min_distance : float = 0.1, elitism : int = 0, sequence_mutation : str = 'swap', pruning : bool = False, fill_gaps : bool = False, adjust_optimized_individuals : bool = False, random_individuals : int = 0, allow_duplicate_parents : bool = False, random_initialization : bool = True, output_interval : int = 100, parallel_evaluation : bool = False, population_size_scale : float = 0.1, tournament_size_scale : float = 0.2, population_size_growth_per_restart : int = 2):
         ud = 1.0#self.determine_ud()
         self.infeasible_solutions = 0
         self.function_evaluations = 0
@@ -584,7 +584,8 @@ class GA:
         gen_stop = (max_generations and generation >= max_generations)
         time_stop = (run_for and False)
         fitness_stop = (stop_at and self.current_best.fitness <= stop_at)
-        stop = gen_stop or time_stop or fitness_stop
+        feval_stop = (stop_after and self.function_evaluations <= stop_after)
+        stop = gen_stop or time_stop or fitness_stop or feval_stop
         last_update = 0
         old_adaptation = False
         while not stop:
@@ -695,7 +696,8 @@ class GA:
             gen_stop = (max_generations and generation >= max_generations)
             time_stop = (run_for and time.time() - start_time >= run_for)
             fitness_stop = (stop_at and self.overall_best.fitness <= stop_at)
-            stop = gen_stop or time_stop or fitness_stop or len(population) == 0
+            feval_stop = (stop_after and self.function_evaluations <= stop_after)
+            stop = gen_stop or time_stop or fitness_stop or feval_stop or len(population) == 0
         if output_interval > 0: # only produce output if needed
             print(f'Finished in {time.time() - start_time} seconds after {generation} generations with best fitness {self.overall_best.fitness} ({self.restarts} Restarts)')
             print(f'Max Generation defined: {max_generations} | Max Generation reached: {gen_stop}\nRuntime defined: {run_for} | Runtime finished: {time_stop}\nStopping Fitness defined: {stop_at} | Stopping Fitness reached: {fitness_stop}')
