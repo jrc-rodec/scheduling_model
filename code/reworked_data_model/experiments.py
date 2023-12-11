@@ -44,7 +44,7 @@ def run_experiment(source, instance, parameters : dict):
     random_individual_per_generation_amount = parameters['random_individuals'] if 'random_individuals' in parameters else 0
     output_interval = parameters['output_interval'] if 'output_interval' in parameters else 1000
     start_time = time.time()
-    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, None, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
     run_time = time.time() - start_time
     return result, run_time, ga.function_evaluations, ga.restarts, ga.generations
 
@@ -177,7 +177,7 @@ def test_individual_adjustment(source, instance, max_generation : int = 5000, ti
 
 def save_adjustment_experiments(fitness, run_time, fevals, generations, restarts, source, instance, adjust):
     #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
-    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\local_minimum_testing.txt'
+    file = r'C:\Users\dhutt\Desktop\SCHEDULING_MODEL\code\reworked_data_model\results\dppaulli_test.txt'
     #maybe add values to dict and use dict writer
     with open(file, 'a') as f:
         f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{fitness};{adjust}\n')
@@ -209,7 +209,7 @@ def run_experiment_adjust_individual(source, instance, max_generation : int = 50
         'avoid_local_mins': True,
         'local_min_distance': 0.1,
         'sequence_mutation': 'mix',
-        'selection': 'roulette_wheel', # 'tournament'
+        'selection': 'tournament', # 'tournament'
         'tournament_size': 2,
         'random_individuals': 0,
         'output_interval': 100 if output else 0
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection =  [('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    selection =  [('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0), ('3_DPpaulli', 10, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
     time_limit = 1200
     #selection = selection[6:]
     #for benchmark_source in sources:

@@ -522,6 +522,7 @@ class Customer(Entitiy):
 class ProductionEnvironment:
 
     def __init__(self) -> None:
+        self.id = ''
         self.event_table : dict[int, str] = dict()
         self.workstation_table : dict[int, str] = dict()
 
