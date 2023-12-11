@@ -121,7 +121,7 @@ class Individual:
                     self.sequence[i] = tmp
                 elif sequence_muatation == 'insert':
                     #take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
-                    insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
+                    insert_at = random.choice([x for x in range(len(self.sequence)) if x != i])# and x != take_from])
                     #value = self.sequence.pop(take_from)
                     value = self.sequence.pop(i)
                     self.sequence.insert(insert_at, value)
@@ -134,7 +134,7 @@ class Individual:
                         self.sequence[i] = tmp
                     else:
                         #take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
-                        insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
+                        insert_at = random.choice([x for x in range(len(self.sequence)) if x != i])# and x != take_from])
                         #value = self.sequence.pop(take_from)
                         value = self.sequence.pop(i)
                         self.sequence.insert(insert_at, value)
