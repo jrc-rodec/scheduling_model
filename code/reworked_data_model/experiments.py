@@ -44,7 +44,7 @@ def run_experiment(source, instance, parameters : dict):
     random_individual_per_generation_amount = parameters['random_individuals'] if 'random_individuals' in parameters else 0
     output_interval = parameters['output_interval'] if 'output_interval' in parameters else 1000
     start_time = time.time()
-    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, None, selection, tournament_size, adjust_parameters, update_interval=update_interval, p_increase_rate=p_increase_rate, max_p=max_p, restart_at_max_p=restart_at_max_p, avoid_local_mins=avoid_local_mins, local_min_distance=local_min_distance, elitism=elitism, sequence_mutation=sequence_mutation, pruning=pruning, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
     run_time = time.time() - start_time
     return result, run_time, ga.function_evaluations, ga.restarts, ga.generations
 
@@ -291,6 +291,36 @@ def run_experiment_elitism(source, instance, max_generation : int = 5000, time_l
     result, run_time, fevals, restarts, generations = run_experiment(source, instance, parameters)
     save_elitism_experiments(result.fitness, run_time, fevals, generations, restarts, source, instance, elitism)
 
+
+def ud_experiment(source, instance, max_generation : int = 5000, time_limit : int = 600, target_fitness : float = None):
+    parameters = {
+        'population_size': 5,
+        'offspring_amount': 20,
+        'max_generations': max_generation,
+        'time_limit': time_limit,
+        'target_fitness': target_fitness,
+        'elitism': 1,
+        'random_initialization': False,
+        'duplicate_parents': False,
+        'pruning': False,
+        'fill_gaps': True,
+        'adjust_individuals': True,
+        'adjust_mutation': True,
+        'mutation_update_interval': 100,
+        'mutation_increase_rate': 1.1,
+        'max_mutation_rate': 1.0,
+        'restart_at_max_mutation_rate': True,
+        'avoid_local_mins': True,
+        'local_min_distance': 0.1,
+        'sequence_mutation': 'mix',
+        'selection': 'tournament', # 'tournament'
+        'tournament_size': 2,
+        'random_individuals': 0,
+        'output_interval': 100
+    }
+
+    result, run_time, fevals, restarts, generations = run_experiment(source, instance, parameters)
+    print(result)
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     read_path = currentdir + '/../external_test_data/FJSSPinstances/'
@@ -300,13 +330,13 @@ if __name__ == '__main__':
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
     #known_best = [11, 11, 7, 11]
-    n_experiments = 3
+    n_experiments = 1
     scores = []
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection =  [('3_DPpaulli', 10, 0)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
-    time_limit = 1200
+    selection =  [('5_Kacem', 4, 11)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    time_limit = 300
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
@@ -315,7 +345,7 @@ if __name__ == '__main__':
         for j in range(n_experiments):
             #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
             #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
-            run_experiment_adjust_individual(instance[0], instance[1], None, time_limit, instance[2], False, True)
+            ud_experiment(instance[0], instance[1], None, time_limit, instance[2])
             #kacem_and_brandimarte(instance[0], instance[1], True)
             #run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, True)
             print(f'{j} - {instance[0]}{instance[1]} - With Elitism')
