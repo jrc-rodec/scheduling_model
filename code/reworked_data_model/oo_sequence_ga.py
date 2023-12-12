@@ -120,9 +120,10 @@ class Individual:
                     self.sequence[swap] = self.sequence[i]
                     self.sequence[i] = tmp
                 elif sequence_muatation == 'insert':
-                    take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
-                    insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
-                    value = self.sequence.pop(take_from)
+                    #take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
+                    insert_at = random.choice([x for x in range(len(self.sequence)) if x != i])# and x != take_from])
+                    #value = self.sequence.pop(take_from)
+                    value = self.sequence.pop(i)
                     self.sequence.insert(insert_at, value)
                 else:
                     # mixed
@@ -132,9 +133,10 @@ class Individual:
                         self.sequence[swap] = self.sequence[i]
                         self.sequence[i] = tmp
                     else:
-                        take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
-                        insert_at = random.choice([x for x in range(len(self.sequence)) if x != i and x != take_from])
-                        value = self.sequence.pop(take_from)
+                        #take_from = random.choice([x for x in range(len(self.sequence)) if x != i])
+                        insert_at = random.choice([x for x in range(len(self.sequence)) if x != i])# and x != take_from])
+                        #value = self.sequence.pop(take_from)
+                        value = self.sequence.pop(i)
                         self.sequence.insert(insert_at, value)
         for i in range(len(self.workstations)):
             if random.random() < p:
