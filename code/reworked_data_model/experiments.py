@@ -357,13 +357,13 @@ def ud_experiment(source, instance, max_generation : int = 5000, time_limit : in
     print(f'RESULT FOR {source}-{instance}:')
     print(result)
 
-def fattahi(source, instance, target):
+def fattahi(source, instance, target_fitness):
     parameters = {
         'population_size': 5,
         'offspring_amount': 20,
         'max_generations': None,
         'time_limit': None,
-        'target_fitness': target,
+        'target_fitness': target_fitness,
         'elitism': 1,
         'random_initialization': False,
         'duplicate_parents': False,
@@ -412,6 +412,7 @@ if __name__ == '__main__':
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
+    selection = [('6_Fattahi', 20, 1196), ('6_Fattahi', 19, 1040)]
     for instance in selection:
         #if instance[0] != '5_Kacem':
         for j in range(n_experiments):
