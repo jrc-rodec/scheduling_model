@@ -76,17 +76,17 @@ class BenchmarkTranslator(DataTranslator):
     def translate(self, benchmark_id : int = 0) -> ProductionEnvironment:
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         if benchmark_id == 0:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-01.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\SFJW\SFJW-01.txt'
         elif benchmark_id == 1:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-02.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\\SFJW\\SFJW-02.txt'
         elif benchmark_id == 2:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-03.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\SFJW\\SFJW-03.txt'
         elif benchmark_id == 3:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-04.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\SFJW\\SFJW-04.txt'
         elif benchmark_id == 4:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-05.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\SFJW\\SFJW-05.txt'
         elif benchmark_id == 5:
-            target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-06.txt'
+            target_file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\external_test_data\FJSSPinstances\SFJW\\SFJW-06.txt'
         elif benchmark_id == 6:
             target_file = currentdir + '\\..\\external_test_data\\1\\SFJW\\SFJW-07.txt'
         elif benchmark_id == 7:

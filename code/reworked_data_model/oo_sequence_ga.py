@@ -591,6 +591,11 @@ class GA:
         stop = gen_stop or time_stop or fitness_stop or feval_stop
         last_update = 0
         old_adaptation = False
+
+
+        #tournament_size = 2
+
+
         while not stop:
             self._update_history(overall_best_history, generation_best_history, average_population_history, p_history, self.overall_best, population, p)
             if output_interval > 0 and generation % output_interval == 0:
@@ -623,6 +628,9 @@ class GA:
                 #tournament_size = max(int(len(population) / 10), 2)
                 elitism = max(1, int((population_size * population_size_scale * ud) + 0.5)) if elitism else None # NOTE: population_size_scale between 0 and 1 - if 0, elitism stays 1
                 tournament_size = max(1, int((population_size * tournament_size_scale * ud) + 0.5)) # NOTE: tournament_size_scale between 0 and 1 - if 0, tournament_size stays 1 -> random selection
+                
+                #tournament_size = 2
+                
                 population = self.create_population(population_size, random_initialization, adjust_optimized_individuals, fill_gaps, parallel_evaluation)
                 self.current_best = population[0]
                 p = starting_p

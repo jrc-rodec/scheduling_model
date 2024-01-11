@@ -362,7 +362,7 @@ def fattahi(source, instance, target_fitness):
         'population_size': 5,
         'offspring_amount': 20,
         'max_generations': None,
-        'time_limit': None,
+        'time_limit': 3600,
         'target_fitness': target_fitness,
         'elitism': 1,
         'random_initialization': False,
@@ -375,7 +375,7 @@ def fattahi(source, instance, target_fitness):
         'mutation_increase_rate': 1.1,
         'max_mutation_rate': 1.0,
         'restart_at_max_mutation_rate': True,
-        'avoid_local_mins': False,
+        'avoid_local_mins': True,
         'local_min_distance': 0.1,
         'sequence_mutation': 'swap',
         'selection': 'tournament', # 'tournament'
@@ -384,14 +384,50 @@ def fattahi(source, instance, target_fitness):
         'output_interval': 1000
     }
 
-    result, history, run_time, function_evaluations, restarts, generations = run_experiment_history(source, instance, parameters)
-    save_fattahi_result(source, instance, result, history, run_time, function_evaluations, restarts, generations)
+    result, history, run_time, fevals, restarts, generations = run_experiment_history(source, instance, parameters)
+    save_history(result, history, run_time, fevals, generations, restarts, source, instance)
 
-def save_fattahi_result(source, instance, solution, history, run_time, function_evaluations, restarts, generations):
-    file = r'C:\Users\dhutt\Desktop\SCHEDULING_MODEL\code\reworked_data_model\results\fattahi\fattahi.txt'
-    #maybe add values to dict and use dict writer
+def save_history(result, history, run_time, fevals, generations, restarts, source, instance):
+    #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
+    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\ga_results\dppaulli.txt'
     with open(file, 'a') as f:
-        f.write(f'{source};{instance};{run_time};{function_evaluations};{generations};{restarts};{solution.fitness};{solution.sequence};{solution.workstations};{solution.durations};{history}\n')
+        f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{result.fitness};{result.sequence};{result.workstations};{result.durations};{history}\n')
+
+def load_geiger():
+    selection = []
+    for i in range(50, 61):
+        selection.append(('0_BehnkeGeiger', i, 0))
+    return selection
+
+def load_geiger2():
+    selection = []
+    for i in range(1, 50):
+        selection.append(('0_BehnkeGeiger', i, 0))
+    return selection
+
+def load_chambers():
+    selection = []
+    for i in range(1, 22):
+        selection.append(('4_ChambersBarnes', i, 0))
+    return selection
+
+def load_dppaulli():
+    selection = []
+    for i in range(1, 19):
+        selection.append(('3_DPpaulli', i, 0))
+    return selection
+
+def load_brandimarte():
+    selection = []
+    for i in range(1, 16):
+        selection.append(('1_Brandimarte', i, 0))
+    return selection
+
+def load_kacem():
+    selection = []
+    for i in range(1, 5):
+        selection.append(('5_Kacem', i, 0))
+    return selection
 
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -407,12 +443,20 @@ if __name__ == '__main__':
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection =  [('5_Kacem', 4, 12), ('6_Fattahi', 20, 1200)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
-    time_limit = None
+    #selection =  [('0_BehnkeGeiger', 60, 537)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    time_limit = 3600
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
-    selection = [('6_Fattahi', 20, 1196), ('6_Fattahi', 19, 1040)]
+    #selection = [('6_Fattahi', 19, 1040), ('6_Fattahi', 20, 1196)]
+    #selection = load_geiger()
+    #selection = load_chambers()
+    #selection = [('3_DPpaulli', 16, 0), ('3_DPpaulli', 17, 0), ('3_DPpaulli', 18, 0)]#load_dppaulli()
+    selection = [('0_BehnkeGeiger', 60, 0)]
+    #selection = load_brandimarte()
+    #selection = load_geiger2()
+    #selection = [('6_Fattahi', 19, 0), ('6_Fattahi', 20, 0)]#[('5_Kacem', 4, 11)]#load_kacem()
+    #n_experiments = 5
     for instance in selection:
         #if instance[0] != '5_Kacem':
         for j in range(n_experiments):
@@ -422,7 +466,7 @@ if __name__ == '__main__':
             fattahi(instance[0], instance[1], instance[2])
             #kacem_and_brandimarte(instance[0], instance[1], True)
             #run_experiment_elitism(instance[0], instance[1], None, time_limit, instance[2], False, True)
-            print(f'{j} - {instance[0]}{instance[1]}')
+            print(f'{j} - {instance[0]}{instance[1]} - Done')
         #for j in range(n_experiments):
             #result, run_time, parameters = run(source, instance, max_generation=5000, time_limit=600, target_fitness=known_best[i], output=False)
             #result, run_time, parameters, fevals, restarts = run_lower_new_adaptation(source, instance, max_generation=None, time_limit=600, target_fitness=known_best, output=False)
