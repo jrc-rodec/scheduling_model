@@ -362,7 +362,7 @@ def fattahi(source, instance, target_fitness):
         'population_size': 5,
         'offspring_amount': 20,
         'max_generations': None,
-        'time_limit': None,
+        'time_limit': 3600,
         'target_fitness': target_fitness,
         'elitism': 1,
         'random_initialization': False,
@@ -381,7 +381,7 @@ def fattahi(source, instance, target_fitness):
         'selection': 'tournament', # 'tournament'
         'tournament_size': 2,
         'random_individuals': 0,
-        'output_interval': 0
+        'output_interval': 1000
     }
 
     result, history, run_time, fevals, restarts, generations = run_experiment_history(source, instance, parameters)
@@ -389,9 +389,45 @@ def fattahi(source, instance, target_fitness):
 
 def save_history(result, history, run_time, fevals, generations, restarts, source, instance):
     #file = 'C:/Users/huda/Documents/GitHub/scheduling_model/code/reworked_data_model/results/comparison.txt'
-    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\ga_results\fattahi.txt'
+    file = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\ga_results\dppaulli.txt'
     with open(file, 'a') as f:
         f.write(f'{source};{instance};{run_time};{fevals};{generations};{restarts};{result.fitness};{result.sequence};{result.workstations};{result.durations};{history}\n')
+
+def load_geiger():
+    selection = []
+    for i in range(50, 61):
+        selection.append(('0_BehnkeGeiger', i, 0))
+    return selection
+
+def load_geiger2():
+    selection = []
+    for i in range(1, 50):
+        selection.append(('0_BehnkeGeiger', i, 0))
+    return selection
+
+def load_chambers():
+    selection = []
+    for i in range(1, 22):
+        selection.append(('4_ChambersBarnes', i, 0))
+    return selection
+
+def load_dppaulli():
+    selection = []
+    for i in range(1, 19):
+        selection.append(('3_DPpaulli', i, 0))
+    return selection
+
+def load_brandimarte():
+    selection = []
+    for i in range(1, 16):
+        selection.append(('1_Brandimarte', i, 0))
+    return selection
+
+def load_kacem():
+    selection = []
+    for i in range(1, 5):
+        selection.append(('5_Kacem', i, 0))
+    return selection
 
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -407,12 +443,20 @@ if __name__ == '__main__':
     #source = '1_Brandimarte'
     #instance = 1
     #known_best = 40
-    selection =  [('0_BehnkeGeiger', 60, 537)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
+    #selection =  [('0_BehnkeGeiger', 60, 537)]#[('3_DPpaulli', 1, 0), ('3_DPpaulli', 5, 0)]#[('0_BehnkeGeiger', 60, 0)]#[('4_ChambersBarnes', 6, 927)]#('5_Kacem', 1, 11), ('4_ChambersBarnes', 6, 927), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40)]#('5_Kacem', 4, 11)]#, ('6_Fattahi', 10, 516), ('6_Fattahi', 15, 514), ('1_Brandimarte', 1, 40), ('1_Brandimarte', 11, 649), ('4_ChambersBarnes', 6, 927)]
     time_limit = 3600
     #selection = selection[6:]
     #for benchmark_source in sources:
     #full_path = read_path + source + '/'
-    selection = [('6_Fattahi', 20, 1196), ('6_Fattahi', 19, 1040)]
+    #selection = [('6_Fattahi', 19, 1040), ('6_Fattahi', 20, 1196)]
+    #selection = load_geiger()
+    #selection = load_chambers()
+    #selection = [('3_DPpaulli', 16, 0), ('3_DPpaulli', 17, 0), ('3_DPpaulli', 18, 0)]#load_dppaulli()
+    selection = [('0_BehnkeGeiger', 60, 0)]
+    #selection = load_brandimarte()
+    #selection = load_geiger2()
+    #selection = [('6_Fattahi', 19, 0), ('6_Fattahi', 20, 0)]#[('5_Kacem', 4, 11)]#load_kacem()
+    #n_experiments = 5
     for instance in selection:
         #if instance[0] != '5_Kacem':
         for j in range(n_experiments):
