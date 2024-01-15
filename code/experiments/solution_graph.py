@@ -11,6 +11,8 @@ class Operation:
         # make a connection in both directions for faster tree search
         self.machine_parent = None
         self.job_parent = None
+        self.start_time = 0
+        self.end_time = 0
 
     def __eq__(self, other):
         return self.job == other.job and self.operation == other.sequence
