@@ -1,17 +1,19 @@
 class Operation:
 
-    def __init__(self, sequence_index, machine, job, assignment):
-        self.sequence = sequence_index
+    def __init__(self, operation_index, machine, job, assignment):
+        self.operation = operation_index
         self.assignment = assignment
         self.job = job
         self.machine = machine
         self.children : list[Operation] = [] # technically there should also be max. 2 children (machine child, job child)
+        self.machine_child = None
+        self.job_child = None
         # make a connection in both directions for faster tree search
         self.machine_parent = None
-        self.sequence_parent = None
+        self.job_parent = None
 
     def __eq__(self, other):
-        return self.job == other.job and self.sequence == other.sequence
+        return self.job == other.job and self.operation == other.sequence
     
     def __ne__(self, other):
         return not self == other
@@ -44,7 +46,7 @@ class SolutionGraph:
                     if sequence_parent:
                         break
                 # compare for sequence parent
-                if operation.job == current.job and operation.sequence -1 == current.sequence:
+                if operation.job == current.job and operation.operation -1 == current.operation:
                     sequence_parent = current
                     if machine_parent:
                         break
@@ -63,7 +65,7 @@ class SolutionGraph:
                 operation.machine_parent = machine_parent
             if sequence_parent:
                 sequence_parent.children.append(operation)
-                operation.sequence_parent = sequence_parent
+                operation.job_parent = sequence_parent
         else:
             self.add_root(operation)
 
@@ -79,7 +81,7 @@ class SolutionGraph:
             while len(open_list) > 0:
                 current = open_list.pop(0)
                 
-                if current.job == job and current.sequence == operation:
+                if current.job == job and current.operation == operation:
                     return current
 
                 closed_list.append(current)
