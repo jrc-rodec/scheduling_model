@@ -1,18 +1,29 @@
 class Operation:
 
-    def __init__(self, operation_index, machine, job, assignment):
+    def __init__(self, operation_index, machine, job, assignment, machine_parent = None, job_parent = None, machine_child = None, job_child = None, start_time = 0, end_time = 0):
         self.operation = operation_index
         self.assignment = assignment
         self.job = job
         self.machine = machine
-        self.children : list[Operation] = [] # technically there should also be max. 2 children (machine child, job child)
-        self.machine_child = None
-        self.job_child = None
+        self.machine_child = machine_child
+        self.job_child = job_child
         # make a connection in both directions for faster tree search
-        self.machine_parent = None
-        self.job_parent = None
-        self.start_time = 0
-        self.end_time = 0
+        self.machine_parent = machine_parent
+        self.job_parent = job_parent
+        self.start_time = start_time
+        self.end_time = end_time
+        
+    def is_leaf(self):
+        return not (self.machine_child or self.job_child)
+    
+    def is_root(self):
+        return not (self.machine_parent or self.job_parent)
+    
+    def is_first_on_machine(self):
+        return not self.machine_parent
+    
+    def is_first_operation(self):
+        return not self.job_parent
 
     def __eq__(self, other):
         return self.job == other.job and self.operation == other.sequence
@@ -22,24 +33,46 @@ class Operation:
 
 class SolutionGraph:
 
-    def __init__(self):
+    def __init__(self, sequence, assignments, duration_matrix : list[int, int], traverse_mode = 'bf', lazy = True):
         self.roots : list[Operation] = []
+        self.traverse_mode = traverse_mode
+        self.durations = duration_matrix
+        self.sequence = sequence
+        self.assignments = assignments
+        self.job_indices = []
+        self._create(sequence, assignments)
+        self.makespan = 0 if lazy else self.determine_makespan()
+        self.lazy = lazy
     
-    def add_root(self, operation : Operation):
+    def _add_root(self, operation : Operation):
         self.roots.append(operation)
 
-    def add_root(self, job, assignment, machine, operation_index = 0):
+    def _add_root(self, job, assignment, machine, operation_index = 0):
         self.roots.append(Operation(operation_index, machine, job, assignment))
 
-    def insert(self, job, assignment, operation_index, machine, traversal : str = 'bf'):
+    def _add_children(self, operation, open_list, closed_list = []):
+        if operation.machine_child and operation.machine_child not in open_list and operation.machine_child not in closed_list:
+            if self.traverse_mode == 'bf':
+                open_list.append(operation.machine_child)
+            else:
+                open_list.insert(0, operation.machine_child)
+        if operation.job_child and operation.job_child not in open_list and operation.job_child not in closed_list:
+            if self.traverse_mode == 'bf':
+                open_list.append(operation.job_child)
+            else:
+                open_list.insert(0, operation.job_child)
+
+    def _get_duration(self, operation):
+        return self.durations[operation.assignment][self.job_indices[operation.job] + operation.operation]
+
+    def insert(self, job, assignment, operation_index, machine):
         operation = Operation(operation_index, machine, job, assignment)
         closed_list : list[Operation] = []
         machine_parent = None
         sequence_parent = None
         for root in self.roots:
-            # traverse root
             open_list : list[Operation] = []
-            open_list.extend(root.children)
+            self._add_children(root, open_list, closed_list)
             while len(open_list) > 0 and not (machine_parent and sequence_parent):
                 current = open_list.pop(0)
                 # compare for machine parent
@@ -53,33 +86,34 @@ class SolutionGraph:
                     if machine_parent:
                         break
                 closed_list.append(current)
-                for child in current.children:
-                    if child not in open_list and child not in closed_list:
-                        if traversal == 'bf':
-                            open_list.append(child)
-                        else: #df
-                            open_list.insert(0, child)
+                self._add_children(current, open_list, closed_list)
             if machine_parent and sequence_parent:
                 break
         if machine_parent or sequence_parent:
             if machine_parent:
-                machine_parent.children.append(operation)
+                machine_parent.machine_child = operation
                 operation.machine_parent = machine_parent
+                operation.start_time = machine_parent.end_time
+                operation.end_time = operation.start_time + self._get_duration(operation)
             if sequence_parent:
-                sequence_parent.children.append(operation)
+                sequence_parent.job_child = operation
                 operation.job_parent = sequence_parent
+                if operation.start_time < sequence_parent.end_time:
+                    operation.start_time = sequence_parent.end_time
+                    operation.end_time = operation.start_time + self._get_duration(operation)
         else:
-            self.add_root(operation)
+            self._add_root(operation)
+        if not self.lazy:
+            self.determine_makespan()
 
     def max_depth(self):
         pass
 
-    def find(self, job, operation, traversal = 'bf') -> Operation:
+    def find_operation(self, job, operation) -> Operation:
         closed_list : list[Operation] = []
         for root in self.roots:
-            # traverse root
             open_list : list[Operation] = []
-            open_list.extend(root.children)
+            self._add_children(root, open_list, closed_list)
             while len(open_list) > 0:
                 current = open_list.pop(0)
                 
@@ -87,50 +121,48 @@ class SolutionGraph:
                     return current
 
                 closed_list.append(current)
-                for child in current.children:
-                    if child not in open_list and child not in closed_list:
-                        if traversal == 'bf':
-                            open_list.append(child)
-                        else: #df
-                            open_list.insert(0, child)
+                self._add_children(current, open_list, closed_list)
         return None
+    
+    def find_machine(self, assignment, machine_index) -> Operation:
+        closed_list : list[Operation] = []
+        for root in self.roots:
+            open_list : list[Operation] = []
+            self._add_children(root, open_list, closed_list)
+            while len(open_list) > 0:
+                current = open_list.pop(0)
+                
+                if current.assignment == assignment and current.machine == machine_index:
+                    return current
 
-    def are_dependent(self, job_a, operation_a, job_b, operation_b, traversal='bf'):
+                closed_list.append(current)
+                self._add_children(current, open_list, closed_list)
+        return None
+    
+    def _is_predecessor(self, operation_a, operation_b):
+        # NOTE: if they are equal, False
+        if operation_a == operation_b:
+            return False
+        closed_list = []
+        open_list = []
+        self._add_children(operation_a, open_list, closed_list)
+        while len(open_list) > 0:
+            current = open_list.pop(0)
+            if current.job == operation_b.job and current.operation == operation_b.operation:
+                return True
+            closed_list.append(current)
+            self._add_children(current, open_list, closed_list)
+        return False
+
+    def _is_successor(self, operation_a, operation_b):
+        return self._is_predecessor(operation_b, operation_a)
+
+    def are_dependent(self, job_a, operation_a, job_b, operation_b):
         if job_a == job_b:
             return True
-        o_a = self.find(job_a, operation_a, traversal)
-        # search children
-        open_list = []
-        closed_list = []
-        open_list.extend(o_a.children)
-        while len(open_list) > 0:
-            current = open_list.pop(0)
-            if current.job == job_b and current.sequence == operation_b:
-                return True
-            closed_list.append(current)
-            for child in current.children:
-                if child not in open_list and child not in closed_list:
-                    if traversal == 'bf':
-                        open_list.append(child)
-                    else: #df
-                        open_list.insert(0, child)
-        # search in parent direction
-        open_list = []
-        closed_list = []
-        if self.machine_parent:
-            open_list.append(self.machine_parent)
-        if self.sequence_parent:
-            open_list.append(self.sequence_parent)
-        while len(open_list) > 0:
-            current = open_list.pop(0)
-            if current.job == job_b and current.sequence == operation_b:
-                return True
-            closed_list.append(current)
-            if current.machine_parent and current.machine_parent not in open_list and current.machine_parent not in closed_list:
-                open_list.append(current.machine_parent)
-            if current.sequence_parent and current.sequence_parent not in open_list and current.sequence_parent not in closed_list:
-                open_list.append(current.sequence_parent)
-        return False
+        o_a = self.find_operation(job_a, operation_a)
+        o_b = self.find_operation(job_b, operation_b)
+        return self._is_predecessor(o_a, o_b) or self._is_successor(o_a, o_b)
 
     def get_dependency(self, job_a, operation_a, job_b, operation_b):
         pass
@@ -142,12 +174,18 @@ class SolutionGraph:
         pass
 
     def get_assignment(self, job, operation):
-        pass
+        operation = self.find_operation(job, operation)
+        if operation:
+            return operation.assignment
+        return None
 
     def get_job(self, assignment, machine_index):
-        pass
+        operation = self.find_machine(assignment, machine_index)
+        if operation:
+            return operation.job
+        return None
 
-    def create(self, sequence, assignments):
+    def _create(self, sequence, assignments):
         machines = [ x for i, x in enumerate(assignments) if x not in assignments[:i]]
         jobs = [ x for i, x in enumerate(sequence) if x not in sequence[:i]]
         machine_indices = [0] * len(machines)
@@ -172,3 +210,20 @@ class SolutionGraph:
 
             machine_indices[machine] += 1
             operation_indices[job] += 1
+        self.job_indices = job_indices
+
+    def determine_makespan(self):
+        makespan = 0
+        closed_list = []
+        for root in self.roots:
+            open_list = []
+            self._add_children(root, open_list, closed_list)
+            while len(open_list) > 0:
+                current = open_list.pop(0)
+                #probably not more efficient than just comparing times
+                if current.is_leaf():
+                    if current.end_time > makespan:
+                        makespan = current.end_time
+                closed_list.append(current)
+                self._add_children(current, open_list, closed_list)
+        return makespan
