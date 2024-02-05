@@ -43,6 +43,10 @@ class History:
         self.durations : list[list[int]] = [] # durations on machines
 
     # make using the history objects easier
+    
+    def summary(self):
+        return f'Instance: {self.instance}\n------------------\nResult\nBest Fitness: {self.overall_best[-1][0]}\nGenerations: {self.generations}/{self.max_generations}\tFunction Evaluations: {self.function_evaluations}/{self.function_evaluation_limit}\tRuntime: {self.runtime}/{self.time_limit}\tTarget Fitness: {self.target_fitness}\tRestarts: {len(self.restart_generations)}\n------------------\nStarting Parameters\nPopulation Size: {self.population_size}\tOffspring Amount: {self.offspring_amount}\tPopulation Growth (on restart): {self.population_growth}\nRestart Time: {self.restart_time}\tMax. Mutation Rate: {self.max_mutation_rate}\tElitism: {self.elitism_rate}\tTournament Size: {self.tournament_size}'
+
     def overall_best_fitness(self) -> list[float]:
         return [x[0] for x in self.overall_best]
 
@@ -77,6 +81,31 @@ class History:
             history.append(average/len(entry[1]))
         return history
     
+    def average_dissimilarity_prev_generation(self, use_list : str = 'overall') -> list[float]:
+        history : list[float] = []
+        in_list = None
+        if use_list == 'overall':
+            in_list = self.overall_best
+        elif use_list == 'run':
+            in_list = self.run_best
+        elif use_list == 'generation':
+            in_list = self.generation_best
+        else:
+            in_list = self.time_checkpoints
+        for i in range(1, len(in_list)):
+            prev = in_list[i-1][1]
+            curr = in_list[i][1]
+            average = 0.0
+            for j in range(len(curr)):
+                current_average = 0.0
+                for k in range(len(prev)):
+                    current_average += self.get_dissimilarity(curr[j], prev[k])
+                current_average = current_average / len(curr)
+                average += current_average
+            history.append(average/len(curr))
+        return history
+        
+    
     def get_dissimilarity(self, a, b):
         dissimilarity = 0
         # 0 - sequence, 1 - assignment
@@ -88,6 +117,16 @@ class History:
                 dissimilarity += 1
         return dissimilarity
     
+    def get_amount_best_overall_history(self):
+        return [len(x[1]) for x in self.overall_best]
+    
+    def get_amount_best_run_history(self):
+            return [len(x[1]) for x in self.run_best]
+    
+    def get_amount_best_generation_history(self):
+        return [len(x[1]) for x in self.generation_best]
+    
+
     def to_file(self, path : str):
         with open(path, 'w') as f:
             json.dump(self, f, default=History._transform)
@@ -129,6 +168,7 @@ class History:
         restored.max_generations = history['max_generations']
         restored.target_fitness = history['target_fitness']
         restored.function_evaluation_limit = history['function_evaluation_limit']
+        restored.restart_time = history['restart_time']
 
         restored.generations_reached = history['generations_reached']
         restored.time_exceeded = history['time_exceeded']

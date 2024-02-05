@@ -462,7 +462,7 @@ class GA:
         feval_stop = (stop_after and self.function_evaluations <= stop_after)
         stop = gen_stop or time_stop or fitness_stop or feval_stop
         last_update = 0
-
+        self._update_history(overall_best_history, current_best_history, generation_best_history, average_population_history, p_history, population, p)
         while not stop:
             if time_checkpoint_index < len(time_checkpoints) and time.time() - start_time >= time_checkpoint_index[time_checkpoint_index]:
                 time_checkpoint_best.append((time.time() - start_time, self.overall_best))
@@ -559,6 +559,7 @@ class GA:
                     if entry not in self.overall_best:
                         self.overall_best.append(entry)
                 #self.overall_best.extend(self.current_best)
+            self._update_history(overall_best_history, current_best_history, generation_best_history, average_population_history, p_history, population, p)
             generation += 1
             gen_stop = (max_generations and generation >= max_generations)
             time_stop = (run_for and time.time() - start_time >= run_for)
