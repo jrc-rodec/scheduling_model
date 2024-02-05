@@ -11,3 +11,6 @@ code/reworked_data_model/changed_benchmarks/
 *.pyc
 code/reworked_data_model/results/~$benchmark_data_reformated.xlsx
 *.fjs
+*.zip
+*.txt
+*.csv

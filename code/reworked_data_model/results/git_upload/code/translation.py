@@ -16,7 +16,7 @@ class FJSSPInstancesTranslator(DataTranslator):
 
     def translate(self, source : str = '6_Fattahi', benchmark_id = 0) -> ProductionEnvironment:
         currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        path = currentdir + '\\benchmarks\\'
+        path = currentdir + '\\..\\benchmarks\\'
         if source.startswith('0_'):
             target_file = f'Behnke{benchmark_id}.fjs'
         elif source.startswith('1_'):

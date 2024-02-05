@@ -1,5 +1,5 @@
 from ga import GA
-from history import History
+
 from translation import SequenceGAEncoder, FJSSPInstancesTranslator
 from model import Order, ProductionEnvironment
 import time
@@ -38,9 +38,9 @@ def run_experiment(source, instance, parameters : dict):
     random_individual_per_generation_amount = parameters['random_individuals'] if 'random_individuals' in parameters else 0
     output_interval = parameters['output_interval'] if 'output_interval' in parameters else 1000
     start_time = time.time()
-    history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, None, tournament_size, adjust_parameters, restart_generations=restart_generations, max_p=max_p, restart_at_max_p=restart_at_max_p, elitism=elitism, sequence_mutation=sequence_mutation, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
+    result, history = ga.run(population_size, offspring_amount, max_generations, run_for, stop_at, None, tournament_size, adjust_parameters, restart_generations=restart_generations, max_p=max_p, restart_at_max_p=restart_at_max_p, elitism=elitism, sequence_mutation=sequence_mutation, fill_gaps=fill_gaps, adjust_optimized_individuals=adjust_individuals, random_individuals=random_individual_per_generation_amount, allow_duplicate_parents=allow_duplicate_parents, random_initialization=random_initialization, output_interval=output_interval)
     run_time = time.time() - start_time
-    return history, run_time
+    return result, history, run_time, ga.function_evaluations, ga.restarts, ga.generations
 
 def run(source, instance, target_fitness):
     parameters = {
@@ -69,10 +69,10 @@ def run(source, instance, target_fitness):
         'output_interval': 1000
     }
 
-    history, run_time = run_experiment(source, instance, parameters)
-    return history, run_time
+    result, history, run_time, fevals, restarts, generations = run_experiment(source, instance, parameters)
+    return result, history, run_time, fevals, generations, restarts, source, instance
 
-from datetime import datetime
+
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     read_path = currentdir + '/../benchmarks/'
@@ -80,15 +80,8 @@ if __name__ == '__main__':
     time_limit = 3600
     n_experiments = 1
     selection = [('5_Kacem', 2, 7)]
-    histories : list[History] = []
+
     for instance in selection:
         for j in range(n_experiments):
-            history, real_runtime = run(instance[0], instance[1], instance[2])
-            history.instance = f'{instance[0]}_{instance[1]}'
-            histories.append(history)
+            result, history, run_time, fevals, generations, restarts, _, _ = run(instance[0], instance[1], instance[2])
             print(f'{j} - {instance[0]}{instance[1]} - Done')
-    result_path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
-    i = 0
-    for result in histories:
-        result.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{i}-{result.instance}.json')
-        i+=1
