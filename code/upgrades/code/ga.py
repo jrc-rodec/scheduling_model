@@ -594,6 +594,7 @@ class GA:
         history.offspring_amount = start_offspring_amount
         history.restart_time = restart_generations
         history.max_mutation_rate = max_p
+        history.population_growth = population_size_growth_per_restart
         history.elitism_rate = elitism_size_scale
         history.tournament_size = tournament_size_scale
         history.time_limit = run_for
