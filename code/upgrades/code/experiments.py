@@ -78,7 +78,7 @@ if __name__ == '__main__':
     read_path = currentdir + '/../benchmarks/'
 
     time_limit = 3600
-    n_experiments = 1
+    n_experiments = 10
     selection = [('5_Kacem', 2, 7)]
     histories : list[History] = []
     for instance in selection:
