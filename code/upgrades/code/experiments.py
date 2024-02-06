@@ -42,12 +42,12 @@ def run_experiment(source, instance, parameters : dict):
     run_time = time.time() - start_time
     return history, run_time
 
-def run(source, instance, target_fitness):
+def run(source, instance, target_fitness, time_limit):
     parameters = {
         'population_size': 5,
         'offspring_amount': 20,
         'max_generations': None,
-        'time_limit': 3600,
+        'time_limit': time_limit,
         'target_fitness': target_fitness,
         'elitism': 1,
         'random_initialization': False,
@@ -57,7 +57,6 @@ def run(source, instance, target_fitness):
         'adjust_individuals': True,
         'adjust_mutation': True,
         'restart_generations': 50,
-        'mutation_increase_rate': 1.1,
         'max_mutation_rate': 1.0,
         'restart_at_max_mutation_rate': True,
         'avoid_local_mins': True,
@@ -77,13 +76,13 @@ if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     read_path = currentdir + '/../benchmarks/'
 
-    time_limit = 3600
-    n_experiments = 10
-    selection = [('5_Kacem', 2, 7)]
+    time_limit = 60
+    n_experiments = 5
+    selection = [('5_Kacem', 3, 7)]
     histories : list[History] = []
     for instance in selection:
         for j in range(n_experiments):
-            history, real_runtime = run(instance[0], instance[1], instance[2])
+            history, real_runtime = run(instance[0], instance[1], instance[2], time_limit)
             history.instance = f'{instance[0]}_{instance[1]}'
             histories.append(history)
             print(f'{j} - {instance[0]}{instance[1]} - Done')

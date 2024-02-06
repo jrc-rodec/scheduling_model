@@ -438,7 +438,7 @@ if __name__ == '__main__':
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 554, 514, 608, 879, 894, 1070, 1196]
     #known_best = [66, 107, 221, 355, 119, 320, 397, 253, 210, 516, 468, 446, 466, 0, 514, 0, 0, 0, 0, 0]
     #known_best = [11, 11, 7, 11]
-    n_experiments = 1
+    n_experiments = 10
     scores = []
     #source = '1_Brandimarte'
     #instance = 1
@@ -452,7 +452,7 @@ if __name__ == '__main__':
     #selection = load_geiger()
     #selection = load_chambers()
     #selection = [('3_DPpaulli', 16, 0), ('3_DPpaulli', 17, 0), ('3_DPpaulli', 18, 0)]#load_dppaulli()
-    selection = [('0_BehnkeGeiger', 60, 0)]
+    selection = [('6_Fattahi', 10, 516)]
     #selection = load_brandimarte()
     #selection = load_geiger2()
     #selection = [('6_Fattahi', 19, 0), ('6_Fattahi', 20, 0)]#[('5_Kacem', 4, 11)]#load_kacem()
