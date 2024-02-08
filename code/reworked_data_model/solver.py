@@ -1384,6 +1384,143 @@ class GurobiSolver(Solver):
     
     def get_lower_bound(self):
         return self.m.LB
+    
+
+class GurobiNoMachineFlexibilitySolver(Solver):
+
+    def __init__(self, production_environment : ProductionEnvironment):
+        super().__init__('GurobiNoMachineFlexibilitySolver', production_environment, GurobiEncoder())
+
+    def initialize(self, f):
+        #self.job_ops_machs = job_ops_machs
+
+        lines = f.readlines()
+        first_line = lines[0].split()
+        # Number of jobs
+        nb_jobs = int(first_line[0])
+        
+        # Number of machines
+        nb_machines = int(first_line[1])
+        
+        # Number of operations for each job
+        nb_operations = [int(lines[j + 1].split()[0]) for j in range(nb_jobs)] 
+        
+        # Number of tasks
+        nb_tasks = sum(nb_operations[j] for j in range(nb_jobs))
+
+        self.m = gp.Model('milp_opt')
+        """jobs = [j for j in range(1,nb_jobs+1)]
+        job_ops = [(j+1,k+1) for j in range(nb_jobs) for k in range(nb_operations[j])] 
+        machines = [m for m in range(1,nb_machines+1)]
+        list_X_var = []
+        for j, k in job_ops :
+            if j < nb_jobs :
+                for jp, kp in job_ops:
+                    if jp > j:
+                        list_X_var.append((j,k,jp,kp))"""
+        #Duration
+        job_op_mach__duration = {}
+        #Suitable machines
+        job_op__suitablemachines = {}
+        #nb of Machines
+        job_op__nb_machines = {}
+        #Indexdarstellung der Job_Ops
+        job_op__idx ={}
+        
+        # Constant for incompatible machines
+        INFINITE = 1000000
+        # Processing time for each task, for each machine
+        task_processing_time = [[[INFINITE for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+        idx = 0
+        
+        for j in range(nb_jobs):
+            line = lines[j + 1].split()
+            tmp = 0
+            for o in range(nb_operations[j]):
+                nb_machines_operation = int(line[tmp + o + 1])
+                suitable_helper =[]
+                for i in range(nb_machines_operation):
+                    machine = int(line[tmp + o + 2 * i + 2])
+                    time = int(line[tmp + o + 2 * i + 3])
+                    task_processing_time[j][o][machine-1] = time
+                    suitable_helper += [machine]
+                    job_op_mach__duration[j+1,o+1,machine] = time
+                    
+                job_op__suitablemachines[j+1,o+1] = suitable_helper
+                job_op__nb_machines[j+1,o+1] = nb_machines_operation
+                job_op__tuple = tuple(job_op__nb_machines.keys())
+                tmp = tmp + 2 * nb_machines_operation
+        #list of jobs for creating Variables
+        jobs = [j for j in range(1,nb_jobs+1)]
+        
+        #list of Job Operations for creating Variables
+        job_ops = [(j+1,k+1) for j in range(nb_jobs) for k in range(nb_operations[j])] 
+        
+        #dict of selected machines
+        job_op__mach = {}
+        job_op__duration = {}
+        for j, k in job_ops :
+            #h = job_op__tuple.index((j,k)) 
+            machine = job_op__suitablemachines[j,k][0]  # !!!! HIER: no machine flexibility
+            job_op__mach[j,k] = machine
+            job_op__duration[j,k] = job_op_mach__duration[j,k,machine]
+
+        L = sum(job_op__duration[j,k] for j, k in job_ops)
+
+        list_X_var = []
+        for j, k in job_ops :
+            if j < nb_jobs :
+                for jp, kp in job_ops:
+                    if jp > j:
+                        if job_op__mach[j,k] == job_op__mach[jp,kp] :
+                            list_X_var.append((j,k,jp,kp))
+        
+        X = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="X")
+        S = self.m.addVars(job_ops,  obj = 0.0, lb = 0.0, vtype=gp.GRB.CONTINUOUS, name ="S")
+        Cmax = self.m.addVar(obj = 1.0, name="Cmax")
+        self.m.addConstrs((S[j,k] >= S[j,k-1] + job_op__duration[j,k-1] 
+                  for j, k in job_ops if k >= 2)
+                 ,"Order")
+
+        self.m.addConstrs((S[jp,kp] + job_op__duration[jp,kp] <= S[j,k] + L*(1 - X[j,k,jp,kp]) 
+                  for j, k in job_ops if j < nb_jobs
+                  for jp, kp in job_ops if jp > j 
+                  if job_op__mach[j,k] == job_op__mach[jp,kp])
+                 , "Mach1")
+
+        self.m.addConstrs((S[j,k] + job_op__duration[j,k] <= S[jp,kp] + L*X[j,k,jp,kp]
+                  for j, k in job_ops if j < nb_jobs
+                  for jp, kp in job_ops if jp > j 
+                  if job_op__mach[j,k] == job_op__mach[jp,kp])
+                 , "Mach2")
+
+        self.m.addConstrs((Cmax >= S[j,nb_operations[j-1]] + job_op__duration[j,nb_operations[j-1]] 
+                  for j in jobs)
+                 ,"Cmax")        
+        #self.m.addConstrs((Cmax>=C[j,nb_operations[j-1]] for j in jobs),"Cmax")
+        timelimit = 3600
+        self.m.Params.TimeLimit = timelimit
+        self.X = X
+        self.S = S
+        #self.C = C
+        self.Cmax = Cmax
+
+    def run(self):
+        self.m.update()
+        #self.m.display()
+        self.m.optimize()
+
+    def get_best(self):
+        xsol = self.m.getAttr('X', self.X)
+        ysol = self.m.getAttr('X', self.S)
+        #csol = self.m.getAttr('X', self.C)
+        return xsol, ysol, self.Cmax.X
+        
+    def get_best_fitness(self):
+        return self.m.getAttr('X', self.C)
+    
+    def get_lower_bound(self):
+        return self.m.LB # ObjBound?
 
 class GurobiWithWorkerSolver(Solver):
     

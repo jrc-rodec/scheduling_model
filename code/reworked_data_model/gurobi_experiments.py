@@ -1,4 +1,4 @@
-from solver import GurobiSolver
+from solver import GurobiSolver, GurobiNoMachineFlexibilitySolver
 from translation import GurobiEncoder, FJSSPInstancesTranslator
 from model import Order
 import time
@@ -18,10 +18,12 @@ def write_end(file, duration):
     with open(file, 'a') as f:
         f.write(f'----------------------FINISHED ALL EXPERIMENTS AFTER {duration} SECONDS----------------------\n')
 
-output_path =  r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results.txt'
+output_path =  r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results\gurobi_results.txt'
+normal_output = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results\hurink_test\normal.txt'
+no_machine_path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\results\gurobi_results\hurink_test\no_machines.txt'
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/../external_test_data/FJSSPinstances/'
-use_sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata','2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
+use_sources = ['2a_Hurink_sdata']
 redo = []
 overall_start_time = time.time()
 for benchmark_source in use_sources:
@@ -42,13 +44,22 @@ for benchmark_source in use_sources:
         start_time = time.time()
         solver = GurobiSolver(production_environment)
         solver.initialize(nb_jobs, nb_operations, nb_machines, job_ops_machs, durations, job_op_suitable, upper_bound)
-        solver.m.Params.TIME_LIMIT = 1800 # time limit in seconds -> 30 Minutes - 1800
+        solver.m.Params.TIME_LIMIT = 3600 # time limit in seconds -> 30 Minutes - 1800
         solver.run()
         real_time = time.time() - start_time
         xsol, ysol, csol = solver.get_best() 
-        write_result(source, benchmark_id, solver.m.objVal, solver.Cmax.UB, solver.Cmax.LB, xsol, ysol, csol, solver.m.MIPGap, solver.m.Status, solver.m.NodeCount, solver.m.Runtime, real_time, output_path)
-        if int(solver.m.Status) == 9:
-            redo.append((source, benchmark_id))
+        write_result(source, benchmark_id, solver.m.objVal, solver.Cmax.UB, solver.Cmax.LB, xsol, ysol, csol, solver.m.MIPGap, solver.m.Status, solver.m.NodeCount, solver.m.Runtime, real_time, normal_output)
+        solver = GurobiNoMachineFlexibilitySolver(production_environment)
+        file_path = full_path + f'HurinkSdata{benchmark_id}.fjs'#path += f'{source}\\{target_file}'
+        f = open(file_path)
+        start_time = time.time()
+        solver.run(f)
+        real_time = time.time() - start_time
+        f.close()
+        xsol, ysol, csol = solver.get_best()
+        write_result(source, benchmark_id, solver.m.objVal, solver.Cmax.UB, solver.Cmax.LB, xsol, ysol, csol, solver.m.MIPGap, solver.m.Status, solver.m.NodeCount, solver.m.Runtime, real_time, no_machine_path)
+        """if int(solver.m.Status) == 9:
+            redo.append((source, benchmark_id))"""
 
 write_divider(output_path)
 for benchmark in redo:
