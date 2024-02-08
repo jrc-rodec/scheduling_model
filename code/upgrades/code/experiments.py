@@ -76,9 +76,9 @@ if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     read_path = currentdir + '/../benchmarks/'
 
-    time_limit = 60
+    time_limit = 300
     n_experiments = 5
-    selection = [('5_Kacem', 3, 7)]
+    selection = [('5_Kacem', 4, 11)]
     histories : list[History] = []
     for instance in selection:
         for j in range(n_experiments):

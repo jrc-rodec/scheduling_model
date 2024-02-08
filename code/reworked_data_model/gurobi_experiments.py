@@ -44,7 +44,7 @@ for benchmark_source in use_sources:
         start_time = time.time()
         solver = GurobiSolver(production_environment)
         solver.initialize(nb_jobs, nb_operations, nb_machines, job_ops_machs, durations, job_op_suitable, upper_bound)
-        solver.m.Params.TIME_LIMIT = 3600 # time limit in seconds -> 30 Minutes - 1800
+        solver.m.Params.TIME_LIMIT = 1800 # time limit in seconds -> 30 Minutes - 1800
         solver.run()
         real_time = time.time() - start_time
         xsol, ysol, csol = solver.get_best() 
