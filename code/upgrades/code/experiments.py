@@ -74,11 +74,13 @@ def run(source, instance, target_fitness, time_limit):
 from datetime import datetime
 if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    read_path = currentdir + '/../benchmarks/'
+    #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
+    
+    shutdown_when_finished = True
 
-    time_limit = 60
-    n_experiments = 5
-    selection = [('5_Kacem', 3, 7)]
+    time_limit = 3600
+    n_experiments = 10
+    selection = [('5_Kacem', 4, 0), ('6_Fattahi', 20, 0), ('6_Fattahi', 19, 0), ('0_BehnkeGeiger', 60, 0)]
     histories : list[History] = []
     for instance in selection:
         for j in range(n_experiments):
@@ -86,8 +88,11 @@ if __name__ == '__main__':
             history.instance = f'{instance[0]}_{instance[1]}'
             histories.append(history)
             print(f'{j} - {instance[0]}{instance[1]} - Done')
-    result_path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
+    result_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
     i = 0
     for result in histories:
         result.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{i}-{result.instance}.json')
         i+=1
+
+if shutdown_when_finished:
+    os.system("shutdown /s /t 1")
