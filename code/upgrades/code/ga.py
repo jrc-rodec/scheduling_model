@@ -275,18 +275,25 @@ class GA:
         next_operations = [0] * len(self.jobs)
         end_on_workstations = [0] * len(Individual.base_durations[0])
         end_times = [-1] * len(Individual.required_operations)
-        gaps_on_workstations : list[list[tuple[int, int]]]= []
+
+        job_start_indices = [0] * len(self.jobs)
+        for i in range(1, len(Individual.required_operations)):
+            if Individual.required_operations[i] != Individual.required_operations[i-1]:
+                job_start_indices[Individual.required_operations[i]] = i
+
+
+        """gaps_on_workstations : list[list[tuple[int, int]]]= []
         for i in range(len(Individual.base_durations[0])):
-            gaps_on_workstations.append([])
+            gaps_on_workstations.append([])"""
         for i in range(len(individual.sequence)):
             job = individual.sequence[i]
             operation = next_operations[job]
-            start_index = 0
-            for j in range(len(Individual.required_operations)):
+            start_index = job_start_indices[job]
+            """for j in range(len(Individual.required_operations)):
                 if Individual.required_operations[j] == job:
                     start_index = j
                     break
-                start_index = j
+                start_index = j"""
             start_index += operation
             next_operations[job] += 1
             workstation = individual.workstations[start_index]
