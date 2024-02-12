@@ -4,7 +4,7 @@ def get_jobs(sequence : list[int]):
     jobs = []
     for i in range(len(sequence)):
         if sequence[i] not in jobs:
-            jobs.append(i)
+            jobs.append(sequence[i])
     return jobs
 
 def get_data(sequence : list[int], assignments : list[int], durations : list[list[int]], required_operations : list[int]):

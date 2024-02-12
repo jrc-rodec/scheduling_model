@@ -80,7 +80,7 @@ if __name__ == '__main__':
     
     time_limit = 600
     n_experiments = 1
-    selection = [('6_Fattahi', 1, 66)]
+    selection = [('6_Fattahi', 15, 514)]
     histories : list[History] = []
     for instance in selection:
         for j in range(n_experiments):
