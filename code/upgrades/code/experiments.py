@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     import evaluation
     
-    time_limit = 600
+    time_limit = 60
     n_experiments = 1
     selection = [('6_Fattahi', 15, 514)]
     histories : list[History] = []
