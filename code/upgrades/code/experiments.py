@@ -78,9 +78,11 @@ if __name__ == '__main__':
     
     shutdown_when_finished = True
 
-    time_limit = 3600
-    n_experiments = 10
-    selection = [('5_Kacem', 4, 0), ('6_Fattahi', 20, 0), ('6_Fattahi', 19, 0), ('0_BehnkeGeiger', 60, 0)]
+    import evaluation
+    
+    time_limit = 60
+    n_experiments = 1
+    selection = [('6_Fattahi', 15, 514)]
     histories : list[History] = []
     for instance in selection:
         for j in range(n_experiments):
@@ -88,7 +90,44 @@ if __name__ == '__main__':
             history.instance = f'{instance[0]}_{instance[1]}'
             histories.append(history)
             print(f'{j} - {instance[0]}{instance[1]} - Done')
-    result_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
+
+            # testing purposes
+            n_options = 5
+            makespan_options, idle_time_options, queue_time_options = history.get_options(n_options) # get 5 options
+
+            solutions = dict()
+            for i in range(n_options):
+                if str(makespan_options[i][0]) not in solutions:
+                    solutions[str(makespan_options[i][0])] = [makespan_options[i][0], [0, 0, 0]]
+                if str(idle_time_options[i][0]) not in solutions:
+                    solutions[str(idle_time_options[i][0])] = [idle_time_options[i][0], [0, 0, 0]]
+                if str(queue_time_options[i][0]) not in solutions:
+                    solutions[str(queue_time_options[i][0])] = [queue_time_options[i][0], [0, 0, 0]]
+            # sum ranks
+            for i in range(n_options):
+                solutions[str(makespan_options[i][0])][1][0] = i
+                solutions[str(idle_time_options[i][0])][1][1] = i
+                solutions[str(queue_time_options[i][0])][1][2] = i
+
+            sorted_solutions = sorted(solutions.keys(), key=lambda x: sum(solutions[x][1])/len(solutions[x][1]))
+            useable_solutions = [solutions[x][0] for x in sorted_solutions][:n_options]
+            #solution = history.overall_best[-1][1][0]
+            required_operations = history.required_operations
+            durations = history.durations
+            rank = 0
+            colors = evaluation.predefine_colors(useable_solutions[0][0])
+            for solution in useable_solutions:
+                sequence = solution[0]
+                assignments = solution[1]
+                # actually not necessary, but whatever for now
+                m = evaluation.makespan(sequence, assignments, durations, required_operations)
+                i = evaluation.idle_time(sequence, assignments, durations, required_operations)
+                q = evaluation.queue_time(sequence, assignments, durations, required_operations)
+                print(f'Makepsan: {m}, Idle-Time: {i}, Queue-Time: {q}')
+                evaluation.visualize(sequence, assignments, durations, required_operations, m, i, q, instance[0], instance[1], pre_colors=colors)#, title_prefix=f'Rank {rank}')
+                rank += 1
+            evaluation.show_plots()
+    result_path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
     i = 0
     for result in histories:
         result.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{i}-{result.instance}.json')

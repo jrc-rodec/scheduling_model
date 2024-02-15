@@ -43,7 +43,33 @@ class History:
         self.durations : list[list[int]] = [] # durations on machines
 
     # make using the history objects easier
-    
+        
+    def get_options(self, n_options):
+        import evaluation
+        pool = []
+        i = -1
+        while len(pool) < n_options:
+            gen = self.overall_best[i][1]
+            for solution in gen:
+                if solution not in pool:
+                    pool.append(solution)
+            i-=1
+        evaluations = []
+        for solution in pool:
+            m = evaluation.makespan(solution[0], solution[1], self.durations, self.required_operations)
+            i = evaluation.idle_time(solution[0], solution[1], self.durations, self.required_operations)
+            q = evaluation.queue_time(solution[0], solution[1], self.durations, self.required_operations)
+            evaluations.append([m, i, q])
+        #NOTE: they should already be sorted by makespan at this point
+        makespan_pool = [(x, y) for y, x in sorted(zip(evaluations, pool), key=lambda z: z[0][0])]
+        n_best_by_makespan = makespan_pool[:n_options]
+        idle_time_pool = [(x, y) for y, x in sorted(zip(evaluations, pool), key=lambda z: z[0][1])]
+        n_best_by_idle_time = idle_time_pool[:n_options]
+        queue_time_pool = [(x, y) for y, x in sorted(zip(evaluations, pool), key=lambda z: z[0][2])]
+        n_best_by_queue_time = queue_time_pool[:n_options]
+        return n_best_by_makespan, n_best_by_idle_time, n_best_by_queue_time
+
+
     def summary(self):
         return f'Instance: {self.instance}\n------------------\nResult\nBest Fitness: {self.overall_best[-1][0]}\nGenerations: {self.generations}/{self.max_generations}\tFunction Evaluations: {self.function_evaluations}/{self.function_evaluation_limit}\tRuntime: {self.runtime}/{self.time_limit}\tTarget Fitness: {self.target_fitness}\tRestarts: {len(self.restart_generations)}\n------------------\nStarting Parameters\nPopulation Size: {self.population_size}\tOffspring Amount: {self.offspring_amount}\tPopulation Growth (on restart): {self.population_growth}\nRestart Time: {self.restart_time}\tMax. Mutation Rate: {self.max_mutation_rate}\tElitism: {self.elitism_rate}\tTournament Size: {self.tournament_size}'
 

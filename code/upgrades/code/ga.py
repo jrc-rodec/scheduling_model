@@ -161,6 +161,11 @@ class GA:
             if x not in self.jobs:
                 self.jobs.append(x)
         Individual.jobs = self.jobs.copy()
+        self.job_start_indices = [0] * len(self.jobs)
+        for i in range(1, len(Individual.required_operations)):
+            if Individual.required_operations[i] != Individual.required_operations[i-1]:
+                self.job_start_indices[Individual.required_operations[i]] = i
+
 
     def recombine(self, parent_a : Individual, parent_b : Individual) -> tuple[Individual, Individual]:
         split = [0 if random.random() < 0.5 else 1 for _ in range(len(self.jobs))]
@@ -205,13 +210,8 @@ class GA:
         for i in range(len(individual.sequence)):
             job = individual.sequence[i]
             operation = next_operation[job]
-            operation_index = 0
-            for j in range(len(Individual.required_operations)):
-                if Individual.required_operations[j] == job:
-                    operation_index = j
-                    break
-                operation_index = j
-            operation_index += operation
+            operation_index = self.job_start_indices[job] + operation
+
             workstation = individual.workstations[operation_index]
             next_operation[job] += 1
             duration = individual.durations[operation_index]
@@ -275,19 +275,11 @@ class GA:
         next_operations = [0] * len(self.jobs)
         end_on_workstations = [0] * len(Individual.base_durations[0])
         end_times = [-1] * len(Individual.required_operations)
-        gaps_on_workstations : list[list[tuple[int, int]]]= []
-        for i in range(len(Individual.base_durations[0])):
-            gaps_on_workstations.append([])
+
         for i in range(len(individual.sequence)):
             job = individual.sequence[i]
             operation = next_operations[job]
-            start_index = 0
-            for j in range(len(Individual.required_operations)):
-                if Individual.required_operations[j] == job:
-                    start_index = j
-                    break
-                start_index = j
-            start_index += operation
+            start_index = self.job_start_indices[job] + operation
             next_operations[job] += 1
             workstation = individual.workstations[start_index]
             duration = individual.durations[start_index]
