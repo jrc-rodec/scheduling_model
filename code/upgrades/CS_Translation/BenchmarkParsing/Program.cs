@@ -13,7 +13,7 @@ namespace BenchmarkParsing
         public static void Main(string[] args)
         {
             // Testing
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi20.fjs";
+            string path = "C:\\Users\\dhutt\\Desktop\\SCHEDULING_MODEL\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi20.fjs";
             BenchmarkParser parser = new BenchmarkParser();
             Encoding result = parser.ParseBenchmark(path);
             for(int i = 0; i < result.Durations.GetLength(0); ++i)

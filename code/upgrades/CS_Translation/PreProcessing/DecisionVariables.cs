@@ -102,7 +102,7 @@ namespace BenchmarkParsing
                 float min = float.MaxValue;
                 for(int j = 0; j < _encoding.Durations.GetLength(1); ++j)
                 {
-                    if(_encoding.Durations[i, j] < min)
+                    if(_encoding.Durations[i, j] > 0 && _encoding.Durations[i, j] < min)
                     {
                         min = _encoding.Durations[i, j];
                     }
@@ -114,6 +114,21 @@ namespace BenchmarkParsing
                 }
             }
             return result;
+        }
+
+        public string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("N Machines: " + _encoding.NMachines + "\n");
+            sb.Append("N Jobs: " + _encoding.NJobs + "\n");
+            sb.Append("N Operations: " + _encoding.NOperations + "\n");
+            sb.Append("Average Operations per Job: " + _averageOperations + "\n");
+            sb.Append("Average Machines: " + _averageMachines + "\n");
+            sb.Append("Average Operations per Machine: " + _averageOperationsOnMachines + "\n");
+            sb.Append("Flexibility: " + _flexibility + "\n");
+            sb.Append("Duration Variety: " + _durationVariety + "\n");
+            sb.Append("Theoretical Min. Makespan: " + _theoreticalMinimumMakespan +  "\n");
+            return sb.ToString();
         }
 
         public float Flexibility => _flexibility;
