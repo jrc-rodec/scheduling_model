@@ -13,6 +13,7 @@ namespace BenchmarkParsing
         private readonly float _durationVariety;
         private readonly float _averageOperations;
         private readonly float _averageOperationsOnMachines;
+        private readonly float _theoreticalMinimumMakespan;
         private Encoding _encoding;
         // ...
 
@@ -51,6 +52,7 @@ namespace BenchmarkParsing
                 _averageOperationsOnMachines += onMachines[i];
             }
             _averageOperationsOnMachines /= onMachines.Length;
+            _theoreticalMinimumMakespan = DetermineTheoreticalMinimumMakespan();
         }
 
         /*
@@ -91,6 +93,29 @@ namespace BenchmarkParsing
             return averageDuration / count;
         }
 
+        private float DetermineTheoreticalMinimumMakespan()
+        {
+            float result = 0;
+            float[] minMakespanOfJobs = new float[_encoding.NJobs];
+            for(int i = 0; i < _encoding.Durations.GetLength(0); ++i)
+            {
+                float min = float.MaxValue;
+                for(int j = 0; j < _encoding.Durations.GetLength(1); ++j)
+                {
+                    if(_encoding.Durations[i, j] < min)
+                    {
+                        min = _encoding.Durations[i, j];
+                    }
+                }
+                minMakespanOfJobs[_encoding.JobSequence[i]] += min;
+                if (minMakespanOfJobs[_encoding.JobSequence[i]] > result)
+                {
+                    result = minMakespanOfJobs[_encoding.JobSequence[i]];
+                }
+            }
+            return result;
+        }
+
         public float Flexibility => _flexibility;
         public float AverageMachines => _averageMachines;
         public float DurationVariety => _durationVariety;
@@ -99,5 +124,6 @@ namespace BenchmarkParsing
         public int NJobs => _encoding.NJobs;
         public float AverageOperations => _averageOperations;
         public float AverageOperationsOnMachines => _averageOperationsOnMachines;
+        public float TheoreticalMinimumMakespan => _theoreticalMinimumMakespan;
     }
 }
