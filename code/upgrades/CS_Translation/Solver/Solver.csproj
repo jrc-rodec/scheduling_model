@@ -7,4 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BenchmarkParsing\BenchmarkParsing.csproj" />
+    <ProjectReference Include="..\PreProcessing\PreProcessing.csproj" />
+  </ItemGroup>
+
 </Project>
