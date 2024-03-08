@@ -17,6 +17,7 @@ namespace Solver
         private int _populationSize = 5;
         private int _offspringAmount = 20;
         private float _mutationProbability;
+        private float _maxMutationProbability;
         private float _elitismRate;
         private int _tournamentSize;
 
@@ -55,5 +56,6 @@ namespace Solver
         public float ElitismRate { get => _elitismRate; set => _elitismRate = value; }
         public int TournamentSize { get => _tournamentSize; set => _tournamentSize = value; }
         public int RestartGenerations { get => _restartGenerations; set => _restartGenerations = value; }
+        public float MaxMutationProbability { get => _maxMutationProbability; set => _maxMutationProbability = value; }
     }
 }
