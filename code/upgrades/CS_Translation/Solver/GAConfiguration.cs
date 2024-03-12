@@ -12,6 +12,7 @@ namespace Solver
 
         private readonly int[,] _durations;
         private readonly int[] _jobSequence;
+        private readonly int[] _jobStartIndices;
         private readonly DecisionVariables _decisionVariables;
         
         private int _populationSize = 5;
@@ -36,6 +37,17 @@ namespace Solver
             Individual.JobSequence = _jobSequence;
             Individual.AvailableMachines = encoding.GetMachinesForAllOperations();
             Individual.DetermineMaxDissimiarilty();
+
+            _jobStartIndices = new int[NJobs];
+            int operation = 0;
+            _jobStartIndices[operation++] = 0;
+            for(int i = 1; i < JobSequence.Length; ++i)
+            {
+                if (JobSequence[i] != JobSequence[i - 1])
+                {
+                    _jobStartIndices[operation++] = i;
+                }
+            }
         }
 
         public int[,] Durations => _durations;
@@ -57,5 +69,7 @@ namespace Solver
         public int TournamentSize { get => _tournamentSize; set => _tournamentSize = value; }
         public int RestartGenerations { get => _restartGenerations; set => _restartGenerations = value; }
         public float MaxMutationProbability { get => _maxMutationProbability; set => _maxMutationProbability = value; }
+
+        public int[] JobStartIndices => _jobStartIndices;
     }
 }

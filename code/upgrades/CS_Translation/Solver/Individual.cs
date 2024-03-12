@@ -18,6 +18,7 @@ namespace Solver
         private int[] _sequence;
         private int[] _assignments;
         private Dictionary<Criteria, float> _fitness;
+        private bool _feasible = true;
 
         public static int[] JobSequence;
         public static int[,] Durations;
@@ -27,6 +28,9 @@ namespace Solver
         public static float DistanceAdjustmentRate = 0.75f; // TODO
 
         public Dictionary<Criteria, float> Fitness { get => _fitness; set => _fitness = value; }
+        public bool Feasible { get => _feasible; set => _feasible = value; }
+        public int[] Sequence { get => _sequence; set => _sequence = value; }
+        public int[] Assignments { get => _assignments; set => _assignments = value; }
 
         public static void DetermineMaxDissimiarilty()
         {

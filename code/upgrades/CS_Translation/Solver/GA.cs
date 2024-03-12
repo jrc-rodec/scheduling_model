@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace Solver
 {
@@ -19,6 +20,10 @@ namespace Solver
         private bool _timeStop = false;
         private bool _fevalStop = false;
 
+        private int _functionEvaluations = 0;
+
+        public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
+
         public GA(GAConfiguration configuration)
         {
             _configuration = configuration;
@@ -29,6 +34,7 @@ namespace Solver
         {
             _random = new Random();
             _population = new List<Individual>();
+            _functionEvaluations = 0;
         }
 
         private Individual TournamentSelection(int tournamentSize)
@@ -70,12 +76,116 @@ namespace Solver
 
         private void Adjust(Individual individual)
         {
-            // TODO
+            List<List<Dictionary<string, int>>> gaps = new List<List<Dictionary<string, int>>>();
+            for(int i = 0; i < _configuration.NMachines; ++i){
+                gaps.Add(new List<Dictionary<string, int>>());
+            }
+            int[] endTimesOnMachines = new int[_configuration.NMachines];
+            int[] endTimesOfOperations = new int[_configuration.NOperations];
+            int[] nextOperation = new int[_configuration.NJobs];
+
+            for(int i = 0; i < individual.Sequence.Length; ++i){
+                int job = 0;
+                int operation = nextOperation[job]++;
+                int operationIndex = _configuration.JobStartIndices[job] + operation;
+                int machine = individual.Assignments[operationIndex];
+                int duration = _configuration.Durations[operation, machine];
+                bool inserted = false;
+                for(int j = 0; j < gaps[machine].Count; ++j){
+                    Dictionary<string, int> gap = gaps[machine][j];
+                    if(gap["end"] - gap["start"] >= duration){
+                        if(operationIndex == 0 || _configuration.JobSequence[operationIndex-1] == _configuration.JobSequence[operationIndex] && endTimesOfOperations[operationIndex-1] <= gap["end"] - duration){
+                            // gap can be used
+                            inserted = true;
+                            int start = 0;
+                            if(operationIndex != 0){
+                                start = Math.Min(gap["start"], endTimesOfOperations[operationIndex-1]);
+                            }
+                            int end = start + duration;
+                            if(gap["end"] - end > 0){
+                                Dictionary<string, int> newGap = new Dictionary<string, int>();
+                                newGap["start"] = end;
+                                newGap["end"] = gap["end"];
+                                newGap["preceedsOperation"] = operationIndex;
+                                gaps[machine].Add(newGap);
+                            }
+                            endTimesOfOperations[operationIndex] = end;
+                            int jobSwap = _configuration.JobSequence[gap["preceedsOperation"]];
+                            int swapOperationIndex = 0;
+                            int swapStartIndex = 0;
+                            bool found = false;
+                            for(int k = 0; k < _configuration.JobSequence.Length && !found; ++k){
+                                if(_configuration.JobSequence[k] == jobSwap){
+                                    swapStartIndex = k;
+                                    found = true;
+                                }
+                            }
+                            swapOperationIndex = gap["preceedsOperation"] - swapStartIndex;
+                            int count = 0;
+                            int swapIndividualIndex = 0;
+                            found = false;
+                            for(int k = 0; k < individual.Sequence.Length && !found; ++k){
+                                if(individual.Sequence[k] == jobSwap){
+                                    if(count == swapOperationIndex){
+                                        swapIndividualIndex = k;
+                                        found = true;
+                                    }
+                                    ++count;
+                                }
+                            }
+                            int tmp = individual.Sequence[swapIndividualIndex];
+                            individual.Sequence[swapIndividualIndex] = individual.Sequence[i];
+                            individual.Sequence[i] = tmp;
+                            gaps[machine].Remove(gap);
+                            break; // TODO: double check
+                        } 
+                    }
+                }
+                if(!inserted){
+                    int jobMinStart = 0;
+                    if(operationIndex != 0 && _configuration.JobSequence[operationIndex-1] == _configuration.JobSequence[operationIndex]){
+                        jobMinStart = endTimesOfOperations[operationIndex-1];
+                    }
+                    if(jobMinStart > endTimesOnMachines[machine]){
+                        gaps[machine].Add(new Dictionary<string, int>(){["start"] = jobMinStart, ["end"] = jobMinStart + duration, ["preceedsOperation"] = operationIndex});
+                        endTimesOnMachines[machine] = jobMinStart + duration;
+                    } else {
+                        endTimesOnMachines[machine] += duration;
+                    }
+                }
+                endTimesOfOperations[operationIndex] = endTimesOnMachines[machine];
+            }
         }
 
         private void Evaluate(Individual individual)
         {
-            // TODO
+            if (!individual.Feasible)
+            {
+                individual.Fitness[Criteria.Makespan] = float.MaxValue;
+                return;
+            }
+            int[] nextOperation = new int[_configuration.NJobs];
+            int[] endOnMachines = new int[_configuration.NMachines];
+            int[] endTimes = new int[_configuration.JobSequence.Length];
+            for(int i = 0; i <  individual.Sequence.Length; ++i)
+            {
+                int job = individual.Sequence[i];
+                int operation = nextOperation[job]++;
+                int startIndex = _configuration.JobStartIndices[job] + operation;
+                int machine = individual.Assignments[startIndex];
+                int duration = _configuration.Durations[startIndex, machine];
+                int offset = 0;
+                int minStartJob = 0;
+                if(operation > 0)
+                {
+                    offset = Math.Max(0, endTimes[startIndex - 1] - endOnMachines[machine]);
+                    minStartJob = endTimes[startIndex - 1];
+                }
+                endTimes[startIndex] = endOnMachines[machine] + duration + offset;
+                endOnMachines[machine] = endTimes[startIndex];
+            }
+            individual.Fitness[Criteria.Makespan] = endTimes.Max();
+            _functionEvaluations++;
         }
 
         private void CreatePopulation(int populationSize)
@@ -159,7 +269,7 @@ namespace Solver
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
                 }
                 // TODO: restarts
-
+                
                 CreateOffspring(offspring, offspringAmount, tournamentSize, mutationProbability);
                 //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
                 List<Individual> pool = offspring;
