@@ -199,6 +199,7 @@ namespace Solver
                 Evaluate(individual);
                 _population.Add(individual);
             }
+            _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
         }
 
         private void CreateOffspring(List<Individual> offspring, int offspringAmount, int tournamentSize, float mutationProbability)
@@ -255,7 +256,7 @@ namespace Solver
             float maxMutationProbability = _configuration.MaxMutationProbability;
             float elitism = _configuration.ElitismRate;
             int maxWait = _configuration.RestartGenerations;
-            _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
+            
             List<Individual> overallBest = GetAllEqual(_population[0], _population);
             List<Individual> currentBest = GetAllEqual(_population[0], _population);
             int lastProgress = 0;
@@ -268,8 +269,34 @@ namespace Solver
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
                 }
-                // TODO: restarts
-                
+                if(mutationProbability > maxMutationProbability){
+                    //TODO: local minimum
+                    // currentBest = ...
+
+                    // only necessary if local search is conducted
+                    if(currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
+                        overallBest = currentBest;
+                    } else if(currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan]){
+                        for(int i = 0; i < currentBest.Count; ++i){
+                            if(!overallBest.Contains(currentBest[i])){
+                                overallBest.Add(currentBest[i]);
+                            }
+                        }
+                    }
+                    int maxPopulationSize = 400; // TODO: parameter
+                    int maxOffspringAmount = maxPopulationSize * 4; // TODO: parameter
+                    populationSize = (int)Math.Min(maxPopulationSize, _configuration.PopulationSizeGrowthRate * populationSize);
+                    offspringAmount = (int)Math.Min(maxOffspringAmount, _configuration.PopulationSizeGrowthRate * offspringAmount);
+
+                    elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
+                    tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
+
+                    // NOTE: also sorts the population
+                    CreatePopulation(populationSize);
+                    mutationProbability = _configuration.MutationProbability;
+                    lastProgress = generation;
+                }
+
                 CreateOffspring(offspring, offspringAmount, tournamentSize, mutationProbability);
                 //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
                 List<Individual> pool = offspring;

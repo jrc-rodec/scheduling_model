@@ -21,7 +21,9 @@ namespace Solver
         private float _maxMutationProbability;
         private float _elitismRate;
         private int _tournamentSize;
-
+        private float _populationGrowthRate = 2.0f;
+        private float _maxElitism = 0.1f; // 1.0f
+        private float _maxTournamentRate = 0.2f; // 1.0f
         private int _restartGenerations;
 
         public GAConfiguration(BenchmarkParsing.Encoding encoding, DecisionVariables variables)
@@ -69,6 +71,9 @@ namespace Solver
         public int TournamentSize { get => _tournamentSize; set => _tournamentSize = value; }
         public int RestartGenerations { get => _restartGenerations; set => _restartGenerations = value; }
         public float MaxMutationProbability { get => _maxMutationProbability; set => _maxMutationProbability = value; }
+        public float PopulationSizeGrowthRate { get => _populationGrowthRate; set => _populationGrowthRate = value; }
+        public float MaxElitismRate { get => _maxElitism; set => _maxElitism = value; }
+        public float MaxTournamentRate { get => _maxTournamentRate; set => _maxTournamentRate = value; }
 
         public int[] JobStartIndices => _jobStartIndices;
     }
