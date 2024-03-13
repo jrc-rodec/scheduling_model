@@ -185,7 +185,31 @@ namespace Solver
                 endOnMachines[machine] = endTimes[startIndex];
             }
             individual.Fitness[Criteria.Makespan] = endTimes.Max();
+            if (endOnMachines.Max() < 516.0f)
+            {
+                Console.WriteLine("Something went wrong");
+            }
             _functionEvaluations++;
+        }
+
+        private bool HasInvalidAssignment(Individual individual)
+        {
+            for(int i = 0; i < individual.Assignments.Length; ++i)
+            {
+                if (_configuration.Durations[i, individual.Assignments[i]] == 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void CheckIndividual(Individual individual)
+        {
+            if (HasInvalidAssignment(individual))
+            {
+                Console.WriteLine("Something went wrong!");
+            }
         }
 
         private void CreatePopulation(int populationSize)
@@ -197,6 +221,7 @@ namespace Solver
                 // Adjustment step
                 Adjust(individual);
                 Evaluate(individual);
+                //CheckIndividual(individual);
                 _population.Add(individual);
             }
             _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
@@ -210,6 +235,7 @@ namespace Solver
             {
                 Individual o = Recombine(tournamentSize);
                 // Adjustment step
+                //CheckIndividual(o);
                 Adjust(o);
                 o.Mutate(mutationProbability);
                 Evaluate(o);
@@ -241,7 +267,7 @@ namespace Solver
 
         private float UpdateMutationProbability(float p, int generation, int lastProgress, int maxWait, float maxP)
         {
-            return (float)(p * (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
+            return (float)(p + (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
         }
 
         private void MutateMachineVector(Individual individual){
@@ -370,8 +396,8 @@ namespace Solver
                     /*Console.WriteLine("Local Search");
                     Individual localMinimum = LocalSearch(currentBest);
                     Console.WriteLine("Local Search Done");*/
-                    Individual localMinimum = currentBest[0];
                     // only necessary if local search is conducted
+                    Individual localMinimum = currentBest[0];
                     if(localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
                         overallBest = currentBest;
                     } else if(localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))

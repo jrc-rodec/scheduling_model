@@ -163,11 +163,9 @@ namespace Solver
                         int swap;
                         do
                         {
-                            swap = random.Next(_assignments.Length);
-                        } while (swap == i);
-                        int tmp = _assignments[swap];
-                        _assignments[swap] = _assignments[i];
-                        _assignments[i] = tmp;
+                            swap = random.Next(AvailableMachines[i].Count);
+                        } while (AvailableMachines[i][swap] == _assignments[i]);
+                        _assignments[i] = AvailableMachines[i][swap];
                     }
                 }
             }
