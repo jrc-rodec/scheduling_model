@@ -54,6 +54,16 @@ namespace Solver
             }
         }
 
+        public Individual(Individual individual)
+        {
+            // Copy
+            _sequence = new int[individual._sequence.Length];
+            individual._sequence.CopyTo(_sequence, 0);
+            _assignments = new int[individual._assignments.Length];
+            individual._assignments.CopyTo(_assignments, 0);
+            _fitness = individual.Fitness;
+        }
+
         public Individual(List<Individual> population) : this(true)
         {
             float minDistance = MaxDissimilarity;
@@ -73,7 +83,6 @@ namespace Solver
                 }
                 ++attempts;
             }
-            population.Add(this);
         }
 
         public Individual(Individual parentA, Individual parentB) : this(false)
@@ -83,7 +92,7 @@ namespace Solver
             
             List<int> a = new List<int>();
             List<int> b = new List<int>();
-            jobs.ElementAt(0);
+            //jobs.ElementAt(0); //?
             Random random = new Random();
             // IPOX-Crossover for Operation Sequence
             for(int i = 0; i < jobs.Count; ++i)
@@ -102,7 +111,7 @@ namespace Solver
             {
                 if (b.Contains(parentB._sequence[i]))
                 {
-                    parentBValues.Add(i);
+                    parentBValues.Add(parentB._sequence[i]);
                 }
             }
             for (int i = 0; i < parentA._sequence.Length; ++i)
@@ -136,9 +145,11 @@ namespace Solver
                 if(random.NextDouble() < p)
                 {
                     int swap;
+                    int attempts = 0;
                     do
                     {
-                        swap = random.Next(_sequence.Length); 
+                        swap = random.Next(_sequence.Length);
+                        ++attempts;
                     } while (_sequence[swap] == _sequence[i]); // make sure it does not swap with itself
                     int tmp = _sequence[swap];
                     _sequence[swap] = _sequence[i];
@@ -166,6 +177,10 @@ namespace Solver
         {
             JobSequence.CopyTo(_sequence, 0);
             Random random = new Random();
+            _sequence = _sequence.Select(x => (x, random.Next())) // TODO: ????
+                         .OrderBy(tuple => tuple.Item2)
+                         .Select(tuple => tuple.Item1)
+                         .ToArray();
             for (int i = 0; i < _assignments.Length; ++i)
             {
                 _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];

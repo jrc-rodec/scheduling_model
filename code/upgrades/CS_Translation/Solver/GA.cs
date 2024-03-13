@@ -41,7 +41,7 @@ namespace Solver
         {
             if(tournamentSize == 0)
             {
-                tournamentSize = _population.Count / 10;
+                tournamentSize = Math.Max(1, _population.Count / 10);
             }
             List<int> participants = new List<int>();
             while(participants.Count < tournamentSize)
@@ -204,7 +204,8 @@ namespace Solver
 
         private void CreateOffspring(List<Individual> offspring, int offspringAmount, int tournamentSize, float mutationProbability)
         {
-            offspring = new List<Individual>();
+            offspring.Clear();
+            //offspring = new List<Individual>();
             for(int i = 0; i < offspringAmount; ++i)
             {
                 Individual o = Recombine(tournamentSize);
@@ -217,7 +218,7 @@ namespace Solver
         }
 
         // TODO: Add parameters for missing criteria
-        private void UpdateStoppingCriteria(int generation, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations)
+        private void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations)
         {
             _generationStop = generation >= maxGeneration;
             _timeStop = false;
@@ -243,8 +244,102 @@ namespace Solver
             return (float)(p * (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
         }
 
+        private void MutateMachineVector(Individual individual){
+            float p = 1.0f / individual.Assignments.Length;
+            for(int i = 0; i < individual.Assignments.Length; ++i)
+            {
+                if(_random.NextDouble() < p)
+                {
+                    if (Individual.AvailableMachines[i].Count > 1)
+                    {
+                        int swap;
+                        do
+                        {
+                            swap = Individual.AvailableMachines[i][_random.Next(Individual.AvailableMachines[i].Count)];
+                        } while (swap != individual.Assignments[i]);
+                        individual.Assignments[i] = swap;
+                    }
+                }
+            }
+        }
+
+        private void MutateSequenceVector(Individual individual)
+        {
+            float p = 1.0f / individual.Sequence.Length;
+            for(int i = 0; i < individual.Sequence.Length; ++i)
+            {
+                if(_random.NextDouble() < p)
+                {
+                    int swap;
+                    do
+                    {
+                        swap = _random.Next(individual.Sequence.Length);
+                    } while (swap == i || individual.Sequence[i] == individual.Sequence[swap]);
+                    int tmp = individual.Sequence[i];
+                    individual.Sequence[i] = individual.Sequence[swap];
+                    individual.Sequence[swap] = tmp;
+                }
+            }
+        } 
+
+        private Individual SimulatedAnnealing(Individual individual)
+        {
+            int nMachineMutations = 5;
+            int nSequenceMutations = 20;
+            float initialT = 20.0f;
+            float alpha = 0.8f;
+            int nT = 7;
+            float T = initialT;
+            Individual best = new Individual(individual);
+            for(int i = 0; i < nMachineMutations; ++i)
+            {
+                Individual y = new Individual(individual);
+                if(i > 0)
+                {
+                    MutateMachineVector(y);
+                }
+                for(int j = 0; j < nT; ++j)
+                {
+                    Individual yTmp = new Individual(y);
+                    Evaluate(yTmp);
+                    for(int k = 0; k < nSequenceMutations; ++k)
+                    {
+                        Individual z = new Individual(y);
+                        MutateSequenceVector(z);
+                        Evaluate(z);
+                        if (z.Fitness[Criteria.Makespan] < yTmp.Fitness[Criteria.Makespan])
+                        {
+                            yTmp = z;
+                        }
+                    }
+                    if (yTmp.Fitness[Criteria.Makespan] < y.Fitness[Criteria.Makespan])
+                    {
+                        y = yTmp;
+                    }
+                    if (y.Fitness[Criteria.Makespan] < best.Fitness[Criteria.Makespan])
+                    {
+                        best = y;
+                    }
+                    T *= alpha;
+                }
+                T = initialT;
+            }
+            return best;
+        }
+
+        private Individual LocalSearch(List<Individual> currentBest)
+        {
+            //NOTE: since currentBest is now a list, somehow one of the individuals would need to be chosen for simulated annealing?
+            return SimulatedAnnealing(currentBest[0]);
+        }
+
+        public void Debug_Report(int generation, List<Individual> best, int restarts, float mutationProbability)
+        {
+            Console.WriteLine(generation + " Best: " + best[0].Fitness[Criteria.Makespan] + "(" + best.Count + " equal solutions, " + restarts + " restarts, current p: " + mutationProbability + ")");
+        }
+
         //TODO: change to public History Run()
-        public void Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        public List<Individual> Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
@@ -254,34 +349,34 @@ namespace Solver
             int tournamentSize = _configuration.TournamentSize; //TODO: adjust
             float mutationProbability = _configuration.MutationProbability;
             float maxMutationProbability = _configuration.MaxMutationProbability;
-            float elitism = _configuration.ElitismRate;
+            float elitism = _configuration.ElitismRate * populationSize;
             int maxWait = _configuration.RestartGenerations;
-            
+            int restarts = 0;
             List<Individual> overallBest = GetAllEqual(_population[0], _population);
             List<Individual> currentBest = GetAllEqual(_population[0], _population);
             int lastProgress = 0;
             int generation = 0;
             int functionEvaluations = 0;
-            UpdateStoppingCriteria(generation, maxGeneration, functionEvaluations, maxFunctionEvaluations);
+            UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations);
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
+                Debug_Report(generation, overallBest, restarts, mutationProbability);
                 if(generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
                 }
                 if(mutationProbability > maxMutationProbability){
-                    //TODO: local minimum
-                    // currentBest = ...
-
+                    //Note: local minimum
+                    /*Console.WriteLine("Local Search");
+                    Individual localMinimum = LocalSearch(currentBest);
+                    Console.WriteLine("Local Search Done");*/
+                    Individual localMinimum = currentBest[0];
                     // only necessary if local search is conducted
-                    if(currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
+                    if(localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
                         overallBest = currentBest;
-                    } else if(currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan]){
-                        for(int i = 0; i < currentBest.Count; ++i){
-                            if(!overallBest.Contains(currentBest[i])){
-                                overallBest.Add(currentBest[i]);
-                            }
-                        }
+                    } else if(localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
+                    {
+                        overallBest.Add(localMinimum);
                     }
                     int maxPopulationSize = 400; // TODO: parameter
                     int maxOffspringAmount = maxPopulationSize * 4; // TODO: parameter
@@ -295,19 +390,20 @@ namespace Solver
                     CreatePopulation(populationSize);
                     mutationProbability = _configuration.MutationProbability;
                     lastProgress = generation;
+                    restarts++;
                 }
 
                 CreateOffspring(offspring, offspringAmount, tournamentSize, mutationProbability);
                 //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
                 List<Individual> pool = offspring;
-                for(int i = 0; i < _population.Count * elitism; ++i)
+                for(int i = 0; i < elitism; ++i)
                 {
                     // NOTE: population always be sorted at this point
                     pool.Add(_population[i]);
                 }
                 pool.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
                 _population = new List<Individual>();
-                for(int i = 0; i < populationSize; ++i)
+                for (int i = 0; i < populationSize; ++i)
                 {
                     _population.Add(pool[i]);
                 }
@@ -328,6 +424,7 @@ namespace Solver
                             }
                         }
                     }
+                    lastProgress = generation;
                 } else if (_population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
                 {
                     List<Individual> equals = GetAllEqual(_population[0], _population);
@@ -349,9 +446,10 @@ namespace Solver
                         }
                     }
                 }
-
+                UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations);
                 ++generation;
             }
+            return overallBest;
         }
         
     }

@@ -18,13 +18,13 @@ namespace Solver
         private int _populationSize = 5;
         private int _offspringAmount = 20;
         private float _mutationProbability;
-        private float _maxMutationProbability;
-        private float _elitismRate;
-        private int _tournamentSize;
+        private float _maxMutationProbability = 1.0f;
+        private float _elitismRate = 0.1f;
+        private int _tournamentSize = 1;
         private float _populationGrowthRate = 2.0f;
         private float _maxElitism = 0.1f; // 1.0f
         private float _maxTournamentRate = 0.2f; // 1.0f
-        private int _restartGenerations;
+        private int _restartGenerations = 25;
 
         public GAConfiguration(BenchmarkParsing.Encoding encoding, DecisionVariables variables)
         {
@@ -50,6 +50,8 @@ namespace Solver
                     _jobStartIndices[operation++] = i;
                 }
             }
+            _tournamentSize = (int)(variables.DurationVariety * MaxTournamentRate * _populationSize + 0.5f);
+            //_elitismRate = Math.Min(MaxElitismRate, (int)(variables.DurationVariety * _populationSize + 0.5f));
         }
 
         public int[,] Durations => _durations;
