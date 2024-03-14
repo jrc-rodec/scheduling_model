@@ -20,6 +20,7 @@ namespace Solver
         private bool _timeStop = false;
         private bool _fevalStop = false;
 
+        DateTime _startTime;
         private int _functionEvaluations = 0;
 
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
@@ -185,10 +186,6 @@ namespace Solver
                 endOnMachines[machine] = endTimes[startIndex];
             }
             individual.Fitness[Criteria.Makespan] = endTimes.Max();
-            if (endOnMachines.Max() < 516.0f)
-            {
-                Console.WriteLine("Something went wrong");
-            }
             _functionEvaluations++;
         }
 
@@ -244,12 +241,12 @@ namespace Solver
         }
 
         // TODO: Add parameters for missing criteria
-        private void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations)
+        private void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations, int timeLimit, float targetFitness)
         {
-            _generationStop = generation >= maxGeneration;
-            _timeStop = false;
-            _fevalStop = functionEvaluations >= maxFunctionEvaluations;
-            _fitnessStop = false;
+            //_generationStop = generation >= maxGeneration;
+            _timeStop = DateTime.Now.Subtract(_startTime).TotalSeconds >= timeLimit;
+            //_fevalStop = functionEvaluations >= maxFunctionEvaluations;
+            _fitnessStop = bestFitness <= targetFitness;
         }
 
         private List<Individual> GetAllEqual(Individual original, List<Individual> individuals)
@@ -383,7 +380,8 @@ namespace Solver
             int lastProgress = 0;
             int generation = 0;
             int functionEvaluations = 0;
-            UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations);
+            _startTime = DateTime.Now;
+            UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 Debug_Report(generation, overallBest, restarts, mutationProbability);
@@ -472,7 +470,7 @@ namespace Solver
                         }
                     }
                 }
-                UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations);
+                UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
             }
             return overallBest;
