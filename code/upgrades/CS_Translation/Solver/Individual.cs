@@ -24,8 +24,8 @@ namespace Solver
         public static int[,] Durations;
         public static List<List<int>> AvailableMachines;
         public static float MaxDissimilarity;
-        public static int MaxInitializationAttemps = 100; // TODO
-        public static float DistanceAdjustmentRate = 0.75f; // TODO
+        public static int MaxInitializationAttemps = 100; // TODO add parameter
+        public static float DistanceAdjustmentRate = 0.75f; // TODO add parameter
 
         public Dictionary<Criteria, float> Fitness { get => _fitness; set => _fitness = value; }
         public bool Feasible { get => _feasible; set => _feasible = value; }
@@ -92,9 +92,7 @@ namespace Solver
             
             List<int> a = new List<int>();
             List<int> b = new List<int>();
-            //jobs.ElementAt(0); //?
             Random random = new Random();
-            // IPOX-Crossover for Operation Sequence
             for(int i = 0; i < jobs.Count; ++i)
             {
                 if(random.NextDouble() < 0.5)
@@ -105,6 +103,8 @@ namespace Solver
                     b.Add(jobs.ElementAt(i));
                 }
             }
+
+            // IPOX-Crossover for Operation Sequence
             int bIndex = 0;
             List<int> parentBValues = new List<int>();
             for(int i = 0; i < parentB._sequence.Length; ++i)
@@ -124,6 +124,7 @@ namespace Solver
                     _sequence[i] = parentBValues[bIndex++];
                 }
             }
+
             // Uniform Crossover for Machine Assignments
             for(int i = 0; i < _assignments.Length; ++i)
             {

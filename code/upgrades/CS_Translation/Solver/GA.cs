@@ -20,6 +20,11 @@ namespace Solver
         private bool _timeStop = false;
         private bool _fevalStop = false;
 
+        private bool _useGenerationStop = true;
+        private bool _useFitnessStop = true;
+        private bool _useTimeStop = true;
+        private bool _useFevalStop = true;
+
         DateTime _startTime;
         private int _functionEvaluations = 0;
 
@@ -239,14 +244,22 @@ namespace Solver
                 offspring.Add(o);
             }
         }
+        
+        public void SetStoppingCriteriaStatus(bool generation, bool time, bool functionEvaluations, bool targetFitness)
+        {
+            _useGenerationStop = generation;
+            _useTimeStop = time;
+            _useFevalStop = functionEvaluations;
+            _useFitnessStop = targetFitness;
+        }
 
         // TODO: Add parameters for missing criteria
         private void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations, int timeLimit, float targetFitness)
         {
-            //_generationStop = generation >= maxGeneration;
-            _timeStop = DateTime.Now.Subtract(_startTime).TotalSeconds >= timeLimit;
-            //_fevalStop = functionEvaluations >= maxFunctionEvaluations;
-            _fitnessStop = bestFitness <= targetFitness;
+            _generationStop = _useGenerationStop && generation >= maxGeneration;
+            _timeStop = _useTimeStop && DateTime.Now.Subtract(_startTime).TotalSeconds >= timeLimit;
+            _fevalStop = _useFevalStop && functionEvaluations >= maxFunctionEvaluations;
+            _fitnessStop = _useFitnessStop && bestFitness <= targetFitness;
         }
 
         private List<Individual> GetAllEqual(Individual original, List<Individual> individuals)
@@ -418,11 +431,11 @@ namespace Solver
                 }
 
                 CreateOffspring(offspring, offspringAmount, tournamentSize, mutationProbability);
-                //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
-                List<Individual> pool = offspring;
+                //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan])); // pool gets sorted anyway
+                List<Individual> pool = offspring; // NOTE: since no copy is made, could just use offspring as list
                 for(int i = 0; i < elitism; ++i)
                 {
-                    // NOTE: population always be sorted at this point
+                    // NOTE: population should always be sorted at this point
                     pool.Add(_population[i]);
                 }
                 pool.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));

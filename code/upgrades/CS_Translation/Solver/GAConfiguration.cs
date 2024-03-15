@@ -18,12 +18,12 @@ namespace Solver
         private int _populationSize = 5;
         private int _offspringAmount = 20;
         private float _mutationProbability;
-        private float _maxMutationProbability = 0.5f;//1.0f;
+        private float _maxMutationProbability = 1.0f;//0.5f;//1.0f;
         private float _elitismRate = 0.1f;
         private int _tournamentSize = 1;
         private float _populationGrowthRate = 2.0f;
-        private float _maxElitism = 0.1f; // 1.0f
-        private float _maxTournamentRate = 0.2f; // 1.0f
+        private float _maxElitism = 0.1f; // 1.0f // scale freely between , and + if 1
+        private float _maxTournamentRate = 0.2f; // 1.0f // NOTE: 0 -> TournamentSize = 1 -> Random Selection, 1 -> TournamentSize = PopulationSize -> Rank Selection
         private int _restartGenerations = 50;
 
         public GAConfiguration(BenchmarkParsing.Encoding encoding, DecisionVariables variables)
@@ -50,8 +50,25 @@ namespace Solver
                     _jobStartIndices[operation++] = i;
                 }
             }
-            _tournamentSize = (int)(variables.DurationVariety * MaxTournamentRate * _populationSize + 0.5f);
-            //_elitismRate = Math.Min(MaxElitismRate, (int)(variables.DurationVariety * _populationSize + 0.5f));
+        }
+
+        public GAConfiguration(BenchmarkParsing.Encoding encoding, DecisionVariables variables, int populationSize, int offspringAmount, float maxMutationProbability, float maxElitismRate, float maxTournamentRate, float populationGrowthRate, int restartGenerations) : this(encoding, variables)
+        {
+            _populationSize = populationSize;
+            _offspringAmount = offspringAmount;
+            _maxMutationProbability = maxMutationProbability;
+            _maxElitism = maxElitismRate;
+            _maxTournamentRate = maxTournamentRate;
+            _populationGrowthRate = populationGrowthRate;
+            _restartGenerations = restartGenerations;
+            _tournamentSize = Math.Min(1, (int)(variables.DurationVariety * MaxTournamentRate * _populationSize + 0.5f));
+            _elitismRate = Math.Min(MaxElitismRate, (int)(variables.DurationVariety * _populationSize + 0.5f));
+        }
+
+        public void UpdateDynamicParameters()
+        {
+            _tournamentSize = Math.Min(1, (int)(_decisionVariables.DurationVariety * MaxTournamentRate * _populationSize + 0.5f));
+            _elitismRate = Math.Min(MaxElitismRate, (int)(_decisionVariables.DurationVariety * _populationSize + 0.5f));
         }
 
         public int[,] Durations => _durations;
