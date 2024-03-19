@@ -172,14 +172,27 @@ namespace Solver
             }
         }
 
+        private void ShuffleSequence()
+        {
+            Random random = new Random();
+            for(int i = 0; i < _sequence.Length; ++i)
+            {
+                int index = random.Next(_sequence.Length);
+                int tmp = _sequence[index];
+                _sequence[index] = _sequence[i];
+                _sequence[i] = tmp;
+            }
+        }
+
         private void Randomize()
         {
             JobSequence.CopyTo(_sequence, 0);
             Random random = new Random();
-            _sequence = _sequence.Select(x => (x, random.Next())) // TODO: ????
-                         .OrderBy(tuple => tuple.Item2)
-                         .Select(tuple => tuple.Item1)
-                         .ToArray();
+            //_sequence = _sequence.Select(x => (x, random.Next())) // TODO: ????
+            //             .OrderBy(tuple => tuple.Item2)
+            //             .Select(tuple => tuple.Item1)
+            //             .ToArray();
+            ShuffleSequence();
             for (int i = 0; i < _assignments.Length; ++i)
             {
                 _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];

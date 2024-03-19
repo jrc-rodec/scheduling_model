@@ -374,8 +374,7 @@ namespace Solver
             Console.WriteLine(generation + " Best: " + best[0].Fitness[Criteria.Makespan] + "(" + best.Count + " equal solutions, " + restarts + " restarts, current p: " + mutationProbability + ")");
         }
 
-        //TODO: change to public History Run()
-        public List<Individual> Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        public Result Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
@@ -392,9 +391,9 @@ namespace Solver
             List<Individual> currentBest = GetAllEqual(_population[0], _population);
             int lastProgress = 0;
             int generation = 0;
-            int functionEvaluations = 0;
+            _functionEvaluations = 0;
             _startTime = DateTime.Now;
-            UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+            UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 Debug_Report(generation, overallBest, restarts, mutationProbability);
@@ -483,10 +482,10 @@ namespace Solver
                         }
                     }
                 }
-                UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+                UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
             }
-            return overallBest;
+            return new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
         }
         
     }
