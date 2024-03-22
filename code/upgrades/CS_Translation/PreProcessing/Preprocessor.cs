@@ -71,7 +71,7 @@ namespace PreProcessing
             int nUniqueDurations = durationSet.Count;
             durationVariety = (nUniqueDurations + 0.0f) / nPossibleCombinations;
             flexibility = (averageMachinesPerOperation + 0.0f) / nMachines;
-            for(int i = 0; i < durations.GetLength(0); ++i)
+            /*for(int i = 0; i < durations.GetLength(0); ++i)
             {
                 for(int j = 0; j < durations.GetLength(1); ++j)
                 {
@@ -80,10 +80,11 @@ namespace PreProcessing
                         for(int k = 0; k < durations.GetLength(0); ++k)
                         {
                             // count amount of jobs on this machine
+
                         }
                     }
                 }
-            }
+            }*/
         }
     }
 }
