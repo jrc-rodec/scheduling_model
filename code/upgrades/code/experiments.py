@@ -80,19 +80,24 @@ if __name__ == '__main__':
 
     import evaluation
     
-    time_limit = 60
-    n_experiments = 1
-    selection = [('5_Kacem', 2, 11)]
+    time_limit = 3600
+    n_experiments = 10
+    selection = [('5_Kacem', 1, 0),('5_Kacem', 2, 0),('5_Kacem', 3, 0),('5_Kacem', 4, 0), ('1_Brandimarte', 1, 0), ('1_Brandimarte', 2, 0), ('1_Brandimarte', 3, 0), ('1_Brandimarte', 4, 0), ('1_Brandimarte', 5, 0), ('1_Brandimarte', 6, 0), ('1_Brandimarte', 7, 0), ('1_Brandimarte', 8, 0), ('1_Brandimarte', 9, 0), ('1_Brandimarte', 10, 0), ('1_Brandimarte', 11, 0), ('1_Brandimarte', 12, 0), ('1_Brandimarte', 13, 0), ('1_Brandimarte', 14, 0), ('1_Brandimarte', 15, 0)]
     histories : list[History] = []
+
+    #for memory conservation 
+    result_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
     for instance in selection:
         for j in range(n_experiments):
             history, real_runtime = run(instance[0], instance[1], instance[2], time_limit)
             history.instance = f'{instance[0]}_{instance[1]}'
-            histories.append(history)
+            # for memory conservation
+            history.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{j}-{history.instance}.json')
+            #histories.append(history)
             print(f'{j} - {instance[0]}{instance[1]} - Done')
 
             # testing purposes
-            n_options = 5
+            """n_options = 5
             makespan_options, idle_time_options, queue_time_options = history.get_options(n_options) # get 5 options
 
             solutions = dict()
@@ -126,12 +131,8 @@ if __name__ == '__main__':
                 print(f'Makepsan: {m}, Idle-Time: {i}, Queue-Time: {q}')
                 evaluation.visualize(sequence, assignments, durations, required_operations, m, i, q, instance[0], instance[1], pre_colors=colors)#, title_prefix=f'Rank {rank}')
                 rank += 1
-            evaluation.show_plots()
-    result_path = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
-    i = 0
-    for result in histories:
-        result.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{i}-{result.instance}.json')
-        i+=1
+            evaluation.show_plots()"""
+
 
 if shutdown_when_finished:
     os.system("shutdown /s /t 1")

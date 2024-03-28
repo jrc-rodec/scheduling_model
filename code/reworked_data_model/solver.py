@@ -1524,7 +1524,7 @@ class GurobiNoMachineFlexibilitySolver(Solver):
 
 class GurobiWithWorkerSolver(Solver):
     
-    def __init__(self, production_environment : ProductionEnvironment):
+    def __init__(self, production_environment : ProductionEnvironment = None):
         super().__init__('GurobiSolver (incl. Worker)', production_environment, GurobiEncoder())
 
     def initialize(self, nb_jobs, nb_operations, nb_machines, nb_workers, job_op_machsuitable, job_op_mach_worker, duration, job_op_mach_workersuitable, L):
@@ -1545,7 +1545,7 @@ class GurobiWithWorkerSolver(Solver):
         self.X = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="X")
         self.U = self.m.addVars(list_X_var, obj = 0.0, vtype=gp.GRB.BINARY, name ="U")
         self.C = self.m.addVars(job_ops,  obj = 0.0, lb = 0.0, vtype=gp.GRB.CONTINUOUS, name ="C")
-        Cmax = self.m.addVar(obj = 1.0, name="Cmax")
+        self.Cmax = self.m.addVar(obj = 1.0, name="Cmax")
 
         self.m.addConstrs((self.Y.sum(j,k,'*','*') == 1 for j, k in job_ops), "Y_const")
         self.m.addConstrs((self.Y.prod(duration,j,k,'*','*') <= self.C[j,k] for j, k in job_ops if k == 1),"C_time")
@@ -1574,7 +1574,7 @@ class GurobiWithWorkerSolver(Solver):
                     for i in machines if i in job_op_machsuitable[j,k]
                     for ip in machines if ip in job_op_machsuitable[jp,kp]
                     for s in workers if s in job_op_mach_workersuitable[j,k,i] if s in job_op_mach_workersuitable[jp,kp,ip]), "l2_U")
-        self.m.addConstrs((Cmax>=self.C[j,nb_operations[j-1]] for j in jobs),"Cmax")
+        self.m.addConstrs((self.Cmax>=self.C[j,nb_operations[j-1]] for j in jobs),"Cmax")
 
     def run(self):
         self.m.update()
