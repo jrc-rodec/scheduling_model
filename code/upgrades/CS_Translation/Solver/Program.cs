@@ -34,8 +34,8 @@ namespace Solver
             GAConfiguration configuration = new GAConfiguration(result, variables);
             GA ga = new GA(configuration);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-            Result gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-            Console.WriteLine(gaResult.ToString());
+            History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            Console.WriteLine(gaResult.Result.ToString());
             Console.ReadLine();
         }
     }

@@ -369,12 +369,20 @@ namespace Solver
             return SimulatedAnnealing(currentBest[0]);
         }
 
-        public void Debug_Report(int generation, List<Individual> best, int restarts, float mutationProbability)
+        public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match)
         {
-            Console.WriteLine(generation + " Best: " + best[0].Fitness[Criteria.Makespan] + "(" + best.Count + " equal solutions, " + restarts + " restarts, current p: " + mutationProbability + ")");
+            if (improvement)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+            } else if (match)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+            }
+            Console.WriteLine("Generation " + generation + " Overall Best: " + best[0].Fitness[Criteria.Makespan] + " (" + best.Count + " equal solutions), Current Run Best " + currentBest[0].Fitness[Criteria.Makespan] + " (" + currentBest.Count + " equal solutions) - " + restarts + " restarts" + ")");
+            Console.ResetColor();
         }
 
-        public Result Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
@@ -393,10 +401,14 @@ namespace Solver
             int generation = 0;
             _functionEvaluations = 0;
             _startTime = DateTime.Now;
+
+            History history = new History();
+            bool improvement = false;
+            bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                Debug_Report(generation, overallBest, restarts, mutationProbability);
+                history.Update(overallBest, currentBest, mutationProbability, _population);
                 if(generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
@@ -409,11 +421,21 @@ namespace Solver
                     // only necessary if local search is conducted
                     Individual localMinimum = currentBest[0];
                     if(localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
-                        overallBest = currentBest;
+                        improvement = true;
+                        foreach(Individual individual in currentBest)
+                        {
+                            if (!overallBest.Contains(individual))
+                            {
+                                overallBest.Add(individual);
+                            }
+                        }
+                        //overallBest = currentBest;
                     } else if(localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
                     {
                         overallBest.Add(localMinimum);
+                        match = true;
                     }
+                    Debug_Report(generation-1, overallBest, currentBest, restarts, improvement, match);
                     int maxPopulationSize = 400; // TODO: parameter
                     int maxOffspringAmount = maxPopulationSize * 4; // TODO: parameter
                     populationSize = (int)Math.Min(maxPopulationSize, _configuration.PopulationSizeGrowthRate * populationSize);
@@ -422,6 +444,10 @@ namespace Solver
                     elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
                     tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
 
+                    currentBest.Clear();
+                    // NOTE: for visual purposes only
+                    improvement = false;
+                    match = false;
                     // NOTE: also sorts the population
                     CreatePopulation(populationSize);
                     mutationProbability = _configuration.MutationProbability;
@@ -444,15 +470,17 @@ namespace Solver
                     _population.Add(pool[i]);
                 }
 
-                if (_population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
+                if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
                 {
                     currentBest = GetAllEqual(_population[0], _population);
                     if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
+                        improvement = true;
                         overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
                     } else if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
-                        for(int i = 0; i < currentBest.Count; ++i)
+                        match = true;
+                        for (int i = 0; i < currentBest.Count; ++i)
                         {
                             if (!overallBest.Contains(currentBest[i]))
                             {
@@ -477,6 +505,7 @@ namespace Solver
                         {
                             if (!overallBest.Contains(currentBest[i]))
                             {
+                                match = true;
                                 overallBest.Add(currentBest[i]);
                             }
                         }
@@ -485,7 +514,9 @@ namespace Solver
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
             }
-            return new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
+            Debug_Report(generation, overallBest, currentBest, restarts, improvement, match);
+            history.Result = new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
+            return history;
         }
         
     }

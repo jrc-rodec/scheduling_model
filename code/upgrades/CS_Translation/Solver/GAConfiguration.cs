@@ -24,7 +24,7 @@ namespace Solver
         private float _populationGrowthRate = 2.0f;
         private float _maxElitism = 0.1f; // 1.0f // scale freely between , and + if 1
         private float _maxTournamentRate = 0.2f; // 1.0f // NOTE: 0 -> TournamentSize = 1 -> Random Selection, 1 -> TournamentSize = PopulationSize -> Rank Selection
-        private int _restartGenerations = 1000;//50;
+        private int _restartGenerations = 50;//1000;//50;
 
         public GAConfiguration(BenchmarkParsing.Encoding encoding, DecisionVariables variables)
         {
