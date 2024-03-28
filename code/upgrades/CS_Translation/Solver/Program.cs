@@ -9,7 +9,7 @@ namespace Solver
             string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi18.fjs"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 3600; // in seconds
-            float targetFitness = 884.0f;
+            float targetFitness = 1000.0f;//884.0f;
             int maxFunctionEvaluations = 0;
             if(args.Length > 0)
             {
@@ -35,6 +35,7 @@ namespace Solver
             GA ga = new GA(configuration);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            gaResult.ToFile("test.json");
             Console.WriteLine(gaResult.Result.ToString());
             Console.ReadLine();
         }

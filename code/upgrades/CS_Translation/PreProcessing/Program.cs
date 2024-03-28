@@ -10,6 +10,7 @@ namespace PreProcessing
             BenchmarkParser parser = new BenchmarkParser();
             Encoding result = parser.ParseBenchmark(path);
             DecisionVariables variables = new DecisionVariables(result);
+            Preprocessor processor = new Preprocessor();
             Console.WriteLine(variables.ToString());
         }
     }

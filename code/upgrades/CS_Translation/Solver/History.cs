@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Solver
@@ -45,6 +48,12 @@ namespace Solver
                 average += population[i].Fitness[Criteria.Makespan];
             }
             _averagePopulationFitness.Add(average / population.Count);
+        }
+
+        public void ToFile(string path)
+        {
+            string text = JsonConvert.SerializeObject(this);
+            File.WriteAllText(@path, text);
         }
 
         public List<float> OverallBestFitness { get => _overallBestFitness; }
