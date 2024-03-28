@@ -76,7 +76,7 @@ if __name__ == '__main__':
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
     
-    shutdown_when_finished = True
+    shutdown_when_finished = False
 
     import evaluation
     
