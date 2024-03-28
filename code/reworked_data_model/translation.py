@@ -498,15 +498,21 @@ import gurobipy as gp
 
 class GurobiWithWorkersEncoder(Encoder):
 
-    def encode(self, production_environment : ProductionEnvironment, orders : list[Order], lines): # TODO: replace and remove lines parameter
+    def encode(self, lines): # TODO: replace and remove lines parameter
         INFINITE = 1000000
         recipes = []
-        nb_operations = [len(recipe.tasks) for recipe in recipes]
-        nb_jobs = len(recipes)
-        nb_machines = len(production_environment.workstations.keys())
-        nb_workers = len(production_environment.resources.keys())
-        for order in orders:
-            recipes.append(order.resources[0][0].recipes[0]) # default recipe for now
+        # jobs, machines, workers
+        values = lines[0].split(' ')
+        nb_jobs = int(values[0])
+        nb_operations = [int(x[0]) for x in lines[1:]]
+        nb_machines = int(values[1])
+        nb_workers = int(values[2])
+        #nb_operations = [len(recipe.tasks) for recipe in recipes]
+        #nb_jobs = len(recipes)
+        #nb_machines = len(production_environment.workstations.keys())
+        #nb_workers = len(production_environment.resources.keys())
+        #for order in orders:
+        #    recipes.append(order.resources[0][0].recipes[0]) # default recipe for now
         task_processing_time = [[[[INFINITE for s in range(nb_workers)] 
                                         for m in range(nb_machines)] 
                                         for o in range(nb_operations[j])] 
@@ -546,7 +552,7 @@ class GurobiWithWorkersEncoder(Encoder):
         for j in range(nb_jobs):
             for o in range(nb_operations[j]):
                 L += max(task_processing_time[j][o][m][s] for m in range(nb_machines) for s in range(nb_workers) if task_processing_time[j][o][m][s] != INFINITE )
-        return nb_jobs, nb_operations, nb_machines, nb_workers, job_op_machsuitable, job_op_mach_worker, duration, job_op_mach_worker, L
+        return nb_jobs, nb_operations, nb_machines, nb_workers, job_op_machsuitable, job_op_mach_worker, duration, job_op_mach_worker, job_op_mach_workersuitable, L
         
 
     def decode(self, xsol, usol, ysol, csol, job_ops_machs, durations, production_environment : ProductionEnvironment, jobs : list[Job], solver : Solver = None):

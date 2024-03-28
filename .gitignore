@@ -14,3 +14,4 @@ code/reworked_data_model/results/~$benchmark_data_reformated.xlsx
 *.zip
 *.txt
 *.csv
+*.json

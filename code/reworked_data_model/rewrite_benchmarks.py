@@ -102,8 +102,9 @@ for i in range(len(sources)):
     rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)"""
 
 
-use_sources = ['2a_Hurink_sdata', '3_DPpaulli', '5_Kacem', '6_Fattahi']
+use_sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
 write_path = currentdir + '/benchmarks_with_workers/'
+random.seed(0)
 for benchmark_source in use_sources:
     full_path = read_path + benchmark_source + '/'
     for i in range(len(os.listdir(full_path))):
