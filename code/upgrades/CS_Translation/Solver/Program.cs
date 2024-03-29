@@ -32,7 +32,7 @@ namespace Solver
             Encoding result = parser.ParseBenchmark(path);
             DecisionVariables variables = new DecisionVariables(result);
             GAConfiguration configuration = new GAConfiguration(result, variables);
-            GA ga = new GA(configuration);
+            GA ga = new GA(configuration, true);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             gaResult.ToFile("test.json");

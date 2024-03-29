@@ -30,9 +30,12 @@ namespace Solver
 
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
 
-        public GA(GAConfiguration configuration)
+        private bool _output = false;
+
+        public GA(GAConfiguration configuration, bool output)
         {
             _configuration = configuration;
+            _output = output;
             Reset();
         }
 
@@ -435,7 +438,10 @@ namespace Solver
                         overallBest.Add(localMinimum);
                         match = true;
                     }
-                    Debug_Report(generation-1, overallBest, currentBest, restarts, improvement, match);
+                    if (_output)
+                    {
+                        Debug_Report(generation-1, overallBest, currentBest, restarts, improvement, match);
+                    }
                     int maxPopulationSize = 400; // TODO: parameter
                     int maxOffspringAmount = maxPopulationSize * 4; // TODO: parameter
                     populationSize = (int)Math.Min(maxPopulationSize, _configuration.PopulationSizeGrowthRate * populationSize);
@@ -514,7 +520,10 @@ namespace Solver
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
             }
-            Debug_Report(generation, overallBest, currentBest, restarts, improvement, match);
+            if (_output)
+            {
+                Debug_Report(generation, overallBest, currentBest, restarts, improvement, match);
+            }
             history.Result = new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
             return history;
         }
