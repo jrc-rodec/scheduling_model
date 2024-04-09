@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Hutter
+    given-names: David
+  - family-names: Hellwig
+    given-names: Michael
+  - family-names: Steinberger
+    given-names: Thomas
+title: "MILP model, Code and Results associated to CEC 2024 contribution"
