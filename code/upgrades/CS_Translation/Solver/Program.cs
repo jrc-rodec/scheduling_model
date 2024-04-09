@@ -9,7 +9,7 @@ namespace Solver
             string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi18.fjs"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 3600; // in seconds
-            float targetFitness = 1000.0f;//884.0f;
+            float targetFitness = 884.0f;
             int maxFunctionEvaluations = 0;
             if(args.Length > 0)
             {
