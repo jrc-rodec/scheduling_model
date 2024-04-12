@@ -71,67 +71,267 @@ def run(source, instance, target_fitness, time_limit):
     history, run_time = run_experiment(source, instance, parameters)
     return history, run_time
 
+def cp_experiment(path):
+    import collections
+    
+    from ortools.sat.python import cp_model
+    
+    class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+        """Print intermediate solutions."""
+    
+        def __init__(self):
+            cp_model.CpSolverSolutionCallback.__init__(self)
+            self.__solution_count = 0
+    
+        def on_solution_callback(self):
+            """Called at each new solution."""
+            print(
+                "Solution %i, time = %f s, objective = %i"
+                % (self.__solution_count, self.wall_time, self.objective_value)
+            )
+            self.__solution_count += 1
+    
+    #read and arrange Data
+    f = open(path)
+    lines = f.readlines()
+    first_line = lines[0].split()
+    
+    # Number of jobs
+    nb_jobs = int(first_line[0])
+    # Number of machines
+    nb_machines = int(first_line[1])
+    # Number of operations for each job
+    nb_operations = [int(lines[j + 1].split()[0]) for j in range(nb_jobs)]
+    # Constant for incompatible machines
+    INFINITE = 1000000
+    
+    task_processing_time = [[[INFINITE for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+    
+    jobs =  [[[(INFINITE,INFINITE) for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+    
+    for j in range(nb_jobs):
+        line = lines[j + 1].split()
+        tmp = 0
+        for o in range(nb_operations[j]):
+            nb_machines_operation = int(line[tmp + o + 1])
+            machine_helper =[]
+            for i in range(nb_machines_operation):
+                machine = int(line[tmp + o + 2 * i + 2]) - 1
+                time = int(line[tmp + o + 2 * i + 3])
+                machine_helper += [(time,machine)]
+                task_processing_time[j][o][machine] = time
+            jobs[j][o] = machine_helper
+            tmp = tmp + 2 * nb_machines_operation
+    
+    
+     # Trivial upper bound for the start times of the tasks
+    L=0
+    for j in range(nb_jobs):
+        for o in range(nb_operations[j]):
+            L += max(task_processing_time[j][o][m] for m in range(nb_machines) if task_processing_time[j][o][m] != INFINITE)
+           
+    num_jobs = len(jobs)
+    all_jobs = range(num_jobs)
+
+    num_machines = nb_machines
+    all_machines = range(num_machines)
+
+    # Model the flexible jobshop problem.
+    model = cp_model.CpModel()
+    
+    horizon = L
+    """horizon = 0
+    for job in jobs:
+        for task in job:
+            max_task_duration = 0
+            for alternative in task:
+                max_task_duration = max(max_task_duration, alternative[0])
+            horizon += max_task_duration"""
+
+    print("Horizon = %i" % horizon)
+
+    # Global storage of variables.
+    intervals_per_resources = collections.defaultdict(list)
+    starts = {}  # indexed by (job_id, task_id).
+    presences = {}  # indexed by (job_id, task_id, alt_id).
+    job_ends = []
+
+    # Scan the jobs and create the relevant variables and intervals.
+    for job_id in all_jobs:
+        job = jobs[job_id]
+        num_tasks = len(job)
+        previous_end = None
+        for task_id in range(num_tasks):
+            task = job[task_id]
+
+            min_duration = task[0][0]
+            max_duration = task[0][0]
+
+            num_alternatives = len(task)
+            all_alternatives = range(num_alternatives)
+
+            for alt_id in range(1, num_alternatives):
+                alt_duration = task[alt_id][0]
+                min_duration = min(min_duration, alt_duration)
+                max_duration = max(max_duration, alt_duration)
+
+            # Create main interval for the task.
+            suffix_name = "_j%i_t%i" % (job_id, task_id)
+            start = model.new_int_var(0, horizon, "start" + suffix_name)
+            duration = model.new_int_var(
+                min_duration, max_duration, "duration" + suffix_name
+            )
+            end = model.new_int_var(0, horizon, "end" + suffix_name)
+            interval = model.new_interval_var(
+                start, duration, end, "interval" + suffix_name
+            )
+
+            # Store the start for the solution.
+            starts[(job_id, task_id)] = start
+
+            # Add precedence with previous task in the same job.
+            if previous_end is not None:
+                model.add(start >= previous_end)
+            previous_end = end
+
+            # Create alternative intervals.
+            if num_alternatives > 1:
+                l_presences = []
+                for alt_id in all_alternatives:
+                    alt_suffix = "_j%i_t%i_a%i" % (job_id, task_id, alt_id)
+                    l_presence = model.new_bool_var("presence" + alt_suffix)
+                    l_start = model.new_int_var(0, horizon, "start" + alt_suffix)
+                    l_duration = task[alt_id][0]
+                    l_end = model.new_int_var(0, horizon, "end" + alt_suffix)
+                    l_interval = model.new_optional_interval_var(
+                        l_start, l_duration, l_end, l_presence, "interval" + alt_suffix
+                    )
+                    l_presences.append(l_presence)
+
+                    # Link the primary/global variables with the local ones.
+                    model.add(start == l_start).only_enforce_if(l_presence)
+                    model.add(duration == l_duration).only_enforce_if(l_presence)
+                    model.add(end == l_end).only_enforce_if(l_presence)
+
+                    # Add the local interval to the right machine.
+                    intervals_per_resources[task[alt_id][1]].append(l_interval)
+
+                    # Store the presences for the solution.
+                    presences[(job_id, task_id, alt_id)] = l_presence
+
+                # Select exactly one presence variable.
+                model.add_exactly_one(l_presences)
+            else:
+                intervals_per_resources[task[0][1]].append(interval)
+                presences[(job_id, task_id, 0)] = model.new_constant(1)
+
+        job_ends.append(previous_end)
+
+    # Create machines constraints.
+    for machine_id in all_machines:
+        intervals = intervals_per_resources[machine_id]
+        if len(intervals) > 1:
+            model.add_no_overlap(intervals)
+
+    # Makespan objective
+    makespan = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(makespan, job_ends)
+    model.minimize(makespan)
+
+    # Solve model.
+    solver = cp_model.CpSolver()
+    solution_printer = SolutionPrinter()
+    status = solver.solve(model, solution_printer)
+
+    start_times = []
+    assignments = []
+    for job_id in all_jobs:
+        for task_id in range(len(jobs[job_id])):
+            start_times.append(solver.value(starts[(job_id, task_id)]))
+            machine = -1
+            for alt_id in range(len(jobs[job_id][task_id])):
+                if solver.value(presences[(job_id, task_id, alt_id)]):
+                    assignments.append(jobs[job_id][task_id][alt_id][1])
+
+    return solver.status_name(status), solver.objective_value, solver.wall_time, start_times, assignments
+
+
+def run_cp_experiments(write_path, benchmark_path):
+    sources = os.listdir(benchmark_path)
+    for source in sources:
+        instances = os.listdir(benchmark_path + '/' + source)
+        for instance in instances:
+            status, fitness, runtime, start_times, assignments = cp_experiment(benchmark_path + '/' + source + '/' + instance)
+            with open(write_path, 'a') as f:
+                f.write(f'{source};{instance};{status};{fitness};{runtime};{start_times};{assignments}\n')
+
+
+
 from datetime import datetime
 if __name__ == '__main__':
-    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    #currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
-    
     shutdown_when_finished = False
+    write_path = r'xxx'
+    BENCHMARK_PATH = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\benchmarks'
+    run_cp_experiments(write_path, BENCHMARK_PATH)
 
-    import evaluation
+    #shutdown_when_finished = False
+
+    #import evaluation
     
-    time_limit = 3600
-    n_experiments = 10
-    selection = [('5_Kacem', 1, 0),('5_Kacem', 2, 0),('5_Kacem', 3, 0),('5_Kacem', 4, 0), ('1_Brandimarte', 1, 0), ('1_Brandimarte', 2, 0), ('1_Brandimarte', 3, 0), ('1_Brandimarte', 4, 0), ('1_Brandimarte', 5, 0), ('1_Brandimarte', 6, 0), ('1_Brandimarte', 7, 0), ('1_Brandimarte', 8, 0), ('1_Brandimarte', 9, 0), ('1_Brandimarte', 10, 0), ('1_Brandimarte', 11, 0), ('1_Brandimarte', 12, 0), ('1_Brandimarte', 13, 0), ('1_Brandimarte', 14, 0), ('1_Brandimarte', 15, 0)]
-    histories : list[History] = []
+    #time_limit = 3600
+    #n_experiments = 1
+    #selection = [('5_Kacem', 1, 0),('5_Kacem', 2, 0),('5_Kacem', 3, 0),('5_Kacem', 4, 0), ('1_Brandimarte', 1, 0), ('1_Brandimarte', 2, 0), ('1_Brandimarte', 3, 0), ('1_Brandimarte', 4, 0), ('1_Brandimarte', 5, 0), ('1_Brandimarte', 6, 0), ('1_Brandimarte', 7, 0), ('1_Brandimarte', 8, 0), ('1_Brandimarte', 9, 0), ('1_Brandimarte', 10, 0), ('1_Brandimarte', 11, 0), ('1_Brandimarte', 12, 0), ('1_Brandimarte', 13, 0), ('1_Brandimarte', 14, 0), ('1_Brandimarte', 15, 0)]
+    #histories : list[History] = []
 
     #for memory conservation 
-    result_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
-    for instance in selection:
-        for j in range(n_experiments):
-            history, real_runtime = run(instance[0], instance[1], instance[2], time_limit)
-            history.instance = f'{instance[0]}_{instance[1]}'
+    #result_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\code\results\\'
+    #for instance in selection:
+    #    for j in range(n_experiments):
+    #        history, real_runtime = run(instance[0], instance[1], instance[2], time_limit)
+    #        history.instance = f'{instance[0]}_{instance[1]}'
             # for memory conservation
-            history.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{j}-{history.instance}.json')
+    #        history.to_file(f'{result_path}{datetime.now().day}-{datetime.now().month}-{datetime.now().year}-{j}-{history.instance}.json')
             #histories.append(history)
-            print(f'{j} - {instance[0]}{instance[1]} - Done')
+    #        print(f'{j} - {instance[0]}{instance[1]} - Done')
 
             # testing purposes
-            """n_options = 5
-            makespan_options, idle_time_options, queue_time_options = history.get_options(n_options) # get 5 options
+    """n_options = 5
+    makespan_options, idle_time_options, queue_time_options = history.get_options(n_options) # get 5 options
 
-            solutions = dict()
-            for i in range(n_options):
-                if str(makespan_options[i][0]) not in solutions:
-                    solutions[str(makespan_options[i][0])] = [makespan_options[i][0], [0, 0, 0]]
-                if str(idle_time_options[i][0]) not in solutions:
-                    solutions[str(idle_time_options[i][0])] = [idle_time_options[i][0], [0, 0, 0]]
-                if str(queue_time_options[i][0]) not in solutions:
-                    solutions[str(queue_time_options[i][0])] = [queue_time_options[i][0], [0, 0, 0]]
-            # sum ranks
-            for i in range(n_options):
-                solutions[str(makespan_options[i][0])][1][0] = i
-                solutions[str(idle_time_options[i][0])][1][1] = i
-                solutions[str(queue_time_options[i][0])][1][2] = i
+    solutions = dict()
+    for i in range(n_options):
+        if str(makespan_options[i][0]) not in solutions:
+            solutions[str(makespan_options[i][0])] = [makespan_options[i][0], [0, 0, 0]]
+        if str(idle_time_options[i][0]) not in solutions:
+            solutions[str(idle_time_options[i][0])] = [idle_time_options[i][0], [0, 0, 0]]
+        if str(queue_time_options[i][0]) not in solutions:
+            solutions[str(queue_time_options[i][0])] = [queue_time_options[i][0], [0, 0, 0]]
+    # sum ranks
+    for i in range(n_options):
+        solutions[str(makespan_options[i][0])][1][0] = i
+        solutions[str(idle_time_options[i][0])][1][1] = i
+        solutions[str(queue_time_options[i][0])][1][2] = i
 
-            sorted_solutions = sorted(solutions.keys(), key=lambda x: sum(solutions[x][1])/len(solutions[x][1]))
-            useable_solutions = [solutions[x][0] for x in sorted_solutions][:n_options]
-            #solution = history.overall_best[-1][1][0]
-            required_operations = history.required_operations
-            durations = history.durations
-            rank = 0
-            colors = evaluation.predefine_colors(useable_solutions[0][0])
-            for solution in useable_solutions:
-                sequence = solution[0]
-                assignments = solution[1]
-                # actually not necessary, but whatever for now
-                m = evaluation.makespan(sequence, assignments, durations, required_operations)
-                i = evaluation.idle_time(sequence, assignments, durations, required_operations)
-                q = evaluation.queue_time(sequence, assignments, durations, required_operations)
-                print(f'Makepsan: {m}, Idle-Time: {i}, Queue-Time: {q}')
-                evaluation.visualize(sequence, assignments, durations, required_operations, m, i, q, instance[0], instance[1], pre_colors=colors)#, title_prefix=f'Rank {rank}')
-                rank += 1
-            evaluation.show_plots()"""
+    sorted_solutions = sorted(solutions.keys(), key=lambda x: sum(solutions[x][1])/len(solutions[x][1]))
+    useable_solutions = [solutions[x][0] for x in sorted_solutions][:n_options]
+    #solution = history.overall_best[-1][1][0]
+    required_operations = history.required_operations
+    durations = history.durations
+    rank = 0
+    colors = evaluation.predefine_colors(useable_solutions[0][0])
+    for solution in useable_solutions:
+        sequence = solution[0]
+        assignments = solution[1]
+        # actually not necessary, but whatever for now
+        m = evaluation.makespan(sequence, assignments, durations, required_operations)
+        i = evaluation.idle_time(sequence, assignments, durations, required_operations)
+        q = evaluation.queue_time(sequence, assignments, durations, required_operations)
+        print(f'Makepsan: {m}, Idle-Time: {i}, Queue-Time: {q}')
+        evaluation.visualize(sequence, assignments, durations, required_operations, m, i, q, instance[0], instance[1], pre_colors=colors)#, title_prefix=f'Rank {rank}')
+        rank += 1
+    evaluation.show_plots()"""
 
 
 if shutdown_when_finished:

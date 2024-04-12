@@ -8,29 +8,30 @@ using System.Transactions;
 
 namespace Solver
 {
+
     public class GA
     {
 
-        private List<Individual> _population;
-        private GAConfiguration _configuration;
-        private Random _random;
+        protected List<Individual> _population;
+        protected GAConfiguration _configuration;
+        protected Random _random;
 
-        private bool _generationStop = false;
-        private bool _fitnessStop = false;
-        private bool _timeStop = false;
-        private bool _fevalStop = false;
+        protected bool _generationStop = false;
+        protected bool _fitnessStop = false;
+        protected bool _timeStop = false;
+        protected bool _fevalStop = false;
 
-        private bool _useGenerationStop = true;
-        private bool _useFitnessStop = true;
-        private bool _useTimeStop = true;
-        private bool _useFevalStop = true;
+        protected bool _useGenerationStop = true;
+        protected bool _useFitnessStop = true;
+        protected bool _useTimeStop = true;
+        protected bool _useFevalStop = true;
 
         DateTime _startTime;
-        private int _functionEvaluations = 0;
+        protected int _functionEvaluations = 0;
 
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
 
-        private bool _output = false;
+        protected bool _output = false;
 
         public GA(GAConfiguration configuration, bool output)
         {
@@ -46,7 +47,7 @@ namespace Solver
             _functionEvaluations = 0;
         }
 
-        private Individual TournamentSelection(int tournamentSize)
+        protected Individual TournamentSelection(int tournamentSize)
         {
             if(tournamentSize == 0)
             {
@@ -72,7 +73,7 @@ namespace Solver
             return winner;
         }
 
-        private Individual Recombine(int tournamentSize)
+        protected Individual Recombine(int tournamentSize)
         {
             Individual parentA = TournamentSelection(tournamentSize);
             Individual parentB;
@@ -83,7 +84,7 @@ namespace Solver
             return new Individual(parentA, parentB);
         }
 
-        private void Adjust(Individual individual)
+        protected void Adjust(Individual individual)
         {
             List<List<Dictionary<string, int>>> gaps = new List<List<Dictionary<string, int>>>();
             for(int i = 0; i < _configuration.NMachines; ++i){
@@ -166,7 +167,7 @@ namespace Solver
             }
         }
 
-        private void Evaluate(Individual individual)
+        protected void Evaluate(Individual individual)
         {
             if (!individual.Feasible)
             {
@@ -197,7 +198,7 @@ namespace Solver
             _functionEvaluations++;
         }
 
-        private bool HasInvalidAssignment(Individual individual)
+        protected bool HasInvalidAssignment(Individual individual)
         {
             for(int i = 0; i < individual.Assignments.Length; ++i)
             {
@@ -209,7 +210,7 @@ namespace Solver
             return false;
         }
 
-        private void CheckIndividual(Individual individual)
+        protected void CheckIndividual(Individual individual)
         {
             if (HasInvalidAssignment(individual))
             {
@@ -217,7 +218,7 @@ namespace Solver
             }
         }
 
-        private void CreatePopulation(int populationSize)
+        protected void CreatePopulation(int populationSize)
         {
             _population = new List<Individual>();
             for(int i = 0; i < populationSize; ++i)
@@ -232,7 +233,7 @@ namespace Solver
             _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
         }
 
-        private void CreateOffspring(List<Individual> offspring, int offspringAmount, int tournamentSize, float mutationProbability)
+        protected void CreateOffspring(List<Individual> offspring, int offspringAmount, int tournamentSize, float mutationProbability)
         {
             offspring.Clear();
             //offspring = new List<Individual>();
@@ -257,7 +258,7 @@ namespace Solver
         }
 
         // TODO: Add parameters for missing criteria
-        private void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations, int timeLimit, float targetFitness)
+        protected void UpdateStoppingCriteria(int generation, float bestFitness, int maxGeneration, int functionEvaluations, int maxFunctionEvaluations, int timeLimit, float targetFitness)
         {
             _generationStop = _useGenerationStop && generation >= maxGeneration;
             _timeStop = _useTimeStop && DateTime.Now.Subtract(_startTime).TotalSeconds >= timeLimit;
@@ -265,7 +266,7 @@ namespace Solver
             _fitnessStop = _useFitnessStop && bestFitness <= targetFitness;
         }
 
-        private List<Individual> GetAllEqual(Individual original, List<Individual> individuals)
+        protected List<Individual> GetAllEqual(Individual original, List<Individual> individuals)
         {
             List<Individual> result = new List<Individual>();
             for(int i = 0; i <  individuals.Count; ++i)
@@ -278,12 +279,12 @@ namespace Solver
             return result;
         }
 
-        private float UpdateMutationProbability(float p, int generation, int lastProgress, int maxWait, float maxP)
+        protected float UpdateMutationProbability(float p, int generation, int lastProgress, int maxWait, float maxP)
         {
             return (float)(p + (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
         }
 
-        private void MutateMachineVector(Individual individual){
+        protected void MutateMachineVector(Individual individual){
             float p = 1.0f / individual.Assignments.Length;
             for(int i = 0; i < individual.Assignments.Length; ++i)
             {
@@ -302,7 +303,7 @@ namespace Solver
             }
         }
 
-        private void MutateSequenceVector(Individual individual)
+        protected void MutateSequenceVector(Individual individual)
         {
             float p = 1.0f / individual.Sequence.Length;
             for(int i = 0; i < individual.Sequence.Length; ++i)
@@ -321,7 +322,7 @@ namespace Solver
             }
         } 
 
-        private Individual SimulatedAnnealing(Individual individual)
+        protected Individual SimulatedAnnealing(Individual individual)
         {
             int nMachineMutations = 5;
             int nSequenceMutations = 20;
@@ -366,7 +367,7 @@ namespace Solver
             return best;
         }
 
-        private Individual LocalSearch(List<Individual> currentBest)
+        protected Individual LocalSearch(List<Individual> currentBest)
         {
             //NOTE: since currentBest is now a list, somehow one of the individuals would need to be chosen for simulated annealing?
             return SimulatedAnnealing(currentBest[0]);

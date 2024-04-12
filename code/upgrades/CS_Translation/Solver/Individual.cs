@@ -15,10 +15,10 @@ namespace Solver
 
     public class Individual
     {
-        private int[] _sequence;
-        private int[] _assignments;
-        private Dictionary<Criteria, float> _fitness;
-        private bool _feasible = true;
+        protected int[] _sequence;
+        protected int[] _assignments;
+        protected Dictionary<Criteria, float> _fitness;
+        protected bool _feasible = true;
 
         public static int[] JobSequence;
         public static int[,] Durations;
@@ -42,7 +42,7 @@ namespace Solver
             MaxDissimilarity += JobSequence.Length;
         }
 
-        private Individual(bool randomize = false)
+        protected Individual(bool randomize = false)
         {
             _sequence = new int[JobSequence.Length];
             _assignments = new int[JobSequence.Length];
@@ -138,7 +138,7 @@ namespace Solver
             }
         }
 
-        public void Mutate(float p)
+        public virtual void Mutate(float p)
         {
             Random random = new Random();
             for(int i = 0; i < _sequence.Length; ++i)
@@ -172,7 +172,7 @@ namespace Solver
             }
         }
 
-        private void ShuffleSequence()
+        protected void ShuffleSequence()
         {
             Random random = new Random();
             for(int i = 0; i < _sequence.Length; ++i)
@@ -184,7 +184,7 @@ namespace Solver
             }
         }
 
-        private void Randomize()
+        protected virtual void Randomize()
         {
             JobSequence.CopyTo(_sequence, 0);
             Random random = new Random();
@@ -199,7 +199,7 @@ namespace Solver
             }
         }
 
-        private float Average(float[] values)
+        protected float Average(float[] values)
         {
             float sum = 0;
             for(int i = 0; i < values.Length; ++i)
