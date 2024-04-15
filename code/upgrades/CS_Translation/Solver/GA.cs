@@ -84,7 +84,7 @@ namespace Solver
             return new Individual(parentA, parentB);
         }
 
-        protected void Adjust(Individual individual)
+        protected virtual void Adjust(Individual individual)
         {
             List<List<Dictionary<string, int>>> gaps = new List<List<Dictionary<string, int>>>();
             for(int i = 0; i < _configuration.NMachines; ++i){
@@ -167,7 +167,7 @@ namespace Solver
             }
         }
 
-        protected void Evaluate(Individual individual)
+        protected virtual void Evaluate(Individual individual)
         {
             if (!individual.Feasible)
             {
