@@ -6,10 +6,10 @@ namespace Solver
     {
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi18.fjs"; // DEBUG
+            string path = "C:\\Users\\dhutt\\Desktop\\SCHEDULING_MODEL\\code\\upgrades\\code\\benchmarks\\6_Fattahi\\Fattahi20.fjs"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 3600; // in seconds
-            float targetFitness = 884.0f;
+            int timeLimit = 0; // in seconds
+            float targetFitness = 1196.0f;
             int maxFunctionEvaluations = 0;
             if(args.Length > 0)
             {

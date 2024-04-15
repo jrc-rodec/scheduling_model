@@ -123,10 +123,19 @@ namespace Solver
                 {
                     _sequence[i] = parentBValues[bIndex++];
                 }
+
+                if (random.NextDouble() < 0.5)
+                {
+                    _assignments[i] = parentA._assignments[i];
+                }
+                else
+                {
+                    _assignments[i] = parentB._assignments[i];
+                }
             }
 
             // Uniform Crossover for Machine Assignments
-            for(int i = 0; i < _assignments.Length; ++i)
+            /*for(int i = 0; i < _assignments.Length; ++i)
             {
                 if(random.NextDouble() < 0.5)
                 {
@@ -135,7 +144,7 @@ namespace Solver
                 {
                     _assignments[i] = parentB._assignments[i];
                 }
-            }
+            }*/
         }
 
         public virtual void Mutate(float p)
