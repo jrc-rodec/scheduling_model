@@ -18,7 +18,7 @@ namespace Solver
         private int _populationSize = 5;
         private int _offspringAmount = 20;
         private float _mutationProbability;
-        private float _maxMutationProbability = 0.5f;//0.5f;//1.0f;
+        private float _maxMutationProbability = 1.0f;//0.5f;//0.5f;//1.0f;
         private float _elitismRate = 0.1f;
         private int _tournamentSize = 1;
         private float _populationGrowthRate = 2.0f;

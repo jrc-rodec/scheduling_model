@@ -71,25 +71,13 @@ def run(source, instance, target_fitness, time_limit):
     history, run_time = run_experiment(source, instance, parameters)
     return history, run_time
 
-def cp_experiment(path):
-    import collections
+import collections
+
+from ortools.sat.python import cp_model
+
+def cp_experiment(path, instance):
     
-    from ortools.sat.python import cp_model
-    
-    class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-        """Print intermediate solutions."""
-    
-        def __init__(self):
-            cp_model.CpSolverSolutionCallback.__init__(self)
-            self.__solution_count = 0
-    
-        def on_solution_callback(self):
-            """Called at each new solution."""
-            print(
-                "Solution %i, time = %f s, objective = %i"
-                % (self.__solution_count, self.wall_time, self.objective_value)
-            )
-            self.__solution_count += 1
+    print(f'Currently Running: {instance}')
     
     #read and arrange Data
     f = open(path)
@@ -140,15 +128,6 @@ def cp_experiment(path):
     model = cp_model.CpModel()
     
     horizon = L
-    """horizon = 0
-    for job in jobs:
-        for task in job:
-            max_task_duration = 0
-            for alternative in task:
-                max_task_duration = max(max_task_duration, alternative[0])
-            horizon += max_task_duration"""
-
-    print("Horizon = %i" % horizon)
 
     # Global storage of variables.
     intervals_per_resources = collections.defaultdict(list)
@@ -240,8 +219,11 @@ def cp_experiment(path):
 
     # Solve model.
     solver = cp_model.CpSolver()
-    solution_printer = SolutionPrinter()
-    status = solver.solve(model, solution_printer)
+
+    # set time limit
+    solver.parameters.max_time_in_seconds = 3600.0
+    
+    status = solver.solve(model)
 
     start_times = []
     assignments = []
@@ -261,9 +243,9 @@ def run_cp_experiments(write_path, benchmark_path):
     for source in sources:
         instances = os.listdir(benchmark_path + '/' + source)
         for instance in instances:
-            status, fitness, runtime, start_times, assignments = cp_experiment(benchmark_path + '/' + source + '/' + instance)
-            with open(write_path, 'a') as f:
-                f.write(f'{source};{instance};{status};{fitness};{runtime};{start_times};{assignments}\n')
+            status, fitness, runtime, start_times, assignments = cp_experiment(benchmark_path + '/' + source + '/' + instance, instance)
+            with open(write_path + '/results.txt', 'a') as f:
+                f.write(f'{instance[:-4]};{status};{fitness};{runtime};{start_times};{assignments}\n')
 
 
 
@@ -271,9 +253,9 @@ from datetime import datetime
 if __name__ == '__main__':
     #currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
-    shutdown_when_finished = False
-    write_path = r'xxx'
-    BENCHMARK_PATH = r'C:\Users\huda\Documents\GitHub\scheduling_model\code\upgrades\code\benchmarks'
+    shutdown_when_finished = True
+    write_path = r'C:\Users\localadmin\Desktop\experiments\cp'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks'
     run_cp_experiments(write_path, BENCHMARK_PATH)
 
     #shutdown_when_finished = False
