@@ -11,6 +11,8 @@ namespace Solver
         private int[] _workers;
         public static List<List<List<int>>> AvailableWorkers;
 
+        public int[] Workers { get => _workers; set => _workers = value; }
+
         public WFJSSPIndividual(bool randomize) : base(randomize)
         {
             _workers = new int[JobSequence.Length];
@@ -159,6 +161,11 @@ namespace Solver
                             swap = random.Next(AvailableMachines[i].Count);
                         } while (AvailableMachines[i][swap] == _assignments[i]);
                         _assignments[i] = AvailableMachines[i][swap];
+                        if (AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
+                        {
+                            // no longer feasible - randomly choose new worker
+                            _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
+                        }
                     }
                 }
                 if(random.NextDouble() < p)
