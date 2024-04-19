@@ -90,7 +90,8 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         )
         self.__solution_count += 1
 
-def cp_wfjssp_experiment(path):
+def cp_wfjssp_experiment(path, instance):
+    print(f'Currently Running: {instance}')
     f = open(path)
     lines = f.readlines()
     first_line = lines[0].split()
@@ -256,8 +257,11 @@ def cp_wfjssp_experiment(path):
 
     # Solve model.
     solver = cp_model.CpSolver()
-    solution_printer = SolutionPrinter()
-    status = solver.solve(model, solution_printer)
+    #solution_printer = SolutionPrinter()
+    # set time limit
+    solver.parameters.max_time_in_seconds = 3600.0
+    
+    status = solver.solve(model)
 
     start_times = []
     assignments = []
@@ -459,7 +463,7 @@ def run_cp_wfjssp_experiments(write_path, benchmark_path):
     for instance in instances:
         try:
             #print(instance)
-            status, fitness, runtime, start_times, assignments, workers = cp_wfjssp_experiment(benchmark_path + '/' + instance)
+            status, fitness, runtime, start_times, assignments, workers = cp_wfjssp_experiment(benchmark_path + '/' + instance, instance)
             with open(write_path, 'a') as f:
                 f.write(f'{instance};{status};{fitness};{runtime};{start_times};{assignments};{workers}\n')
         except:
@@ -469,7 +473,7 @@ from datetime import datetime
 if __name__ == '__main__':
     #currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
-    shutdown_when_finished = False
+    shutdown_when_finished = True
     write_path = r'C:\Users\localadmin\Desktop\experiments\cp_wfjssp\results.txt'
     BENCHMARK_PATH = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\benchmarks_with_workers'
     run_cp_wfjssp_experiments(write_path, BENCHMARK_PATH)
