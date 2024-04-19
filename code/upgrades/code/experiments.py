@@ -5,6 +5,9 @@ from model import Order, ProductionEnvironment
 import time
 import os
 import inspect
+import collections
+
+from ortools.sat.python import cp_model
 
 def generate_one_order_per_recipe(production_environment : ProductionEnvironment) -> list[Order]:
     orders : list[Order] = []
@@ -71,14 +74,216 @@ def run(source, instance, target_fitness, time_limit):
     history, run_time = run_experiment(source, instance, parameters)
     return history, run_time
 
-import collections
 
-from ortools.sat.python import cp_model
+class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions."""
+
+    def __init__(self):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__solution_count = 0
+
+    def on_solution_callback(self):
+        """Called at each new solution."""
+        print(
+            "Solution %i, time = %f s, objective = %i"
+            % (self.__solution_count, self.wall_time, self.objective_value)
+        )
+        self.__solution_count += 1
+
+def cp_wfjssp_experiment(path):
+    f = open(path)
+    lines = f.readlines()
+    first_line = lines[0].split()
+    # Number of jobs
+    nb_jobs = int(first_line[0])
+    # Number of machines
+    nb_machines = int(first_line[1])
+    # Number of workers
+    nb_workers = int(first_line[2])
+    # Number of operations for each job
+    nb_operations = [int(lines[j + 1].split()[0]) for j in range(nb_jobs)]
+
+    # Constant for incompatible machines
+    INFINITE = 1000000
+
+    # Number of tasks
+    nb_tasks = sum(nb_operations[j] for j in range(nb_jobs))
+            
+    # Processing time for each task, for each machine-worker combination
+
+    task_processing_time = [[[[INFINITE for s in range(nb_workers)] 
+                                        for m in range(nb_machines)] 
+                                        for o in range(nb_operations[j])] 
+                                        for j in range(nb_jobs)]
+
+    jobs =  [[[INFINITE] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+
+
+    for j in range(nb_jobs):
+        line = lines[j + 1].split()
+        tmp_idx = 1
+        for o in range(nb_operations[j]):
+            nb_machines_operation = int(line[tmp_idx])
+            tmp_idx += 1
+            m_w_helper=[]
+            for i in range(nb_machines_operation):
+                machine = int(line[tmp_idx])-1
+                nb_m_workers = int(line[tmp_idx + 1])
+                tmp_idx += 2
+            
+                for s in range(nb_m_workers):
+                    worker = int(line[tmp_idx])-1
+                    time = int(line[tmp_idx + 1])
+                    tmp_idx += 2
+                    task_processing_time[j][o][machine][worker] = time
+                    m_w_helper += [(time,machine,worker)]
+                            
+            jobs[j][o] = m_w_helper
+
+    # Trivial upper bound for the completion times of the tasks
+    horizon = 0
+    for j in range(nb_jobs):
+        for o in range(nb_operations[j]):
+            horizon += max(task_processing_time[j][o][m][s] for m in range(nb_machines) for s in range(nb_workers) if task_processing_time[j][o][m][s] != INFINITE )
+
+    all_jobs = range(nb_jobs)
+    all_machines = range(nb_machines)
+    all_workers = range(nb_workers)
+
+    # Global storage of variables.
+    intervals_per_machine = collections.defaultdict(list)
+    intervals_per_worker = collections.defaultdict(list)
+
+    starts = {}  # indexed by (job_id, task_id).
+    presences = {}  # indexed by (job_id, task_id, alt_id).
+    job_ends = [] 
+
+    # Model the flexible jobshop problem with worker constraint.
+    model = cp_model.CpModel()
+
+    # Scan the jobs and create the relevant variables and intervals.
+    for job_id in all_jobs:
+        job = jobs[job_id]
+        num_tasks = len(job)
+        previous_end = None
+        for task_id in range(num_tasks):
+            task = job[task_id]
+            
+            #temporerary
+            min_duration = task[0][0]
+            max_duration = task[0][0]
+
+            num_alternatives = len(task)
+            all_alternatives = range(num_alternatives)
+
+            for alt_id in range(1, num_alternatives):
+                alt_duration = task[alt_id][0]
+                min_duration = min(min_duration, alt_duration)
+                max_duration = max(max_duration, alt_duration)
+
+            # Create main interval for the task.
+            suffix_name = "_j%i_t%i" % (job_id, task_id)
+            start = model.new_int_var(0, horizon, "start" + suffix_name)
+            duration = model.new_int_var(
+                min_duration, max_duration, "duration" + suffix_name
+            )
+            end = model.new_int_var(0, horizon, "end" + suffix_name)
+            interval = model.new_interval_var(
+                start, duration, end, "interval" + suffix_name
+            )
+
+            # Store the start for the solution.
+            starts[(job_id, task_id)] = start
+
+            # Add precedence with previous task in the same job.
+            if previous_end is not None:
+                model.add(start >= previous_end)
+            previous_end = end
+
+            # Create alternative intervals.
+            if num_alternatives > 1:
+                l_presences = []
+                for alt_id in all_alternatives:
+                    alt_suffix = "_j%i_t%i_a%i" % (job_id, task_id, alt_id)
+                    l_presence = model.new_bool_var("presence" + alt_suffix)
+                    l_start = model.new_int_var(0, horizon, "start" + alt_suffix)
+                    l_duration = task[alt_id][0]
+                    l_end = model.new_int_var(0, horizon, "end" + alt_suffix)
+                    l_interval = model.new_optional_interval_var(
+                        l_start, l_duration, l_end, l_presence, "interval" + alt_suffix
+                    )
+                    l_presences.append(l_presence)
+
+                    # Link the primary/global variables with the local ones.
+                    model.add(start == l_start).only_enforce_if(l_presence)
+                    model.add(duration == l_duration).only_enforce_if(l_presence)
+                    model.add(end == l_end).only_enforce_if(l_presence)
+
+                    # Add the local interval to the right machine.
+                    intervals_per_machine[task[alt_id][1]].append(l_interval)
+                    
+                    # Add the local interval to the right machine.
+                    intervals_per_worker[task[alt_id][2]].append(l_interval)
+
+                    # Store the presences for the solution.
+                    presences[(job_id, task_id, alt_id)] = l_presence
+
+                # Select exactly one presence variable.
+                model.add_exactly_one(l_presences)
+            else:
+                intervals_per_machine[task[0][1]].append(interval)
+                intervals_per_worker[task[0][2]].append(interval)
+                presences[(job_id, task_id, 0)] = model.new_constant(1)
+
+        job_ends.append(previous_end)
+
+    # Create machines constraints.
+    for machine_id in all_machines:
+        intervals = intervals_per_machine[machine_id]
+        if len(intervals) > 1:
+            model.add_no_overlap(intervals)
+            
+    # Create worker constraints.
+    for worker_id in all_workers:
+        intervals = intervals_per_worker[worker_id]
+        if len(intervals) > 1:
+            model.add_no_overlap(intervals)
+
+    # Makespan objective.
+    makespan = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(makespan, job_ends)
+    model.minimize(makespan)
+
+    # Solve model.
+    solver = cp_model.CpSolver()
+    solution_printer = SolutionPrinter()
+    status = solver.solve(model, solution_printer)
+
+    start_times = []
+    assignments = []
+    workers = []
+    for job_id in all_jobs:
+        for task_id in range(len(jobs[job_id])):
+            start_value = solver.value(starts[(job_id, task_id)])
+            start_times.append(start_value)
+            machine = -1
+            worker = -1
+            duration = -1
+            for alt_id in range(len(jobs[job_id][task_id])):
+                if solver.value(presences[(job_id, task_id, alt_id)]):
+                    duration = jobs[job_id][task_id][alt_id][0]
+                    machine = jobs[job_id][task_id][alt_id][1]
+                    worker = jobs[job_id][task_id][alt_id][2]
+                    assignments.append(machine)
+                    workers.append(worker)
+                    # technically could break here
+
+    return solver.status_name(status), solver.objective_value, solver.wall_time, start_times, assignments, workers
+
 
 def cp_experiment(path, instance):
     
     print(f'Currently Running: {instance}')
-    
     #read and arrange Data
     f = open(path)
     lines = f.readlines()
@@ -247,7 +452,17 @@ def run_cp_experiments(write_path, benchmark_path):
             with open(write_path + '/results.txt', 'a') as f:
                 f.write(f'{instance[:-4]};{status};{fitness};{runtime};{start_times};{assignments}\n')
 
-
+def run_cp_wfjssp_experiments(write_path, benchmark_path):
+    sources = os.listdir(benchmark_path)
+    for source in sources:
+        instances = os.listdir(benchmark_path + '/' + source)
+        for instance in instances:
+            try:
+                status, fitness, runtime, start_times, assignments, workers = cp_wfjssp_experiment(benchmark_path + '/' + source + '/' + instance)
+                with open(write_path, 'a') as f:
+                    f.write(f'{source};{instance};{status};{fitness};{runtime};{start_times};{assignments};{workers}\n')
+            except:
+                pass
 
 from datetime import datetime
 if __name__ == '__main__':

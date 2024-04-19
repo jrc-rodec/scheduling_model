@@ -1,0 +1,124 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 17 15:42:47 2024
+
+@author: tst
+"""
+
+from docplex.cp.model import *
+import os
+
+#read and arrange Data
+#filename = r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\openHSU_436_2\FJSSPinstances\1_Brandimarte\BrandimarteMk1.fjs'
+#filename = r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\openHSU_436_2\FJSSPinstances\2a_Hurink_sdata\HurinkSdata1.fjs'
+#filename = r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\openHSU_436_2\FJSSPinstances\4_ChambersBarnes\ChambersBarnes17.fjs'
+#filename = r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\openHSU_436_2\FJSSPinstances\5_Kacem\Kacem4.fjs'
+filename = r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\openHSU_436_2\FJSSPinstances\6_Fattahi\Fattahi19.fjs'
+f = open(filename)
+
+lines = f.readlines()
+first_line = lines[0].split()
+
+# Number of jobs
+nb_jobs = int(first_line[0])
+# Number of machines
+nb_machines = int(first_line[1])
+# Number of operations for each job
+nb_operations = [int(lines[j + 1].split()[0]) for j in range(nb_jobs)]
+# Constant for incompatible machines
+INFINITE = 1000000
+
+# not needed for CP solver of CPLEX
+#task_processing_time = [[[INFINITE for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+
+JOBS =  [[[(INFINITE,INFINITE) for m in range(nb_machines)] for o in range(nb_operations[j])] for j in range(nb_jobs)]
+
+for j in range(nb_jobs):
+    line = lines[j + 1].split()
+    tmp = 0
+    for o in range(nb_operations[j]):
+        nb_machines_operation = int(line[tmp + o + 1])
+        machine_helper =[]
+        for i in range(nb_machines_operation):
+            machine = int(line[tmp + o + 2 * i + 2]) - 1
+            time = int(line[tmp + o + 2 * i + 3])
+            machine_helper += [(machine,time)]
+            #task_processing_time[j][o][machine] = time # not needed for CP solver of CPLEX
+        JOBS[j][o] = machine_helper
+        tmp = tmp + 2 * nb_machines_operation
+
+# not needed for CP solver of CPLEX
+'''# Trivial upper bound for the start times of the tasks
+L=0
+for j in range(nb_jobs):
+    for o in range(nb_operations[j]):
+        L += max(task_processing_time[j][o][m] for m in range(nb_machines) if task_processing_time[j][o][m] != INFINITE)
+'''        
+#-----------------------------------------------------------------------------
+# Build the model
+#-----------------------------------------------------------------------------
+
+# Create model
+mdl = CpoModel()
+
+# Following code creates:
+# - creates one interval variable 'ops' for each possible operation choice
+# - creates one interval variable mops' for each operation, as an alternative of all operation choices
+# - setup precedence constraints between operations of each job
+# - creates a no_overlap constraint an the operations of each machine
+
+ops  = { (j,o) : interval_var(name='J{}_O{}'.format(j,o))
+         for j,J in enumerate(JOBS) for o,O in enumerate(J)}
+mops = { (j,o,k,m) : interval_var(name='J{}_O{}_C{}_M{}'.format(j,o,k,m), optional=True, size=d)
+         for j,J in enumerate(JOBS) for o,O in enumerate(J) for k, (m, d) in enumerate(O)}
+
+# Precedence constraints between operations of a job
+mdl.add(end_before_start(ops[j,o-1], ops[j,o]) for j,o in ops if 0<o)
+
+# Alternative constraints
+mdl.add(alternative(ops[j,o], [mops[a] for a in mops if a[0:2]==(j,o)]) for j,o in ops)
+
+# Add no_overlap constraint between operations executed on the same machine
+mdl.add(no_overlap(mops[a] for a in mops if a[3]==m) for m in range(nb_machines))
+
+# Minimize termination date
+mdl.add(minimize(max(end_of(ops[j,o]) for j,o in ops)))
+
+
+#-----------------------------------------------------------------------------
+# Solve the model and display the result
+#-----------------------------------------------------------------------------
+
+# Solve model
+print('Solving model...')
+res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", FailLimit=100000,TimeLimit=1)
+print('Solution:')
+#res.print_solution()
+
+for a in mops:
+    itv = res.get_var_solution(mops[a])
+    for m in range(nb_machines):
+        if a[3]==m and itv.is_present():
+            print('Job %i Operation %i on Mashine %i starts at %i ends at %i (duration %i)' %(a[0],a[1],a[3],itv.start,itv.end,itv.size))
+
+print("Solution Status: " + res.solve_status)  
+
+print("Optimal objective value: %i" % res.solution.objective_values[0])
+print('Objektive lower bound: %i' % res.solution.objective_bounds[0])
+
+        
+'''
+# Draw solution
+import docplex.cp.utils_visu as visu
+if res and visu.is_visu_enabled():
+# Draw solution
+    visu.timeline('Solution for flexible job-shop problem' + filename)
+    visu.panel('Machines')
+    for m in range(nb_machines):
+        visu.sequence(name='M' + str(m))
+        for a in mops:
+            if a[3]==m:
+                itv = res.get_var_solution(mops[a])
+                if itv.is_present():
+                    visu.interval(itv, a[0], 'J{}_O{}'.format(a[0],a[1]))
+    visu.show()'''
