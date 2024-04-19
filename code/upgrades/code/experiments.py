@@ -453,25 +453,26 @@ def run_cp_experiments(write_path, benchmark_path):
                 f.write(f'{instance[:-4]};{status};{fitness};{runtime};{start_times};{assignments}\n')
 
 def run_cp_wfjssp_experiments(write_path, benchmark_path):
-    sources = os.listdir(benchmark_path)
-    for source in sources:
-        instances = os.listdir(benchmark_path + '/' + source)
-        for instance in instances:
-            try:
-                status, fitness, runtime, start_times, assignments, workers = cp_wfjssp_experiment(benchmark_path + '/' + source + '/' + instance)
-                with open(write_path, 'a') as f:
-                    f.write(f'{source};{instance};{status};{fitness};{runtime};{start_times};{assignments};{workers}\n')
-            except:
-                pass
+    instances = os.listdir(benchmark_path)
+    #for source in sources:
+    #instances = os.listdir(benchmark_path + '/' + source)
+    for instance in instances:
+        try:
+            #print(instance)
+            status, fitness, runtime, start_times, assignments, workers = cp_wfjssp_experiment(benchmark_path + '/' + instance)
+            with open(write_path, 'a') as f:
+                f.write(f'{instance};{status};{fitness};{runtime};{start_times};{assignments};{workers}\n')
+        except:
+            pass
 
 from datetime import datetime
 if __name__ == '__main__':
     #currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     #read_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks\\'
-    shutdown_when_finished = True
-    write_path = r'C:\Users\localadmin\Desktop\experiments\cp'
-    BENCHMARK_PATH = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks'
-    run_cp_experiments(write_path, BENCHMARK_PATH)
+    shutdown_when_finished = False
+    write_path = r'C:\Users\localadmin\Desktop\experiments\cp_wfjssp\results.txt'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\reworked_data_model\benchmarks_with_workers'
+    run_cp_wfjssp_experiments(write_path, BENCHMARK_PATH)
 
     #shutdown_when_finished = False
 
