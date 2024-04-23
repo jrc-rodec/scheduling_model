@@ -181,5 +181,17 @@ namespace Solver
                 }
             }
         }
+
+        public bool Equals(WFJSSPIndividual other)
+        {
+            for(int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_sequence[i] != other._sequence[i] || _assignments[i] != other._assignments[i] || _workers[i] != other._workers[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

@@ -33,7 +33,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 #f = open(r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\MO-FJSPW_BenchmarkDataInstances\MFJW\MFJW-01.txt')
 
 #von David erzeugte Probleme
-f = open(r'C:\Users\tst\OneDrive - FH Vorarlberg\Forschung\JobShopScheduling\changed_benchmarks\6_Fattahi_10_updated.fjs')
+f = open(r'C:\Users\huda\Documents\GitHub\scheduling_model\code\reworked_data_model\changed_benchmarks\6_Fattahi_1_updated.fjs')
 
 lines = f.readlines()
 first_line = lines[0].split()
@@ -201,8 +201,11 @@ model.minimize(makespan)
 
 # Solve model.
 solver = cp_model.CpSolver()
-solution_printer = SolutionPrinter()
-status = solver.solve(model, solution_printer)
+#solution_printer = SolutionPrinter()
+solver.parameters.max_time_in_seconds = 10
+status = solver.solve(model)
+
+
 
 # Print final solution.
 for job_id in all_jobs:
@@ -230,3 +233,6 @@ print("Statistics")
 print("  - conflicts : %i" % solver.num_conflicts)
 print("  - branches  : %i" % solver.num_branches)
 print("  - wall time : %f s" % solver.wall_time)
+
+#if status == 'FEASIBLE':
+print(f'OBJECTIVE BOUND: ' + str(solver.best_objective_bound))

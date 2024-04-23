@@ -8,7 +8,7 @@ namespace BenchmarkParsing
 {
     public class Encoding
     {
-        private readonly int[,] _durations;
+        private int[,] _durations;
         private readonly int[] _jobSequence;
         private readonly int _nJobs;
 
@@ -27,12 +27,13 @@ namespace BenchmarkParsing
         }
 
         public int[] JobSequence { get => _jobSequence; }
-        public int[,] Durations { get => _durations; }
 
         public int NOperations => _durations.GetLength(0);
         public int NMachines => _durations.GetLength(1);
 
         public int NJobs => _nJobs;
+
+        public int[,] Durations { get => _durations; set => _durations = value; }
 
         public List<int> GetMachinesForOperation(int operationIndex)
         {
