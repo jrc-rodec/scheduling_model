@@ -64,7 +64,7 @@ namespace PSO
             {
                 argumentText.Append(args[i] + " ");
             }
-            // Remove trainling whitespace
+            // Remove trailing whitespace
             argumentText.Remove(argumentText.Length - 2, argumentText.Length - 1);
 
             process.StartInfo.Arguments = argumentText.ToString();
