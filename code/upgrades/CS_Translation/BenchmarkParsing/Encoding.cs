@@ -115,6 +115,54 @@ namespace BenchmarkParsing
             }
         }
 
+        public List<int> GetMachinesForOperation(int operation)
+        {
+            List<int> machines = new List<int>();
+            for (int i = 0; i < _durations.GetLength(1); ++i)
+            {
+                for(int j = 0; j < _durations.GetLength(2); ++j)
+                {
+                    if (_durations[operation, i, j] > 0)
+                    {
+                        // at least one worker is available, so stop here
+                        machines.Add(i);
+                        break;
+                    }
+                }
+            }
+            return machines;
+        }
+
+        public List<int> GetWorkersForOperation(int operation)
+        {
+            List<int> workers = new List<int>();
+            for (int i = 0; i < _durations.GetLength(1); ++i)
+            {
+                for (int j = 0; j < _durations.GetLength(2); ++j)
+                {
+                    if (_durations[operation, i, j] > 0)
+                    {
+                        // at least one worker is available, so stop here
+                        workers.Add(i);
+                    }
+                }
+            }
+            return workers;
+        }
+
+        public List<int> GetWorkersForOperationOnMachine(int operation, int machine)
+        {
+            List<int> workers = new List<int>();
+            for (int j = 0; j < _durations.GetLength(2); ++j)
+            {
+                if (_durations[operation, machine, j] > 0)
+                {
+                    workers.Add(j);
+                }
+            }
+            return workers;
+        }
+
         public bool IsPossible(int operation, int machine, int worker)
         {
             return _durations[operation, machine, worker] > 0;
