@@ -88,4 +88,64 @@ namespace BenchmarkParsing
             return new Encoding(durationCopy, jobSequenceCopy);
         }
     }
+
+    public class WorkerEncoding
+    {
+        private int[,,] _durations; 
+        private readonly int[] _jobSequence;
+        private readonly int _nJobs;
+
+        public int[,,] Durations { get => _durations; set => _durations = value; }
+
+        public int[] JobSequence => _jobSequence;
+
+        public int NJobs => _nJobs;
+
+        public WorkerEncoding(int[,,] durations, int[] jobSequence)
+        {
+            _durations = durations;
+            _jobSequence = jobSequence;
+            _nJobs = 1;
+            for (int i = 1; i < _jobSequence.Length; ++i)
+            {
+                if (_jobSequence[i] != _jobSequence[i - 1])
+                {
+                    ++_nJobs;
+                }
+            }
+        }
+
+        public bool IsPossible(int operation, int machine, int worker)
+        {
+            return _durations[operation, machine, worker] > 0;
+        }
+
+        public WorkerEncoding Copy()
+        {
+            return new WorkerEncoding(_durations, _jobSequence);
+        }
+
+        public WorkerEncoding DeepCopy()
+        {
+            int[,,] durationCopy = new int[_durations.GetLength(0), _durations.GetLength(1), _durations.GetLength(2)];
+            for (int i = 0; i < _durations.GetLength(0); ++i)
+            {
+                for (int j = 0; j < _durations.GetLength(1); ++j)
+                {
+                    for (int k = 0; k < _durations.GetLength(2); ++k)
+                    {
+                        durationCopy[i, j, k] = _durations[i, j, k];
+                    }
+                }
+            }
+            int[] jobSequenceCopy = new int[_jobSequence.Length];
+            for (int i = 0; i < _jobSequence.Length; ++i)
+            {
+                jobSequenceCopy[i] = _jobSequence[i];
+            }
+            return new WorkerEncoding(durationCopy, jobSequenceCopy);
+        }
+
+
+    }
 }
