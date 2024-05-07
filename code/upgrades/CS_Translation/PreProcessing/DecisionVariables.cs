@@ -116,7 +116,7 @@ namespace BenchmarkParsing
             return result;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("N Machines: " + _encoding.NMachines + "\n");
