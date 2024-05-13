@@ -24,7 +24,7 @@ def read_file(source : str, id : int, path : str) -> list[str]:
         target_file = f'Kacem{id}.fjs'
     elif source.startswith('6'):
         target_file = f'Fattahi{id}.fjs'
-    path += f'{source}\\{target_file}'
+    path += f'\\{source}\\{target_file}'
     file = open(path, 'r')
     return file.readlines()
 
