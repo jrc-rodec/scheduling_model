@@ -71,10 +71,10 @@ def rewrite_benchmark(source : str, id : int, lower_bound : float, upper_bound :
     return result
 
 def rewrite_all_from_source(source : str, lower_bound : float, upper_bound : float, worker_amount : int, read_path : str, write_path : str) -> None:
-    full_path = read_path + source + '/'
+    full_path = read_path + '/' + source + '/'
     for i in range(len(os.listdir(full_path))):
         result = rewrite_benchmark(source, i+1, lower_bound, upper_bound, worker_amount, read_path)
-        write_file(result, write_path, f'{source}_{i+1}_updated.fjs')
+        write_file(result, write_path + '/', f'{source}_{i+1}_updated.fjs')
 
 
 

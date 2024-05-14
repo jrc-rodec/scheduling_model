@@ -1,6 +1,7 @@
 from flask import Flask, request
 import os
 import sys
+from models import RewriteBenchmarkRequest
 
 # Install: flask, requests
 
@@ -19,45 +20,62 @@ def hello():
 """
 """source = 1
 
-# rewrite a specific benchmark
-id = 5
-result = rewrite_benchmark(source=sources[source], id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path=read_path)
-write_file(benchmark=result,path=write_path, file_name=f'{sources[source]}_{id}_updated.fjs')
-
-# rewrite all benchmarks from a specific source
-rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)
-
 # rewrite all benchmarks (with the same parameters)
 for i in range(len(sources)):
     source = i
     rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)"""
 
 @app.route('/sources', methods=["GET"])
-def availableBenchmarks():
+def availableSources():
     sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
     return sources
 
-@app.route('/example', methods=["POST"])
-def example():
-    return request.get_json()
+# Example Usages
+"""
+data = {"source":"0_BehnkeGeiger", "id":1, "lower_bound":0.8, "upper_bound":1.2, "worker_amount":4, "read_path":read_path_default} 
+r = requests.post("http://127.0.0.1:5000/rewriteBenchmark", json=data)
+
+data = {"source":"0_BehnkeGeiger", "id":1} 
+r = requests.post("http://127.0.0.1:5000/rewriteBenchmark", json=data)
+"""
 
 @app.route('/rewriteBenchmark',  methods=["POST"])
 def rewrite_benchmark():
-    request_data = request.get_json()
+    request_json = request.get_json()
 
-    read_path = os.path.dirname(os.getcwd() + "\\external_test_data\\FJSSPinstances\\")
+    data = RewriteBenchmarkRequest(request_json.get("source"), request_json.get("id", None), 
+                                   request_json.get("lower_bound", None), request_json.get("upper_bound", None),
+                                   request_json.get("worker_amount", None), request_json.get("read_path", None))
 
-    result = rewrite_benchmarks.rewrite_benchmark(
-        source=request_data["source"], 
-        id=request_data["id"], 
-        lower_bound=request_data["lower_bound"], 
-        upper_bound=request_data["upper_bound"], 
-        worker_amount=request_data["worker_amount"], 
-        path=read_path)
-
-    print(result)
+    result = rewrite_benchmarks.rewrite_benchmark(data.source, data.id, 
+                                                  data.lower_bound, data.upper_bound, 
+                                                  data.worker_amount, data.read_path)
 
     return result
+
+
+# Example Usage
+"""
+data = {"source":"0_BehnkeGeiger", "lower_bound":0.8, "upper_bound":1.2, "worker_amount":4, "read_path":read_path_default, "write_path":write_path_default} 
+r = requests.post("http://127.0.0.1:5000/rewriteBenchmarksOfSource", json=data)
+
+data = {"source":"0_BehnkeGeiger"} 
+r = requests.post("http://127.0.0.1:5000/rewriteBenchmarksOfSource", json=data)
+"""
+@app.route('/rewriteBenchmarksOfSource',  methods=["POST"])
+def rewrite_benchmarks_of_source():
+    request_json = request.get_json()
+
+    data = RewriteBenchmarkRequest(request_json.get("source"), None, request_json.get("lower_bound", None), 
+                                   request_json.get("upper_bound", None), request_json.get("worker_amount", None), 
+                                   request_json.get("read_path", None), request_json.get("write_path", None))
+
+
+    rewrite_benchmarks.rewrite_all_from_source(data.source, data.lower_bound, 
+                                               data.upper_bound, data.worker_amount, 
+                                               data.read_path, data.write_path)
+
+    return ('', 204)
 
 if __name__ == '__main__':
     app.run()
