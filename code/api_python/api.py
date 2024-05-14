@@ -3,28 +3,19 @@ import os
 import sys
 from models import RewriteBenchmarkRequest
 
-# Install: flask, requests
+# Install necessary dependencies: flask, requests
 
-sys.path.append(os.path.dirname(os.getcwd() + "\\reworked_data_model"))
+sys.path.append(os.path.dirname(os.getcwd() + "\\reworked_data_model")) # so rewrite_benchmarks can be imported as a module
 
 from reworked_data_model import rewrite_benchmarks
 
 app = Flask(__name__)
 
-@app.route('/')
-def hello():
-    return "Hello"
-
+#Example Usage
 """
-    EXAMPLE USAGES:
+r = requests.get("http://127.0.0.1:5000/sources")
+print(r.text)
 """
-"""source = 1
-
-# rewrite all benchmarks (with the same parameters)
-for i in range(len(sources)):
-    source = i
-    rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)"""
-
 @app.route('/sources', methods=["GET"])
 def availableSources():
     sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
