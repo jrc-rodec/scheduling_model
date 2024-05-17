@@ -17,3 +17,10 @@ code/reworked_data_model/results/~$benchmark_data_reformated.xlsx
 *.json
 **/obj/
 **/bin/
+/code/api_python/__pycache__
+/code/api_python/tests/__pycache__
+/code/api_python/build
+/code/api_python/dist
+/code/api_python/.eggs
+/code/api_python/.pytest_cache
+/code/api_python/benchmarkrewriter.egg-info
