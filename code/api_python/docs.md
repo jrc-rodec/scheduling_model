@@ -28,12 +28,13 @@ pytest-runner
 
 `pip install "C:\Users\Bianca\OneDrive - FH Vorarlberg\JRZ\JRZ\Scheduling\scheduling_model\code\api_python\dist\benchmarkrewriter-0.1-py3-none-any.whl"`
 
-For later:
-
-## Upload library to PyPI
-
-`twine upload dist/\*`
-
 ## Use library
 
+The library can be imported like `import benchmarkrewriter`
+
+For later:
+
+## Publish to PyPI
+
+`twine upload dist/\*`
 `pip install benchmarkrewriter`
