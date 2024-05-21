@@ -9,3 +9,6 @@ def test_get_available_sources():
 def test_rewrite_benchmark_with_workers():
     rewrite_benchmarks.rewrite_benchmark(
         sources[0], 1, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path="C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\api_python\\benchmarkrewriter\\FJSSPinstances")
+    
+def benchmark_parser():
+    path = "..\\..\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
