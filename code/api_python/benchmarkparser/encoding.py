@@ -21,6 +21,9 @@ class Encoding:
     def n_jobs(self):
         return self.__n_jobs
     
+    def durations(self):
+        return self.__durations
+    
     def get_machines_for_operation(self, operation_index: int):
         machines = []
         for i in range(0, len(self.__durations[1])): 
@@ -41,13 +44,12 @@ class Encoding:
         return Encoding(self.__durations, self.__job_sequence)
     
     def deep_copy(self):
-        duration_copy = np.zeros_like(self.__durations)
-        
+        duration_copy = np.zeros((len(self.__durations[0]), len(self.__durations[1])), dtype=int)
         for i in range(0, len(self.__durations[0])):
             for j in range(0, len(self.__durations[1])):
                 duration_copy[i, j] = self.__durations[i, j]
         
-        job_sequence_copy = range(len(self.__job_sequence))
+        job_sequence_copy = [None] * len(self.__job_sequence)
         for i in range(0, len(self.__job_sequence)):
             job_sequence_copy[i] = self.__job_sequence[i]
 
@@ -74,6 +76,9 @@ class WorkerEncoding:
     def n_jobs(self):
         return self.__n_jobs
     
+    def durations(self):
+        return self.__durations
+
     def get_workers_for_operation(self, operation_index: int):
         workers = []
         for i in range(0, len(self.__durations[1])): 
@@ -112,14 +117,13 @@ class WorkerEncoding:
         return WorkerEncoding(self.__durations, self.__job_sequence)
     
     def deep_copy(self):
-        duration_copy = np.zeros_like(self.__durations)
-        
+        duration_copy = np.zeros((len(self.__durations[0]), len(self.__durations[1]), len(self.__durations[2])), dtype=int)
         for i in range(0, len(self.__durations[0])):
             for j in range(0, len(self.__durations[1])):
                 for k in range(0, len(self.__durations[2])):
                     duration_copy[i, j, k] = self.__durations[i, j, k]
         
-        job_sequence_copy = range(len(self.__job_sequence))
+        job_sequence_copy = [None] * len(self.__job_sequence)
         for i in range(0, len(self.__job_sequence)):
             job_sequence_copy[i] = self.__job_sequence[i]
 
