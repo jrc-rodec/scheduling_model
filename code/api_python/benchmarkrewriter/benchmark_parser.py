@@ -1,4 +1,4 @@
-from encoding import Encoding, WorkerEncoding
+from benchmarkrewriter.encoding import Encoding, WorkerEncoding
 import numpy as np
 
 class BenchmarkParser: 
@@ -61,6 +61,7 @@ class WorkerBenchmarkParser:
         n_workers = int(round(float(info[2])))
         n_overall_operations = 0
         lines = [line.split() for line in file_content[1:]]
+
         for i in range(1, len(file_content)):
             line = file_content[i].split(' ')
             lines[i - 1] = line
@@ -95,5 +96,11 @@ class WorkerBenchmarkParser:
                 
         return WorkerEncoding(durations, job_sequence)
 
+def main(): 
+    path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
+    parser = WorkerBenchmarkParser()
+    result = parser.parse_benchmark(path)
 
+if __name__ == "__main__":
+    main()
 
