@@ -13,10 +13,10 @@ class Encoding:
         return self.__job_sequence
     
     def n_operations(self):
-        return len(self.__durations[0])
+        return self.__durations.shape[0]
     
     def n_machines(self):
-        return len(self.__durations[1])
+        return self.__durations.shape[1]
     
     def n_jobs(self):
         return self.__n_jobs
@@ -26,16 +26,16 @@ class Encoding:
     
     def get_machines_for_operation(self, operation_index: int):
         machines = []
-        for i in range(0, len(self.__durations[1])): 
+        for i in range(0, self.__durations.shape[1]): 
             if self.__durations[operation_index, i] > 0:
                 machines.append(i)
         return machines
     
     def get_machines_for_all_operations(self):
         machines = []
-        for i in range (0, len(self.__durations[0])):
+        for i in range (0, self.__durations.shape[0]):
             machines.append([])
-            for j in range(0, len(self.__durations[1])):
+            for j in range(0, self.__durations.shape[1]):
                 if self.__durations[i, j] > 0: 
                     machines[i].append(j)
         return machines
@@ -44,9 +44,9 @@ class Encoding:
         return Encoding(self.__durations, self.__job_sequence)
     
     def deep_copy(self):
-        duration_copy = np.zeros((len(self.__durations[0]), len(self.__durations[1])), dtype=int)
-        for i in range(0, len(self.__durations[0])):
-            for j in range(0, len(self.__durations[1])):
+        duration_copy = np.zeros((self.__durations.shape[0], self.__durations.shape[1]), dtype=int)
+        for i in range(0, self.__durations.shape[0]):
+            for j in range(0, self.__durations.shape[1]):
                 duration_copy[i, j] = self.__durations[i, j]
         
         job_sequence_copy = [None] * len(self.__job_sequence)
@@ -68,10 +68,10 @@ class WorkerEncoding:
         return self.__job_sequence
     
     def n_operations(self):
-        return len(self.__durations[0])
+        return self.__durations.shape[0]
     
     def n_machines(self):
-        return len(self.__durations[1])
+        return self.__durations.shape[1]
     
     def n_jobs(self):
         return self.__n_jobs
@@ -81,30 +81,30 @@ class WorkerEncoding:
 
     def get_workers_for_operation(self, operation_index: int):
         workers = []
-        for i in range(0, len(self.__durations[1])): 
-            for j in range(0, len(self.__durations[2])):
+        for i in range(0, self.__durations.shape[1]): 
+            for j in range(0, self.__durations.shape[2]):
                 if self.__durations[operation_index, i, j] > 0:
-                    workers.append(i)
-                    break
+                    workers.append(j) # laut dem C# Code wird i hinzugefügt -> warum i? Sollte es nicht j für die Worker sein? 
 
         return workers
     
-    def get_machines_for_all_operations(self):
+    def get_all_machines_for_all_operations(self):
         operations = []
-        for i in range (0, len(self.__durations[0])):
+        for i in range (0, self.__durations.shape[0]):
             machines = []
-            for j in range(0, len(self.__durations[1])):
-                for k in range(0, len(self.__durations[2])):
+            for j in range(0, self.__durations.shape[1]):
+                for k in range(0, self.__durations.shape[2]):
                     if self.__durations[i, j, k] > 0: 
                         machines.append(j)
                         break
+                    
             operations.append(machines)
 
         return operations
     
     def get_workers_for_operation_on_machine(self, operation: int, machine: int):
         workers = []
-        for j in range(0, len(self.__durations[2])):
+        for j in range(0, self.__durations.shape[2]):
             if self.__durations[operation, machine, j] > 0:
                 workers.append(j)
 
@@ -117,10 +117,10 @@ class WorkerEncoding:
         return WorkerEncoding(self.__durations, self.__job_sequence)
     
     def deep_copy(self):
-        duration_copy = np.zeros((len(self.__durations[0]), len(self.__durations[1]), len(self.__durations[2])), dtype=int)
-        for i in range(0, len(self.__durations[0])):
-            for j in range(0, len(self.__durations[1])):
-                for k in range(0, len(self.__durations[2])):
+        duration_copy = np.zeros((self.__durations.shape[0], self.__durations.shape[1], self.__durations.shape[2]), dtype=int)
+        for i in range(0, self.__durations.shape[0]):
+            for j in range(0, self.__durations.shape[1]):
+                for k in range(0, self.__durations.shape[2]):
                     duration_copy[i, j, k] = self.__durations[i, j, k]
         
         job_sequence_copy = [None] * len(self.__job_sequence)
