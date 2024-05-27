@@ -84,7 +84,7 @@ class WorkerEncoding:
         for i in range(0, self.__durations.shape[1]): 
             for j in range(0, self.__durations.shape[2]):
                 if self.__durations[operation_index, i, j] > 0:
-                    workers.append(j) # laut dem C# Code wird i hinzugefügt -> warum i? Sollte es nicht j für die Worker sein? 
+                    workers.append(j)
 
         return workers
     

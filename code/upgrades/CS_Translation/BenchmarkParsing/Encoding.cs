@@ -142,8 +142,7 @@ namespace BenchmarkParsing
                 {
                     if (_durations[operation, i, j] > 0)
                     {
-                        // at least one worker is available, so stop here
-                        workers.Add(i);
+                        workers.Add(j);
                     }
                 }
             }
