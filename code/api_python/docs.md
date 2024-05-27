@@ -4,17 +4,17 @@ Change directory: `cd code\api_python`
 
 ## Install dependencies
 
-`pip install -r requirements.txt`
+Create a text file named requirements.txt with following content:
 
-Necessary dependencies:
-
-(
+{
 setuptools
 wheel
 twine
 pytest
 pytest-runner
-)
+}
+
+`pip install -r requirements.txt`
 
 ## Build library
 
@@ -25,6 +25,8 @@ pytest-runner
 `pytest tests/tests.py`
 
 ## Install library
+
+Adjust path to whl-File (in dist-folder)
 
 `pip install "C:\Users\Bianca\OneDrive - FH Vorarlberg\JRZ\JRZ\Scheduling\scheduling_model\code\api_python\dist\benchmarkrewriter-0.1-py3-none-any.whl"`
 
