@@ -24,3 +24,4 @@ code/reworked_data_model/results/~$benchmark_data_reformated.xlsx
 /code/api_python/.eggs
 /code/api_python/.pytest_cache
 /code/api_python/benchmarkrewriter.egg-info
+/code/api_python/tests/output

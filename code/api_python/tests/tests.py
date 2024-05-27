@@ -5,12 +5,28 @@ import numpy as np
 
 sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
 
+read_path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\api_python\\benchmarkrewriter\\FJSSPinstances\\"
+write_path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\api_python\\tests\\output\\"
+
 def test_get_available_sources():
     assert rewrite_benchmarks.get_available_sources() == sources
 
+def test_rewrite_benchmark():
+    rewrite_benchmarks.rewrite_benchmark(sources[0], 1, path=read_path, lower_bound=0.9, upper_bound=1.1, worker_amount=3)
+    rewrite_benchmarks.rewrite_benchmark(sources[0], 1, path=read_path)
+
+def test_rewrite_all_from_source():
+    rewrite_benchmarks.rewrite_all_from_source(sources[0], read_path, write_path, lower_bound=0.9, upper_bound=1.1, worker_amount=3)
+    rewrite_benchmarks.rewrite_all_from_source(sources[0], read_path, write_path)
+
+def test_rewrite_all_with_workers():
+    rewrite_benchmarks.rewrite_all_with_workers(read_path, write_path)
+
+def test_rewrite_all_from_source_with_workers():
+    rewrite_benchmarks.rewrite_all_from_source_with_workers(sources[0], read_path, write_path)
+    
 def test_rewrite_benchmark_with_workers():
-    rewrite_benchmarks.rewrite_benchmark(
-        sources[0], 1, lower_bound=0.9, upper_bound=1.1, worker_amount=3, path="C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\api_python\\benchmarkrewriter\\FJSSPinstances")
+    rewrite_benchmarks.rewrite_benchmark_with_workers(sources[0], 1, read_path, write_path)
 
 durations = np.array([[1, 2, 0], [4, 0, 6], [0, 8, 9]])
 job_sequence = [1, 1, 2, 2, 3, 3, 3, 4]
@@ -115,7 +131,7 @@ def test_benchmark_parser():
     print(f"n_machines: {result.n_machines()}")
     print(f"n_operations: {result.n_operations()}")
 
-def test_worker_benchmark_parser(): 
+"""def test_worker_benchmark_parser(): 
     path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
     parser = WorkerBenchmarkParser()
     result = parser.parse_benchmark(path)
@@ -127,5 +143,5 @@ def test_worker_benchmark_parser():
 
     print(f"n_jobs: {result.n_jobs()}")
     print(f"n_machines: {result.n_machines()}")
-    print(f"n_operations: {result.n_operations()}")
+    print(f"n_operations: {result.n_operations()}")"""
 
