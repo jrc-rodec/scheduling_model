@@ -103,7 +103,7 @@ def test_worker_encoder_deep_copy():
     assert copied.n_operations() == new.n_operations()
 
 def test_benchmark_parser(): 
-    path = "scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
+    path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
     parser = BenchmarkParser()
     result = parser.parse_benchmark(path)
 
@@ -116,7 +116,7 @@ def test_benchmark_parser():
     print(f"n_operations: {result.n_operations()}")
 
 def test_worker_benchmark_parser(): 
-    path = "scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
+    path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
     parser = WorkerBenchmarkParser()
     result = parser.parse_benchmark(path)
 
