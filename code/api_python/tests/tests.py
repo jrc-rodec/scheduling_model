@@ -123,13 +123,13 @@ def test_benchmark_parser():
     parser = BenchmarkParser()
     result = parser.parse_benchmark(path)
 
-    for i in range(0, result.durations().shape[0]):
+    """for i in range(0, result.durations().shape[0]):
         for j in range(0, result.durations().shape[1]):
-            print(f"{result.durations()[i, j]},")
+            print(f"{result.durations()[i, j]},")"""
 
-    print(f"n_jobs: {result.n_jobs()}")
-    print(f"n_machines: {result.n_machines()}")
-    print(f"n_operations: {result.n_operations()}")
+    assert result.n_jobs()== 12
+    assert result.n_machines() == 8
+    assert result.n_operations() == 48
 
 """def test_worker_benchmark_parser(): 
     path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
@@ -144,4 +144,3 @@ def test_benchmark_parser():
     print(f"n_jobs: {result.n_jobs()}")
     print(f"n_machines: {result.n_machines()}")
     print(f"n_operations: {result.n_operations()}")"""
-
