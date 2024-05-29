@@ -1,8 +1,10 @@
 # Benchmark Rewriter
 
+## Local usage
+
 Change directory: `cd code\api_python`
 
-## Install dependencies
+### Install dependencies
 
 Create a text file named requirements.txt with following content:
 
@@ -16,21 +18,21 @@ pytest-runner
 
 `pip install -r requirements.txt`
 
-## Build library
+### Build library
 
 `python setup.py bdist_wheel`
 
-## Run test
+### Run tests (optional)
 
 `pytest tests/tests.py`
 
-## Install library
+### Install library
 
 Adjust path to whl-File (in dist-folder)
 
 `pip install "C:\Users\Bianca\OneDrive - FH Vorarlberg\JRZ\JRZ\Scheduling\scheduling_model\code\api_python\dist\benchmarkrewriter-0.1-py3-none-any.whl"`
 
-## Use library
+### Use library
 
 The library can be imported like `import benchmarkrewriter`
 
