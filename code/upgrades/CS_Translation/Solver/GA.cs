@@ -13,7 +13,7 @@ namespace Solver
     {
 
         protected List<Individual> _population;
-        protected GAConfiguration _configuration;
+        private GAConfiguration _configuration;
         protected Random _random;
 
         protected bool _generationStop = false;
@@ -32,7 +32,7 @@ namespace Solver
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
 
         protected bool _output = false;
-
+        //public GA() { }
         public GA(GAConfiguration configuration, bool output)
         {
             _configuration = configuration;

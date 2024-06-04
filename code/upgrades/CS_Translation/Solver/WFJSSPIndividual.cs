@@ -6,20 +6,47 @@ using System.Threading.Tasks;
 
 namespace Solver
 {
-    public class WFJSSPIndividual : Individual
+    public class WFJSSPIndividual //: Individual
     {
         private int[] _workers;
         public static List<List<List<int>>> AvailableWorkers;
+        public static int[,,] Durations;
+        protected int[] _sequence;
+        protected int[] _assignments;
+        protected Dictionary<Criteria, float> _fitness;
+        protected bool _feasible = true;
 
+        public static int[] JobSequence;
+        public static List<List<int>> AvailableMachines;
+        public static float MaxDissimilarity;
+        public static int MaxInitializationAttemps = 100; // TODO add parameter
+        public static float DistanceAdjustmentRate = 0.75f; // TODO add parameter
         public int[] Workers { get => _workers; set => _workers = value; }
 
-        public WFJSSPIndividual(bool randomize) : base(randomize)
+        public Dictionary<Criteria, float> Fitness { get => _fitness; set => _fitness = value; }
+        public bool Feasible { get => _feasible; set => _feasible = value; }
+        public int[] Sequence { get => _sequence; set => _sequence = value; }
+        public int[] Assignments { get => _assignments; set => _assignments = value; }
+        public WFJSSPIndividual(bool randomize)// : base(randomize)
         {
             _workers = new int[JobSequence.Length];
+            _sequence = new int[JobSequence.Length];
+            _assignments = new int[JobSequence.Length];
+            _fitness = new Dictionary<Criteria, float>();
+            if (randomize)
+            {
+                // randomize
+                Randomize();
+            }
         }
 
-        public WFJSSPIndividual(WFJSSPIndividual other) : base(other)
+        public WFJSSPIndividual(WFJSSPIndividual other)// : base(other)
         {
+            _sequence = new int[other._sequence.Length];
+            other._sequence.CopyTo(_sequence, 0);
+            _assignments = new int[other._assignments.Length];
+            other._assignments.CopyTo(_assignments, 0);
+            _fitness = other.Fitness;
             _workers = new int[other._workers.Length];
             other._workers.CopyTo(_workers, 0);
         }
@@ -44,6 +71,57 @@ namespace Solver
                 }
                 ++attempts;
             }
+        }
+
+
+        public float GetDissimilarity(WFJSSPIndividual other)
+        {
+            float result = 0.0f;
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_assignments[i] != other._assignments[i])
+                {
+                    result += AvailableMachines[i].Count;
+                }
+                if (_sequence[i] != other._sequence[i])
+                {
+                    ++result;
+                }
+                if (_workers[i] != other._workers[i])
+                {
+                    result += AvailableWorkers[other._assignments[i]].Count;
+                }
+            }
+            return result;
+        }
+
+        public static void DetermineMaxDissimiarilty()
+        {
+            MaxDissimilarity = 0.0f;
+            for (int i = 0; i < AvailableMachines.Count; ++i)
+            {
+                MaxDissimilarity += AvailableMachines[i].Count;
+                int maxWorkers = 0;
+                for(int j = 0; j < AvailableMachines[i].Count; ++j)
+                {
+                    if (AvailableWorkers[AvailableMachines[i][j]].Count > maxWorkers)
+                    {
+                        maxWorkers = AvailableWorkers[AvailableMachines[i][j]].Count;
+                    }
+                }
+                MaxDissimilarity += maxWorkers;
+            }
+            MaxDissimilarity += JobSequence.Length;
+        }
+
+        protected float Average(float[] values)
+        {
+            float sum = 0;
+            for (int i = 0; i < values.Length; ++i)
+            {
+                sum += values[i];
+            }
+            return sum / values.Length;
         }
 
         public WFJSSPIndividual(WFJSSPIndividual parentA, WFJSSPIndividual parentB) : this(false)
@@ -110,10 +188,27 @@ namespace Solver
             }*/
         }
 
-        protected override void Randomize()
+        protected void ShuffleSequence()
         {
             Random random = new Random();
-            base.Randomize();
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                int index = random.Next(_sequence.Length);
+                int tmp = _sequence[index];
+                _sequence[index] = _sequence[i];
+                _sequence[i] = tmp;
+            }
+        }
+
+        protected void Randomize()
+        {
+            Random random = new Random();
+            JobSequence.CopyTo(_sequence, 0);
+            ShuffleSequence();
+            for (int i = 0; i < _assignments.Length; ++i)
+            {
+                _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];
+            }
             _workers = new int[JobSequence.Length];
             for (int i = 0; i < _workers.Length; ++i)
             {
@@ -123,14 +218,19 @@ namespace Solver
 
         public static void DetermineMaxDissimilarity()
         {
-            Individual.DetermineMaxDissimiarilty();
-            for(int i = 0; i < AvailableWorkers.Count; ++i)
+            MaxDissimilarity = 0.0f;
+            for (int i = 0; i < AvailableMachines.Count; ++i)
+            {
+                MaxDissimilarity += AvailableMachines[i].Count;
+            }
+            MaxDissimilarity += JobSequence.Length;
+            for (int i = 0; i < AvailableWorkers.Count; ++i)
             {
                 MaxDissimilarity += AvailableWorkers[i].Count;
             }
         }
 
-        public override void Mutate(float p)
+        public void Mutate(float p)
         {
             // mutate sequence and assignments through base would require one unnecessary loop
             //base.Mutate(p);
