@@ -20,7 +20,7 @@ pytest-runner
 
 ### Build library
 
-`python setup.py bdist_wheel`
+`python -m build --wheel`
 
 ### Run tests (optional)
 
