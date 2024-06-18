@@ -188,6 +188,7 @@ namespace Solver
             }
             int[] nextOperation = new int[_configuration.NJobs];
             int[] endOnMachines = new int[_configuration.NMachines];
+            // TODO: need to keep record of worker times in a different format
             int[] endOfWorkers = new int[_workerDurations.GetLength(2)];
             int[] endTimes = new int[_configuration.JobSequence.Length];
             for (int i = 0; i < individual.Sequence.Length; ++i)
@@ -204,11 +205,32 @@ namespace Solver
                 int minStartJob = 0;
                 if (operation > 0)
                 {
-                    offset = Math.Max(Math.Max(0, endTimes[startIndex - 1] - endOnMachines[machine]), endTimes[startIndex - 1] - endOfWorkers[worker]);
-                    minStartJob = endTimes[startIndex - 1];
+                    if (endTimes[startIndex - 1] > offset)
+                    {
+                        // need to wait for previous operation to finish
+                        offset = endTimes[startIndex - 1];
+                    }
                 }
-                endTimes[startIndex] = Math.Max(endOnMachines[machine], endOfWorkers[worker]) + duration + offset;
+                if (endOnMachines[machine] > offset)
+                {
+                    // need to wait for machine to be available
+                    offset = endOnMachines[machine];
+                }
+                // TODO: don't check if the worker is finished, check if the worker is free in the timespan instead
+                // (could be on other machine at a later time already)
+                if (endOfWorkers[worker] > offset)
+                {
+                    // need to wait for worker to be ready
+                    offset = endOfWorkers[worker];
+                }
+                    
+                    //offset = Math.Max(Math.Max(0, endTimes[startIndex - 1] - endOnMachines[machine]), endTimes[startIndex - 1] - endOfWorkers[worker]);
+                    //minStartJob = endTimes[startIndex - 1];
+                //}
+                endTimes[startIndex] = offset + duration;
+                //endTimes[startIndex] = Math.Max(endOnMachines[machine], endOfWorkers[worker]) + duration + offset;
                 endOnMachines[machine] = endTimes[startIndex];
+                endOfWorkers[worker] = endTimes[startIndex];
             }
             individual.Fitness[Criteria.Makespan] = endTimes.Max();
             _functionEvaluations++;
