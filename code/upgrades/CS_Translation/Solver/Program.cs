@@ -8,7 +8,7 @@ namespace Solver
     {
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
+            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 60; // in seconds
             //float targetFitness = 1196.0f;
