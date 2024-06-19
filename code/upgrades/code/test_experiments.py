@@ -1,6 +1,7 @@
 import os
 import psutil
-
+from multiprocessing import Process, Value
+from test_monitor import monitor_resources
 # import gurobi stuff
 import gurobipy as gp
 
@@ -18,22 +19,18 @@ import collections
 # import hexaly stuff
 import localsolver
 
-TIME_LIMIT_IN_SECONDS = 600
+TIME_LIMIT_IN_SECONDS = 60
 
 def get_cpu_ram_stats():
     return psutil.cpu_percent(), psutil.virtual_memory().percent
 
 def run_gurobi(path):
-    peak_cpu = 0
-    peak_ram = 0
     history = [(0, float('inf'), -float('inf'))]
+    resources = [(0, 0)]
 
     def SolutionListener(model, where):
         cpu, ram = get_cpu_ram_stats
-        if cpu > peak_cpu:
-            peak_cpu = cpu
-        if ram > peak_ram:
-            peak_ram = ram
+        resources.append((cpu, ram))
         if where == gp.Callback.MIPSOL:
             time = model.cbGet(gp.Callback.RUNTIME)
             obj_best = round(model.cbGet(gp.Callback.MIPSOL_OBJBST))
@@ -137,13 +134,11 @@ def run_gurobi(path):
             start_times.append(csol[j,k]-duration[j,k,i])
             assignments.append(i)
 
-    return m.status, m.objVal, m.objBound, m.Runtime, start_times, assignments, peak_cpu, peak_ram, history
+    return m.status, m.objVal, m.objBound, m.Runtime, start_times, assignments, resources, history
 
 def run_cplex_lp(path):
-    # TODO: solver listener - record progress history, peak cpu usage and peak ram usage
-    peak_cpu = 0
-    peak_ram = 0
     history = [(0, float('inf'), -float('inf'))]
+    resources = [(0,0)]
     class SolutionPrinter(ProgressListener):
     
         def __init__(self):
@@ -151,16 +146,14 @@ def run_cplex_lp(path):
             
         def notify_progress(self, pdata):
             cpu, ram = get_cpu_ram_stats()
-            if cpu > peak_cpu:
-                peak_cpu = cpu
-            if ram > peak_ram:
-                peak_ram = ram
+            resources.append((cpu, ram))
             #Called at each new solution (better objective).
             objective = round(pdata.current_objective)
             bnd = round(pdata.best_bound)
             time = pdata.time
             if objective < history[-1][1] or bnd > history[-1][2]:
                 history.append((time, objective, bnd))
+                
 
     f = open(path)
 
@@ -263,12 +256,11 @@ def run_cplex_lp(path):
 
     mdl.end()
 
-    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, peak_cpu, peak_ram, history
+    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
 
 def run_cplex_cp(path):
-    peak_cpu = 0
-    peak_ram = 0
     history = [(0, float('inf'), -float('inf'))]
+    resources = [(0,0)]
 
     class SolutionPrinter(CpoSolverListener):
         
@@ -277,16 +269,13 @@ def run_cplex_cp(path):
 
         def new_result(self, solver, msol):
             cpu, ram = get_cpu_ram_stats()
-            if cpu > peak_cpu:
-                peak_cpu = cpu
-            if ram > peak_ram:
-                peak_ram = ram
+            resources.append((cpu, ram))
             if msol:
                 time = msol.get_solve_time()
                 obj = msol.get_objective_value()
                 bnd = msol.get_objective_bound()
                 if obj < history[-1][1] or bnd > history[-1][2]:
-                    history.append(time, obj, bnd)
+                    history.append((time, obj, bnd))
                     
     f = open(path)
 
@@ -335,12 +324,11 @@ def run_cplex_cp(path):
                 start_times.append(itv.start)
                 assignments.append(a[3])
 
-    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, peak_cpu, peak_ram, history
+    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
 
 def run_ortools(path):
-    peak_cpu = 0
-    peak_ram = 0
     history = [(0, float('inf'), -float('inf'))]
+    resources = [(0,0)]
 
     class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
@@ -349,10 +337,7 @@ def run_ortools(path):
 
         def on_solution_callback(self):
             cpu, ram = get_cpu_ram_stats()
-            if cpu > peak_cpu:
-                peak_cpu = cpu
-            if ram > peak_ram:
-                peak_ram = ram
+            resources.append((cpu, ram))
             if round(self.objective_value) < history[-1][1] or round(self.best_objective_bound) > history[-1][2]:
                 history.append((self.wall_time, self.objective_value, self.best_objective_bound))
 
@@ -486,21 +471,18 @@ def run_ortools(path):
                     assignments.append(jobs[job_id][task_id][alt_id][1])
 
     lower_bound = solver.objective_value
-    return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, peak_cpu, peak_ram, history
+    return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, resources, history
 
 def run_hexaly(path):
-    peak_cpu = 0
-    peak_ram = 0
     history = []
+    resources = [(0,0)]
+
     class SolutionListener:
         def __init__(self):
-            history.append(0, float('inf'), -float('inf'))
+            history.append((0, float('inf'), -float('inf')))
         def my_callback(self, ls, cb_type):
             cpu, ram = get_cpu_ram_stats()
-            if  ram > peak_ram:
-                peak_ram = ram
-            if  cpu > peak_cpu:
-                peak_cpu = cpu
+            resources.append((cpu, ram))
             time = ls.statistics.running_time
             obj = round(ls.model.objectives[0].value)
             bnd = round(ls.solution.get_objective_bound(0))
@@ -608,7 +590,7 @@ def run_hexaly(path):
 
     lower_bound = solver.objective_value
 
-    return status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history
+    return status, fitness, lower_bound, runtime, start_times, assignments, resources, history
 
 def write_output(message, path):
     with open(path, 'a') as f:
@@ -623,7 +605,17 @@ if __name__ == '__main__':
     instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
 
     # NOTE: RAM and CPU stats are in percent
+    """
+     num = Value('d', 0.0)
+    arr = Array('i', range(10))
 
+    p = Process(target=f, args=(num, arr))
+    p.start()
+    p.join()
+
+    print(num.value)
+    print(arr[:])
+    """
     for instance in instances:
         for solver in solvers:
             try:
@@ -632,20 +624,57 @@ if __name__ == '__main__':
                 #TODO: double check optimal/feasible status values for each solver
                 message = ''
                 if solver == 'gurobi':
-                    status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history = run_cplex_lp(path)
-                    message = f'{instance[1][:-4]};{1 if status == 2 else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{history}'
+                    cpu = Value('d', 0.0)
+                    ram = Value('d', 0.0)
+                    run_monitor = Value('i', 1)
+                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                    p.start()
+                    status, fitness, lower_bound, runtime, start_times, assignments, resources, history = run_gurobi(path)
+                    run_monitor.value = 0
+                    p.join()
+                    peak_cpu = cpu.value
+                    peak_ram = ram.value
+                    message = f'{instance[1][:-4]};{1 if status == 2 else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'cplex_lp':
-                    status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history = run_cplex_lp(path)
-                    message = f'{instance[1][:-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{history}'
+                    cpu = Value('d', 0.0)
+                    ram = Value('d', 0.0)
+                    run_monitor = Value('i', 1)
+                    status, fitness, lower_bound, runtime, start_times, assignments, resources, history = run_cplex_lp(path)
+                    run_monitor.value = 0
+                    p.join()
+                    peak_cpu = cpu.value
+                    peak_ram = ram.value
+                    message = f'{instance[1][:-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'cplex_cp':
-                    status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history = run_cplex_cp(path)
-                    message = f'{instance[1][:-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{history}'
+                    cpu = Value('d', 0.0)
+                    ram = Value('d', 0.0)
+                    run_monitor = Value('i', 1)
+                    status, fitness, lower_bound, runtime, start_times, assignments, resources, history = run_cplex_cp(path)
+                    run_monitor.value = 0
+                    p.join()
+                    peak_cpu = cpu.value
+                    peak_ram = ram.value
+                    message = f'{instance[1][:-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'ortools':
-                    status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history = run_ortools(path)
-                    message = f'{instance[1][-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{history}'
+                    cpu = Value('d', 0.0)
+                    ram = Value('d', 0.0)
+                    run_monitor = Value('i', 1)
+                    status, fitness, lower_bound, runtime, start_times, assignments, resources, history = run_ortools(path)
+                    run_monitor.value = 0
+                    p.join()
+                    peak_cpu = cpu.value
+                    peak_ram = ram.value
+                    message = f'{instance[1][-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 else:
-                    status, fitness, lower_bound, runtime, start_times, assignments, peak_cpu, peak_ram, history = run_ortools(path)
-                    message = f'{instance[1][-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{history}'
+                    cpu = Value('d', 0.0)
+                    ram = Value('d', 0.0)
+                    run_monitor = Value('i', 1)
+                    status, fitness, lower_bound, runtime, start_times, assignments, resources, history = run_hexaly(path)
+                    run_monitor.value = 0
+                    p.join()
+                    peak_cpu = cpu.value
+                    peak_ram = ram.value
+                    message = f'{instance[1][-4]};{1 if status == 'OPTIMAL' else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
             except:
                 write_output(f'Error on instance {instance[0]}-{instance[1]} using solver {solver}!', f'{OUTPUT_PATH}/results_{solver}.txt')
