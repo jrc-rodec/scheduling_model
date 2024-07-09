@@ -62,6 +62,7 @@ class UncertaintySimulation:
         # returns makespan and robust makespan
         makespan = 0.0
         robust_makespan = 0.0
+        mean_deterioation = 0.0
         for i in range(len(self.durations)):
             end = start_times[i] + self.durations[i][machine_assignments[i]]
             if end > makespan:
@@ -105,9 +106,13 @@ class UncertaintySimulation:
                 end = start_times[j] + simulation_durations[j]
                 if end > makespan_after_shift:
                     makespan_after_shift = end
-            # TODO: robustness measure
+            
             difference = makespan_after_shift - makespan
             deterioration = difference / makespan
+            mean_deterioation += deterioration
+            # TODO: compare to other robustness measures, robustness weight as parameter
+            robustness_weight = 0.7
+            # NOTE: taken from old paper
+            robust_makespan += robustness_weight * makespan + (1-robustness_weight) * difference
 
-
-        return robust_makespan / self.n_simulations
+        return robust_makespan / self.n_simulations, makespan, mean_deterioation / self.n_simulations
