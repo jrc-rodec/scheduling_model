@@ -46,7 +46,7 @@ namespace BenchmarkParsing
             int[,] durations = new int[nOverallOperations, nMachines];
             int operationIndex = 0;
             int[] jobSequence = new int[nOverallOperations];
-            for (int i = 1; i < lines.Length; ++i)
+            for (int i = 1; i < lines.Length+1; ++i)
             {
                 //string[] line = fileContent[i].Split(' ');
                 string[] line = lines[i-1];

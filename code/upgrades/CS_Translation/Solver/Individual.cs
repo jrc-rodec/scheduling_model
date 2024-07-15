@@ -68,8 +68,10 @@ namespace Solver
         {
             float minDistance = MaxDissimilarity;
             int attempts = 0;
+            int overallMaxAttempts = 10000;
+            int overallAttempts = 0;
             float[] dissimilarity = new float[population.Count];
-            while(dissimilarity.Length > 0 && Average(dissimilarity) < minDistance)
+            while(dissimilarity.Length > 0 && Average(dissimilarity) <= minDistance && overallAttempts < overallMaxAttempts)
             {
                 if(attempts > MaxInitializationAttemps)
                 {
@@ -82,6 +84,7 @@ namespace Solver
                     dissimilarity[i] = GetDissimilarity(population[i]);
                 }
                 ++attempts;
+                ++overallAttempts;
             }
         }
 

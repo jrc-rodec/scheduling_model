@@ -108,7 +108,7 @@ namespace Solver
         public void ToFile(string path)
         {
             string text = JsonConvert.SerializeObject(this);
-            File.WriteAllText(@path, text);
+            File.AppendAllText(@path, text);
         }
 
         public List<float> OverallBestFitness { get => _overallBestFitness; }

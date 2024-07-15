@@ -1,4 +1,6 @@
 ﻿using BenchmarkParsing;
+using System.IO;
+using System.Runtime.InteropServices;
 using static BenchmarkParsing.BenchmarkParser;
 
 
@@ -6,11 +8,72 @@ namespace Solver
 {
     internal class Program
     {
+
+        static void RunExperiment(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        {
+            // TODO
+            bool skip = true;
+            bool skipSource = true;
+            string[] sources = Directory.GetDirectories(basepath);
+            foreach (string source in sources)
+            {
+                //Console.WriteLine(source);
+                if (source.EndsWith("2c_Hurink_rdata"))
+                {
+                    skipSource = false;
+                }
+                if (!skipSource)
+                {
+
+                    string[] instances = Directory.GetFiles(source);
+                    foreach (string instance in instances)
+                    {
+                        if (instance.EndsWith("HurinkRdata64.fjs"))
+                        {
+                            skip = false;
+                        }
+                        if (!skip)
+                        {
+                            Console.WriteLine("Processing: " + instance);
+                            BenchmarkParser parser = new BenchmarkParser();
+                            Console.WriteLine("Parsing Complete");
+                            Encoding result = parser.ParseBenchmark(instance);
+                            Console.WriteLine("Encoding Complete");
+                            DecisionVariables variables = new DecisionVariables(result);
+                            Console.WriteLine("Decision Variables Complete");
+                            GAConfiguration configuration = new GAConfiguration(result, variables);
+                            Console.WriteLine("Configuration Complete");
+                            GA ga = new GA(configuration, true);
+                            Console.WriteLine("GA Creation Complete");
+                            ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
+                            Console.WriteLine("Starting Run");
+                            History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                            gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results.json");
+                        }
+                    }
+                }
+                //Console.ReadLine();
+            }
+                
+
+            /*
+            BenchmarkParser parser = new BenchmarkParser();
+            Encoding result = parser.ParseBenchmark(path);
+            DecisionVariables variables = new DecisionVariables(result);
+            GAConfiguration configuration = new GAConfiguration(result, variables);
+            GA ga = new GA(configuration, true);
+            ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
+            History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            // TODO
+            gaResult.ToFile("test.json");
+            Console.WriteLine(gaResult.Result.ToString());*/
+        }
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
+            //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
+            string path = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\external_test_data\\FJSSPinstances"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 60; // in seconds
+            int timeLimit = 300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
@@ -31,7 +94,9 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            bool worker = true;
+            RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            /*
+            bool worker = false;
             if (!worker)
             {
                 BenchmarkParser parser = new BenchmarkParser();
@@ -56,6 +121,7 @@ namespace Solver
                 Console.WriteLine(gaResult.Result.ToString());
             }
             Console.ReadLine();
+            */
         }
     }
 }
