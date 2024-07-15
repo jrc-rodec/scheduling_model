@@ -389,6 +389,7 @@ namespace Solver
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             CreatePopulation(_configuration.PopulationSize);
+            Console.WriteLine("Created Initial Population");
             List<Individual> offspring = new List<Individual>();
             // Setup all required parameters using the decision variables
             int populationSize = _configuration.PopulationSize;
