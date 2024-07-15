@@ -53,23 +53,29 @@ namespace Solver
 
         public WFJSSPIndividual(List<WFJSSPIndividual> population) : this(true)
         {
-            //NOTE: code duplication
-            float minDistance = MaxDissimilarity;
-            int attempts = 0;
-            float[] dissimilarity = new float[population.Count];
-            while (dissimilarity.Length > 0 && Average(dissimilarity) < minDistance)
+            if(population.Count < 1)
             {
-                if (attempts > MaxInitializationAttemps)
-                {
-                    minDistance = minDistance * DistanceAdjustmentRate;
-                    attempts = 0;
-                }
                 Randomize();
-                for (int i = 0; i < population.Count; ++i)
+            } else
+            {
+                //NOTE: code duplication
+                float minDistance = MaxDissimilarity;
+                int attempts = 0;
+                float[] dissimilarity = new float[population.Count];
+                while (dissimilarity.Length > 0 && Average(dissimilarity) < minDistance)
                 {
-                    dissimilarity[i] = GetDissimilarity(population[i]);
+                    if (attempts > MaxInitializationAttemps)
+                    {
+                        minDistance = minDistance * DistanceAdjustmentRate;
+                        attempts = 0;
+                    }
+                    Randomize();
+                    for (int i = 0; i < population.Count; ++i)
+                    {
+                        dissimilarity[i] = GetDissimilarity(population[i]);
+                    }
+                    ++attempts;
                 }
-                ++attempts;
             }
         }
 

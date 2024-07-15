@@ -66,25 +66,32 @@ namespace Solver
 
         public Individual(List<Individual> population) : this(true)
         {
-            float minDistance = MaxDissimilarity;
-            int attempts = 0;
-            int overallMaxAttempts = 10000;
-            int overallAttempts = 0;
-            float[] dissimilarity = new float[population.Count];
-            while(dissimilarity.Length > 0 && Average(dissimilarity) <= minDistance && overallAttempts < overallMaxAttempts)
+            if(population.Count < 1)
             {
-                if(attempts > MaxInitializationAttemps)
-                {
-                    minDistance = minDistance * DistanceAdjustmentRate;
-                    attempts = 0;
-                }
+                // create random individual, since population does not contain any individuals
                 Randomize();
-                for(int i = 0; i < population.Count; ++i)
+            } else
+            {
+                float minDistance = MaxDissimilarity;
+                int attempts = 0;
+                int overallMaxAttempts = 10000;
+                int overallAttempts = 0;
+                float[] dissimilarity = new float[population.Count];
+                while(Average(dissimilarity) <= minDistance && overallAttempts < overallMaxAttempts)
                 {
-                    dissimilarity[i] = GetDissimilarity(population[i]);
+                    if(attempts > MaxInitializationAttemps)
+                    {
+                        minDistance = minDistance * DistanceAdjustmentRate;
+                        attempts = 0;
+                    }
+                    Randomize();
+                    for(int i = 0; i < population.Count; ++i)
+                    {
+                        dissimilarity[i] = GetDissimilarity(population[i]);
+                    }
+                    ++attempts;
+                    ++overallAttempts;
                 }
-                ++attempts;
-                ++overallAttempts;
             }
         }
 
