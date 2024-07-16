@@ -12,6 +12,7 @@ namespace Solver
 
     public class WorkerHistory
     {
+        private string _name;
         private List<float> _overallBestFitness;
         private List<float> _resetBestHistory;
         private List<int> _nEqualOverallBestSolutions;
@@ -30,6 +31,7 @@ namespace Solver
             _nEqualOverallBestSolutions = new List<int>();
             _nEqualResetBestSolutions = new List<int>();
             _averagePopulationFitness = new List<float>();
+            _name = "";
 
         }
 
@@ -63,11 +65,13 @@ namespace Solver
         public List<int> PopulationSize { get => _populationSize; }
         public List<float> AveragePopulationFitness { get => _averagePopulationFitness; }
         public WorkerResult Result { get => _result; set => _result = value; }
+        public string Name { get => _name; set => _name = value; }
     }
     public class History
     {
 
         // TODO: multiobjective
+        private string _name = "";
         private List<float> _overallBestFitness;
         private List<float> _resetBestHistory;
         private List<int> _nEqualOverallBestSolutions;
@@ -119,5 +123,6 @@ namespace Solver
         public List<int> PopulationSize { get => _populationSize;  }
         public List<float> AveragePopulationFitness { get => _averagePopulationFitness;  }
         public Result Result { get => _result; set => _result = value; }
+        public string Name { get => _name; set => _name = value; }
     }
 }
