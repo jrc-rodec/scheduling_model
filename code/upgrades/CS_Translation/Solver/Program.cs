@@ -100,7 +100,7 @@ namespace Solver
                     Console.WriteLine("Processing: " + instance);
                     WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
                     Console.WriteLine("Parsing Complete");
-                    WorkerEncoding encoding = parser.ParseBenchmark(basepath);
+                    WorkerEncoding encoding = parser.ParseBenchmark(instance);
                     Console.WriteLine("Encoding Complete");
                     WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
                     Console.WriteLine("Decision Variables Complete");
@@ -113,7 +113,7 @@ namespace Solver
                     WorkerHistory gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_workers.json");
+                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_workers_1_second.json");
                 }
             }
         }
@@ -147,6 +147,7 @@ namespace Solver
                 return;
             }
             RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             /*
             bool worker = false;
             if (!worker)

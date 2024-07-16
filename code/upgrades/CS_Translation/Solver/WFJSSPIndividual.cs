@@ -95,7 +95,7 @@ namespace Solver
                 }
                 if (_workers[i] != other._workers[i])
                 {
-                    result += AvailableWorkers[other._assignments[i]].Count;
+                    result += AvailableWorkers[i][other._assignments[i]].Count;
                 }
             }
             return result;
@@ -104,15 +104,18 @@ namespace Solver
         public static void DetermineMaxDissimiarilty()
         {
             MaxDissimilarity = 0.0f;
+            // For every operation
             for (int i = 0; i < AvailableMachines.Count; ++i)
             {
                 MaxDissimilarity += AvailableMachines[i].Count;
                 int maxWorkers = 0;
+                //maxWorkers = AvailableWorkers.Count();
+                // for every machine available for the operation
                 for(int j = 0; j < AvailableMachines[i].Count; ++j)
                 {
-                    if (AvailableWorkers[AvailableMachines[i][j]].Count > maxWorkers)
+                    if (AvailableWorkers[i][AvailableMachines[i][j]].Count > maxWorkers)
                     {
-                        maxWorkers = AvailableWorkers[AvailableMachines[i][j]].Count;
+                        maxWorkers = AvailableWorkers[i][AvailableMachines[i][j]].Count;
                     }
                 }
                 MaxDissimilarity += maxWorkers;
