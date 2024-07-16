@@ -18,7 +18,7 @@ namespace Solver
             foreach (string source in sources)
             {
                 //Console.WriteLine(source);
-                if (source.EndsWith("2c_Hurink_rdata"))
+                if (source.EndsWith("6_Fattahi"))
                 {
                     skipSource = false;
                 }
@@ -28,7 +28,7 @@ namespace Solver
                     string[] instances = Directory.GetFiles(source);
                     foreach (string instance in instances)
                     {
-                        if (instance.EndsWith("HurinkRdata64.fjs"))
+                        if (instance.EndsWith("Fattahi4.fjs"))
                         {
                             skip = false;
                         }

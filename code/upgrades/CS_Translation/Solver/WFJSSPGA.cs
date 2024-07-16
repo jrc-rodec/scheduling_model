@@ -268,10 +268,13 @@ namespace Solver
         {
             WFJSSPIndividual parentA = TournamentSelection(tournamentSize);
             WFJSSPIndividual parentB;
+            int maxAttempts = 100;
+            int attempts = 0;
             do
             {
                 parentB = TournamentSelection(tournamentSize);
-            } while (parentA.Equals(parentB));
+                ++attempts;
+            } while (parentA.Equals(parentB) && attempts < maxAttempts);
             return new WFJSSPIndividual(parentA, parentB);
         }
 

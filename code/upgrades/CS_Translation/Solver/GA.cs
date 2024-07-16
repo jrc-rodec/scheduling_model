@@ -77,10 +77,13 @@ namespace Solver
         {
             Individual parentA = TournamentSelection(tournamentSize);
             Individual parentB;
+            int maxAttempts = 100;
+            int attempts = 0;
             do
             {
                 parentB = TournamentSelection(tournamentSize);
-            } while (parentA.Equals(parentB));
+                ++attempts;
+            } while (parentA.Equals(parentB) && attempts < maxAttempts);
             return new Individual(parentA, parentB);
         }
 
@@ -411,6 +414,7 @@ namespace Solver
             bool improvement = false;
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+            Console.WriteLine("Starting Optimization Main Loop");
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 history.Update(overallBest, currentBest, mutationProbability, _population);
