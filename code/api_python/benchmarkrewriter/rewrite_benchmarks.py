@@ -24,6 +24,7 @@ def read_file(source : str, id : int, path : str) -> list[str]:
         target_file = f'Kacem{id}.fjs'
     elif source.startswith('6'):
         target_file = f'Fattahi{id}.fjs'
+
     path += f'\\{source}\\{target_file}'
     file = open(path, 'r')
     return file.readlines()
@@ -38,7 +39,7 @@ def write_file(benchmark : list[list[int]], path : str, file_name : str) -> None
         file.write(output + '\n')
     file.close()
 
-def rewrite_benchmark(source : str, id : int, lower_bound : float, upper_bound : float, worker_amount : int, path : str) -> list[list[int]]:
+def rewrite_benchmark(source : str, id : int, path : str, lower_bound : float = 0.9, upper_bound : float = 1.1, worker_amount : int = 3) -> list[list[int]]:
     file_content : list[str] = read_file(source, id, path)
     
     values = [list(map(float, x.strip('\n').split(' '))) for x in file_content]
@@ -70,19 +71,16 @@ def rewrite_benchmark(source : str, id : int, lower_bound : float, upper_bound :
         result.append(new_line)
     return result
 
-def rewrite_all_from_source(source : str, lower_bound : float, upper_bound : float, worker_amount : int, read_path : str, write_path : str) -> None:
+def rewrite_all_from_source(source : str, read_path : str, write_path : str, lower_bound : float = 0.9, upper_bound : float = 1.1, worker_amount : int = 3) -> None:
     full_path = read_path + '/' + source + '/'
     for i in range(len(os.listdir(full_path))):
-        result = rewrite_benchmark(source, i+1, lower_bound, upper_bound, worker_amount, read_path)
+        result = rewrite_benchmark(source, i+1, read_path, lower_bound, upper_bound, worker_amount)
         write_file(result, write_path + '/', f'{source}_{i+1}_updated.fjs')
 
-
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-read_path = currentdir + '/../external_test_data/FJSSPinstances/'
-write_path = currentdir + '/changed_benchmarks/'
+read_path = currentdir + '/FJSSPinstances/'
+write_path = currentdir + '/../changed_benchmarks/'
 sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
-
 """
     EXAMPLE USAGES:
 """
@@ -101,16 +99,50 @@ for i in range(len(sources)):
     source = i
     rewrite_all_from_source(sources[source], 0.9, 1.1, 3, read_path, write_path)"""
 
+def get_available_sources():
+    return sources
 
-use_sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
-write_path = currentdir + '/benchmarks_with_workers/'
-random.seed(0)
-for benchmark_source in use_sources:
-    full_path = read_path + benchmark_source + '/'
+write_path = currentdir + '/../benchmarks_with_workers/'
+
+def rewrite_all_with_workers(read_path: str, write_path: str):
+    for benchmark_source in sources:
+        full_path = read_path + benchmark_source + '/'
+        for i in range(len(os.listdir(full_path))):
+            file_content : list[str] = read_file(benchmark_source, i+1, read_path)
+            values = file_content[0].split(' ')
+            workstation_amount = int(values[1])
+            worker_amount = int(workstation_amount*1.5)
+            result = rewrite_benchmark(source=benchmark_source, id=i+1, lower_bound=0.9, upper_bound=1.1, worker_amount=worker_amount, path=read_path)
+            write_file(benchmark=result,path=write_path, file_name=f'{benchmark_source}_{i+1}_workers.fjs')
+
+def rewrite_all_from_source_with_workers(source: str, read_path: str, write_path: str):
+    full_path = read_path + source + '/'
     for i in range(len(os.listdir(full_path))):
-        file_content : list[str] = read_file(benchmark_source, i+1, read_path)
+        file_content : list[str] = read_file(source, i+1, read_path)
         values = file_content[0].split(' ')
         workstation_amount = int(values[1])
         worker_amount = int(workstation_amount*1.5)
-        result = rewrite_benchmark(source=benchmark_source, id=i+1, lower_bound=0.9, upper_bound=1.1, worker_amount=worker_amount, path=read_path)
-        write_file(benchmark=result,path=write_path, file_name=f'{benchmark_source}_{i+1}_workers.fjs')
+        result = rewrite_benchmark(source=source, id=i+1, lower_bound=0.9, upper_bound=1.1, worker_amount=worker_amount, path=read_path)
+        write_file(benchmark=result,path=write_path, file_name=f'{source}_{i+1}_workers.fjs')
+
+def rewrite_benchmark_with_workers(source : str, id: int, read_path : str, write_path : str) -> None:
+    file_content : list[str] = read_file(source, id, read_path)
+    values = file_content[0].split(' ')
+    workstation_amount = int(values[1])
+    worker_amount = int(workstation_amount*1.5)
+    result = rewrite_benchmark(source=source, id=id, lower_bound=0.9, upper_bound=1.1, worker_amount=worker_amount, path=read_path)
+    write_file(benchmark=result,path=write_path, file_name=f'{source}_{id}_workers.fjs')
+
+"""
+    EXAMPLE USAGES:
+"""
+"""source = 1
+
+# rewrite a specific benchmark with workers
+rewrite_benchmark_with_workers(sources[0], 1, read_path, write_path)
+
+# rewrite all benchmarks with workers from a specific source
+rewrite_all_from_source_with_workers(sources[0], read_path, write_path)
+
+# rewrite all benchmarks
+rewrite_all_with_workers(read_path, write_path)"""

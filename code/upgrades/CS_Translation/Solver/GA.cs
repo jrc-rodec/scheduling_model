@@ -13,7 +13,7 @@ namespace Solver
     {
 
         protected List<Individual> _population;
-        protected GAConfiguration _configuration;
+        private GAConfiguration _configuration;
         protected Random _random;
 
         protected bool _generationStop = false;
@@ -32,7 +32,7 @@ namespace Solver
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
 
         protected bool _output = false;
-
+        //public GA() { }
         public GA(GAConfiguration configuration, bool output)
         {
             _configuration = configuration;
@@ -77,10 +77,13 @@ namespace Solver
         {
             Individual parentA = TournamentSelection(tournamentSize);
             Individual parentB;
+            int maxAttempts = 100;
+            int attempts = 0;
             do
             {
                 parentB = TournamentSelection(tournamentSize);
-            } while (parentA.Equals(parentB));
+                ++attempts;
+            } while (parentA.Equals(parentB) && attempts < maxAttempts);
             return new Individual(parentA, parentB);
         }
 
@@ -389,6 +392,7 @@ namespace Solver
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             CreatePopulation(_configuration.PopulationSize);
+            Console.WriteLine("Created Initial Population");
             List<Individual> offspring = new List<Individual>();
             // Setup all required parameters using the decision variables
             int populationSize = _configuration.PopulationSize;
@@ -410,6 +414,7 @@ namespace Solver
             bool improvement = false;
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+            Console.WriteLine("Starting Optimization Main Loop");
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 history.Update(overallBest, currentBest, mutationProbability, _population);

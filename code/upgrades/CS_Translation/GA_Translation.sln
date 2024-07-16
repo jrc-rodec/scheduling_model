@@ -11,9 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Solver", "Solver\Solver.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Experiments", "Experiments\Experiments.csproj", "{E5AB49EF-ABFB-44CA-AA06-E1C58678D414}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSO", "PSO\PSO.csproj", "{8CBDFAC0-69ED-40C6-B0C7-438FE2D64C31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSO", "PSO\PSO.csproj", "{8CBDFAC0-69ED-40C6-B0C7-438FE2D64C31}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GAWorkerProcess", "GAWorkerProcess\GAWorkerProcess.csproj", "{F55695B7-E998-4435-ACE3-0CB81807A1B0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GAWorkerProcess", "GAWorkerProcess\GAWorkerProcess.csproj", "{F55695B7-E998-4435-ACE3-0CB81807A1B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

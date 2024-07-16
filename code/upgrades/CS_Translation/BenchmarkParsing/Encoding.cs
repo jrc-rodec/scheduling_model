@@ -8,9 +8,9 @@ namespace BenchmarkParsing
 {
     public class Encoding
     {
-        private int[,] _durations;
-        private readonly int[] _jobSequence;
-        private readonly int _nJobs;
+        protected int[,] _durations;
+        protected readonly int[] _jobSequence;
+        protected readonly int _nJobs;
 
         public Encoding(int[,] durations, int[] jobSequence)
         {
@@ -24,6 +24,10 @@ namespace BenchmarkParsing
                     ++_nJobs;
                 }
             }
+        }
+        public Encoding()
+        {
+
         }
 
         public int[] JobSequence { get => _jobSequence; }
@@ -96,11 +100,14 @@ namespace BenchmarkParsing
         private readonly int _nJobs;
 
         public int[,,] Durations { get => _durations; set => _durations = value; }
+        public int[] JobSequence { get => _jobSequence; }
 
-        public int[] JobSequence => _jobSequence;
+        public int NOperations => _durations.GetLength(0);
+        public int NMachines => _durations.GetLength(1);
 
         public int NJobs => _nJobs;
-
+        public int NWorkers => _durations.GetLength(2);
+ 
         public WorkerEncoding(int[,,] durations, int[] jobSequence)
         {
             _durations = durations;
@@ -142,12 +149,34 @@ namespace BenchmarkParsing
                 {
                     if (_durations[operation, i, j] > 0)
                     {
-                        // at least one worker is available, so stop here
-                        workers.Add(i);
+                        workers.Add(j);
                     }
                 }
             }
             return workers;
+        }
+
+        public List<List<List<int>>> GetAllWorkersForAllOperations()
+        {
+            List<List<List<int>>> result = new List<List<List<int>>>();
+            for(int i = 0; i < _durations.GetLength(0); ++i)
+            {
+                List<List<int>> machinesWorkers = new List<List<int>>();
+                for(int j = 0; j < _durations.GetLength(1); ++j)
+                {
+                    List<int> workers = new List<int>();
+                    for(int k = 0; k < _durations.GetLength(2); ++k)
+                    {
+                        if (_durations[i, j, k] > 0)
+                        {
+                            workers.Add(k);
+                        }
+                    }
+                    machinesWorkers.Add(workers);
+                }
+                result.Add(machinesWorkers);
+            }
+            return result;
         }
 
         public List<List<int>> GetAllMachinesForAllOperations()
