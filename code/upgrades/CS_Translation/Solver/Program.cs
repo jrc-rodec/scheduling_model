@@ -36,21 +36,21 @@ namespace Solver
                         {
                             Console.WriteLine("Processing: " + instance);
                             BenchmarkParser parser = new BenchmarkParser();
-                            Console.WriteLine("Parsing Complete");
+                            //Console.WriteLine("Parsing Complete");
                             Encoding result = parser.ParseBenchmark(instance);
-                            Console.WriteLine("Encoding Complete");
+                            //Console.WriteLine("Encoding Complete");
                             DecisionVariables variables = new DecisionVariables(result);
-                            Console.WriteLine("Decision Variables Complete");
+                            //Console.WriteLine("Decision Variables Complete");
                             GAConfiguration configuration = new GAConfiguration(result, variables);
-                            Console.WriteLine("Configuration Complete");
+                            //Console.WriteLine("Configuration Complete");
                             GA ga = new GA(configuration, true);
-                            Console.WriteLine("GA Creation Complete");
+                            //Console.WriteLine("GA Creation Complete");
                             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-                            Console.WriteLine("Starting Run");
+                            //Console.WriteLine("Starting Run");
                             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
                             string[] fullPath = instance.Split("\\");
                             gaResult.Name = fullPath.Last();
-                            gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_1_second.json");
+                            gaResult.ToFile("C:\\Users\\huda\\Desktop\\experiments\\results_1_second.json");
                         }
                     }
                 }
@@ -74,7 +74,8 @@ namespace Solver
         static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             // TODO
-            basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
+            //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
+            basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
@@ -99,21 +100,21 @@ namespace Solver
                 {
                     Console.WriteLine("Processing: " + instance);
                     WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
-                    Console.WriteLine("Parsing Complete");
+                    //Console.WriteLine("Parsing Complete");
                     WorkerEncoding encoding = parser.ParseBenchmark(instance);
-                    Console.WriteLine("Encoding Complete");
+                    //Console.WriteLine("Encoding Complete");
                     WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
-                    Console.WriteLine("Decision Variables Complete");
+                    //Console.WriteLine("Decision Variables Complete");
                     WorkerGAConfiguration config = new WorkerGAConfiguration(encoding, variables);
-                    Console.WriteLine("Configuration Complete");
+                    //Console.WriteLine("Configuration Complete");
                     WFJSSPGA ga = new WFJSSPGA(config, true, encoding.Durations);
-                    Console.WriteLine("GA Creation Complete");
+                    //Console.WriteLine("GA Creation Complete");
                     ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-                    Console.WriteLine("Starting Run");
+                    //Console.WriteLine("Starting Run");
                     WorkerHistory gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_workers_1_second.json");
+                    gaResult.ToFile("C:\\Users\\huda\\Desktop\\experiments\\results_workers_1_second.json");
                 }
             }
         }
@@ -123,7 +124,7 @@ namespace Solver
             static void Main(string[] args)
         {
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
-            string path = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\external_test_data\\FJSSPinstances"; // DEBUG
+            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 1;//300; // in seconds
             //float targetFitness = 1196.0f;
@@ -146,8 +147,8 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             /*
             bool worker = false;
             if (!worker)
