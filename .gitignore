@@ -27,3 +27,4 @@ code/reworked_data_model/results/~$benchmark_data_reformated.xlsx
 /code/api_python/tests/output
 /code/analysis/.ipynb_checkpoints/
 /code/analysis/output/
+.venv
