@@ -375,7 +375,7 @@ namespace Solver
                         int swap;
                         do
                         {
-                            swap = Individual.AvailableMachines[i][_random.Next(WFJSSPIndividual.AvailableMachines[i].Count)];
+                            swap = WFJSSPIndividual.AvailableMachines[i][_random.Next(WFJSSPIndividual.AvailableMachines[i].Count)];
                         } while (swap != individual.Assignments[i]);
                         individual.Assignments[i] = swap;
                     }
@@ -501,11 +501,11 @@ namespace Solver
                 if (mutationProbability > maxMutationProbability)
                 {
                     //Note: local minimum
-                    /*Console.WriteLine("Local Search");
-                    Individual localMinimum = LocalSearch(currentBest);
-                    Console.WriteLine("Local Search Done");*/
+                    //Console.WriteLine("Local Search");
+                    WFJSSPIndividual localMinimum = LocalSearch(currentBest);
+                    //Console.WriteLine("Local Search Done");
                     // only necessary if local search is conducted
-                    WFJSSPIndividual localMinimum = currentBest[0];
+                    //WFJSSPIndividual localMinimum = currentBest[0];
                     if (localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
                         improvement = true;

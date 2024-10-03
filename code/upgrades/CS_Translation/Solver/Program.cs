@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using static BenchmarkParsing.BenchmarkParser;
+using static System.Net.Mime.MediaTypeNames;
 
 
 namespace Solver
@@ -17,6 +18,7 @@ namespace Solver
             string[] sources = Directory.GetDirectories(basepath);
             foreach (string source in sources)
             {
+                History gaResult = null;
                 //Console.WriteLine(source);
                 if (source.EndsWith("6_Fattahi"))
                 {
@@ -47,7 +49,7 @@ namespace Solver
                             Console.WriteLine("GA Creation Complete");
                             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
                             Console.WriteLine("Starting Run");
-                            History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                            gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
                             string[] fullPath = instance.Split("\\");
                             gaResult.Name = fullPath.Last();
                             gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_1_second.json");
@@ -71,6 +73,20 @@ namespace Solver
             Console.WriteLine(gaResult.Result.ToString());*/
         }
 
+        static void PrepareFile(string filename)
+        {
+            File.AppendAllText(filename, "results=[");
+        }
+
+        static void DelimitRun(string filename)
+        {
+            File.AppendAllText(filename, ",");
+        }
+
+        static void EndFile(string filename)
+        {
+            File.AppendAllText(filename, "];");
+        }
         static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             // TODO
@@ -91,12 +107,19 @@ namespace Solver
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
-                if (instance.EndsWith("Fattahi4.fjs"))
+                //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
+                if (!File.Exists(instance+".json"))
                 {
-                    skip = false;
+                    PrepareFile(instance + ".json");
                 }
+                WorkerHistory gaResult = null; // free up memory
+                //if (instance.EndsWith("Fattahi4.fjs"))
+                //{
+                //    skip = false;
+                //}
                 if (!skip)
                 {
+                    DelimitRun(instance + ".json");
                     Console.WriteLine("Processing: " + instance);
                     WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
                     Console.WriteLine("Parsing Complete");
@@ -110,10 +133,10 @@ namespace Solver
                     Console.WriteLine("GA Creation Complete");
                     ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
                     Console.WriteLine("Starting Run");
-                    WorkerHistory gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                    gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\GA\\results_workers_1_second.json");
+                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch_again\\"+ gaResult.Name + ".json");
                 }
             }
         }
@@ -125,7 +148,7 @@ namespace Solver
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
             string path = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\external_test_data\\FJSSPinstances"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 1;//300; // in seconds
+            int timeLimit = 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
@@ -146,8 +169,11 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-            RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            for(int i = 0; i < 3; ++i) // assuming 5 instances
+            {
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            }
             /*
             bool worker = false;
             if (!worker)
