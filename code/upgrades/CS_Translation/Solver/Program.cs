@@ -87,12 +87,12 @@ namespace Solver
         {
             File.AppendAllText(filename, "];");
         }
-        static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool localSearch)
         {
             // TODO
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
-            bool skip = false;
+            bool skip = true;
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
             //foreach (string source in sources)
@@ -114,10 +114,10 @@ namespace Solver
                     PrepareFile(instance + ".json");
                 }
                 WorkerHistory gaResult = null; // free up memory
-                //if (instance.EndsWith("Fattahi4.fjs"))
-                //{
-                //    skip = false;
-                //}
+                if (instance.EndsWith("6_Fattahi_14_workers.fjs"))
+                {
+                    skip = false;
+                }
                 if (!skip)
                 {
                     DelimitRun(instance + ".json");
@@ -134,10 +134,10 @@ namespace Solver
                     //Console.WriteLine("GA Creation Complete");
                     ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
                     Console.WriteLine("Starting Run");
-                    gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                    gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile("C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch_again\\"+ gaResult.Name + ".json");
+                    gaResult.ToFile("C:\\Users\\huda\\Desktop\\test_output\\" + gaResult.Name + ".json");
                 }
             }
         }
@@ -146,8 +146,8 @@ namespace Solver
 
             static void Main(string[] args)
         {
-            //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\6_Fattahi_1_workers.fjs"; // DEBUG
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
+            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\2d_Hurink_vdata_20_workers.fjs"; // DEBUG
+            //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
@@ -170,10 +170,14 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
+            int nExperiments = 1;
+            bool keepMultiple = false;
+            bool localSearch = false;
+
             //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-            for(int i = 0; i < 3; ++i) // assuming 5 instances
+            for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
-                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
             }
             /*
             bool worker = false;
