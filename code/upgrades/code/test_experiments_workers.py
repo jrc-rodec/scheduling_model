@@ -15,7 +15,7 @@ from docplex.mp.progress import ProgressListener, ProgressClock
 import collections
 from ortools.sat.python import cp_model
 
-import localsolver
+#import localsolver
 
 
 TIME_LIMIT_IN_SECONDS = 1200
@@ -34,12 +34,12 @@ def run_gurobi(path):
     def SolutionListener(model, where):
         cpu, ram = get_cpu_ram_stats()
         resources.append((cpu, ram))
-        if where == gp.Callback.MIPSOL:
-            time = model.cbGet(gp.Callback.RUNTIME)
-            obj_best = round(model.cbGet(gp.Callback.MIPSOL_OBJBST))
-            bnd = round(model.cbGet(gp.Callback.MIPSOL_OBJBND))
-            if obj_best < history[-1][1] or bnd > history[-1][2]:
-                history.append((time, obj_best, bnd))
+        if where == gp.GRB.Callback.MIPSOL:
+            time = model.cbGet(gp.GRB.Callback.RUNTIME)
+            obj_best = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST))
+            bnd = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND))
+            #if obj_best < history[-1][1] or bnd > history[-1][2]:
+            history.append((time, obj_best, bnd))
 
     f = open(path)
     lines = f.readlines()
@@ -179,15 +179,17 @@ def run_gurobi(path):
     #m.display()
     m.Params.TimeLimit = TIME_LIMIT_IN_SECONDS
     m.Params.LogToConsole = 0
-
+    # NOTE: FOR TESTING PURPOSES ONLY
+    # TODO: REMOVE
+    m.Params.Presolve = 0
     #---------- ohne solution listener--------
     #m.optimize()
     #---------- mit solution listener--------
     m._solution_count = 0
     # Bei Abbruch wenn known_best erreicht
     m._known_best = 0 # 884
-    #m.optimize(SolutionListener)
-    m.optimize()
+    m.optimize(SolutionListener)
+    #m.optimize()
     #----------------------------------------
 
     start_times = []
@@ -222,8 +224,8 @@ def run_cplex_lp(path):
             objective = round(pdata.current_objective)
             bnd = round(pdata.best_bound)
             time = pdata.time
-            if objective < history[-1][1] or bnd > history[-1][2]:
-                history.append((time, objective, bnd))
+            #if objective < history[-1][1] or bnd > history[-1][2]:
+            history.append((time, objective, bnd))
                 
 
     f = open(path)
@@ -324,7 +326,7 @@ def run_cplex_lp(path):
         for m in job_op_machsuitable[j,o] :
             for w in job_op_mach_workersuitable[j,o,m]:
                 list_Y_var.append((j,o,m,w))
-            
+    
     # Variables
     Y = mdl.binary_var_dict(list_Y_var, name=lambda y: 'Y_%s_%s_%s_%s' % y)
     mdl.Y = Y
@@ -336,7 +338,7 @@ def run_cplex_lp(path):
     mdl.C = C
     Cmax = mdl.continuous_var(lb = 0, ub = L, name = "Cmax")
     mdl.Cmax = Cmax
-
+    
     #Constraints
     mdl.add_constraints((mdl.sum(mdl.Y[j,o,m,w] 
                                 for m in job_op_machsuitable[j,o]
@@ -401,18 +403,22 @@ def run_cplex_lp(path):
     #-----------------------------------------------------------------------------
 
     # Solve model
-
-    mdl.parameters.timelimit = TIME_LIMIT_IN_SECONDS
+    
+    mdl.parameters.timelimit = 5#TIME_LIMIT_IN_SECONDS
     mdl.add_progress_listener(SolutionPrinter())
+    mdl.set_log_stream(None)
+    mdl.set_error_stream(None)
+    mdl.set_warning_stream(None)
+    mdl.set_results_stream(None)
     #mdl.log_output = True
     #C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe
-    res = mdl.solve(execfile = r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex.exe")
+    mdl.solve(execfile = r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex.exe")
     #res = mdl.solve()
     #res = mdl.solve()
 
-    xsol = res.get_value_dict(X)
+    xsol = mdl.get_value_dict(X)
     #ysol = res.get_value_dict(Y) #Bug in res.get_value_dict: wenn Y[i,j,m] negativ ist
-    csol = res.get_value_dict(C)
+    csol = mdl.get_value_dict(C)
 
     #Output
     ysol = {}
@@ -420,13 +426,13 @@ def run_cplex_lp(path):
     assignments = []
     workers = []
     for j, k, i, s in list_Y_var:
-        ysol[j,k,i,s] = res.get_value(Y[j,k,i,s])
+        ysol[j,k,i,s] = mdl.get_value(Y[j,k,i,s])
         if ysol[j,k,i,s] > 0:
             start_times.append(round(csol[j,k]-duration[j,k,i,s]))
             assignments.append(i)
             workers.append(s)
     mdl.end()
-    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, workers, resources, history
+    return mdl.solve_status, mdl.solution.objective_values[0], mdl.solution.objective_bounds[0], mdl.get_solve_time(), start_times, assignments, workers, resources, history
 
 def run_cplex_cp(path):
     history = [(0, float('inf'), -float('inf'))]
@@ -649,6 +655,7 @@ def run_ortools(path):
     all_machines = range(nb_machines)
     all_workers = range(nb_workers)
 
+    #print("Creating Variables")
     # Global storage of variables.
     intervals_per_machine = collections.defaultdict(list)
     intervals_per_worker = collections.defaultdict(list)
@@ -735,7 +742,7 @@ def run_ortools(path):
                 presences[(job_id, task_id, 0)] = model.new_constant(1)
 
         job_ends.append(previous_end)
-
+    #print("Creating Constraints")
     # Create machines constraints.
     for machine_id in all_machines:
         intervals = intervals_per_machine[machine_id]
@@ -747,12 +754,12 @@ def run_ortools(path):
         intervals = intervals_per_worker[worker_id]
         if len(intervals) > 1:
             model.add_no_overlap(intervals)
-
+    #print("Setting Objective")
     # Makespan objective.
     makespan = model.new_int_var(0, horizon, "makespan")
     model.add_max_equality(makespan, job_ends)
     model.minimize(makespan)
-
+    #print("Running the model")
     # Solve model.
     solver = cp_model.CpSolver()
     # Sets a time limit in seconds.
@@ -761,36 +768,39 @@ def run_ortools(path):
     #Meldung bei jeder neuen Lösung 
     solution_printer = SolutionPrinter()
     status = solver.solve(model, solution_printer)
-
+    #print("Finished Solving the problem")
     #Ohne Meldung bei jeder neuen Lösung
     #status = solver.solve(model)
 
     start_times = []
     assignments = []
     workers = []
-    # Print final solution.
-    for job_id in all_jobs:
-        #print("Job %i:" % job_id)
-        for task_id in range(len(jobs[job_id])):
-            start_value = solver.value(starts[(job_id, task_id)])
-            machine = -1
-            worker = -1
-            duration = -1
-            selected = -1
-            for alt_id in range(len(jobs[job_id][task_id])):
-                if solver.value(presences[(job_id, task_id, alt_id)]):
-                    duration = jobs[job_id][task_id][alt_id][0]
-                    machine = jobs[job_id][task_id][alt_id][1]
-                    worker = jobs[job_id][task_id][alt_id][2]
-                    selected = alt_id
-            start_times.append(start_value)
-            assignments.append(machine)
-            workers.append(worker)
-            """print(
-                "  task_%i_%i starts at %i ends at %i (alt %i, machine %i, worker %i, duration %i)"
-                % (job_id, task_id, start_value,start_value+duration, selected, machine, worker, duration)
-            )"""
-    lower_bound = solver.best_objective_bound
+    if solver.status_name(status) == 'OPTIMAL' or solver.status_name(status) == 'FEASIBLE':
+        # Print final solution.
+        #print(solver.status_name(status))
+        for job_id in all_jobs:
+            #print("Job %i:" % job_id)
+            for task_id in range(len(jobs[job_id])):
+                #print(len(starts))
+                start_value = solver.value(starts[(job_id, task_id)])
+                machine = -1
+                worker = -1
+                duration = -1
+                selected = -1
+                for alt_id in range(len(jobs[job_id][task_id])):
+                    if solver.value(presences[(job_id, task_id, alt_id)]):
+                        duration = jobs[job_id][task_id][alt_id][0]
+                        machine = jobs[job_id][task_id][alt_id][1]
+                        worker = jobs[job_id][task_id][alt_id][2]
+                        selected = alt_id
+                start_times.append(start_value)
+                assignments.append(machine)
+                workers.append(worker)
+                """print(
+                    "  task_%i_%i starts at %i ends at %i (alt %i, machine %i, worker %i, duration %i)"
+                    % (job_id, task_id, start_value,start_value+duration, selected, machine, worker, duration)
+                )"""
+        lower_bound = solver.best_objective_bound
 
     return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, workers, resources, history
 
@@ -805,11 +815,15 @@ def run_hexaly(path):
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             time = ls.statistics.running_time
-            obj = round(ls.model.objectives[0].value)
-            bnd = round(ls.solution.get_objective_bound(0))
-            #if obj < history[-1][1] or bnd > history[-1][2]:
+            obj = ls.model.objectives[0].value
+            bnd = ls.solution.get_objective_bound(0)
+            #if obj != history[-1][1] or bnd != history[-1][2]:#.compare(history[-1][1]) < 0 or bnd.compare(history[-1][2]) < 0:# != history[-1][1] or bnd != history[-1][2]:
                 # found better objective or better lower bound
-            #    history.append((time, obj, bnd))
+            #obj_out = None
+            #obj.pretty_print(out=obj_out)
+            #bnd_out = None
+            #bnd.pretty_print(out=bnd_out)
+            history.append((time, obj, bnd))
 
     status = -1
     fitness = -1
@@ -959,7 +973,7 @@ def run_hexaly(path):
         model.close()
         
         # Parameterize the solver
-        ls.param.time_limit = 30
+        ls.param.time_limit = TIME_LIMIT_IN_SECONDS
         ls.param.verbosity = 0 #1 defaul 0 quiet 2 detailed
         
         #---------- ohne solution listener--------
@@ -999,93 +1013,123 @@ def run_hexaly(path):
         runtime = ls.statistics.running_time
 
     #lower_bound = solver.objective_value
-    return status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history
+    history_result = []
+    for entry in history:
+        history_result.append((entry[0], entry[1], entry[2]))    
+    return status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history_result
 
 
 if __name__ == '__main__':
     shutdown_when_finished = True
     # TODO: include all paths, all instances
     BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_with_workers\benchmarks_with_workers'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\tests\worker_tests\test2'
-    # test fjssp first, then wfjssp
-    solvers = ['cplex_cp', 'gurobi', 'cplex_lp', 'ortools', 'hexaly']
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\worker_results\repeat_repeat\again'
+    # test fjssp first, then wfjssp 
+    #solvers = ['gurobi', 'cplex_lp', 'cplex_cp', 'ortools', 'hexaly']
+    #solvers = ['cplex_cp','ortools', 'gurobi', 'hexaly']
+    solvers = ['cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
+    #solvers = ['ortools']#, 'gurobi', 'cplex_cp','hexaly']
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
+    skip = False
     instances = os.listdir(BENCHMARK_PATH)
     for solver in solvers:
         for instance in instances:
-            p = None
-            try:
-                path = f'{BENCHMARK_PATH}/{instance}'
-                print(f'Solving {instance} with {solver}...')
-                #TODO: double check optimal/feasible status values for each solver
-                message = ''
-                if solver == 'gurobi':
-                    cpu = Value('d', 0.0)
-                    ram = Value('d', 0.0)
-                    run_monitor = Value('i', 1)
-                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                    p.start()
-                    status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_gurobi(path)
-                    run_monitor.value = 0
-                    p.join()
-                    peak_cpu = cpu.value
-                    peak_ram = ram.value
-                    message = f'{instance};{1 if status == 2 else 0 if status == 9 and len(start_times) > 0 else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                elif solver == 'cplex_lp':
-                    cpu = Value('d', 0.0)
-                    ram = Value('d', 0.0)
-                    run_monitor = Value('i', 1)
-                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                    p.start()
-                    status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_lp(path)
-                    run_monitor.value = 0
-                    p.join()
-                    peak_cpu = cpu.value
-                    peak_ram = ram.value
-                    message = f'{instance};{1 if status == "OPTIMAL" else -1 if status == "INFEASIBLE" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                elif solver == 'cplex_cp':
-                    cpu = Value('d', 0.0)
-                    ram = Value('d', 0.0)
-                    run_monitor = Value('i', 1)
-                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                    p.start()
-                    status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_cp(path)
-                    run_monitor.value = 0
-                    p.join()
-                    peak_cpu = cpu.value
-                    peak_ram = ram.value
-                    message = f'{instance};{1 if status == "Optimal" else 0 if status == "Feasible" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                elif solver == 'ortools':
-                    cpu = Value('d', 0.0)
-                    ram = Value('d', 0.0)
-                    run_monitor = Value('i', 1)
-                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                    p.start()
-                    status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_ortools(path)
-                    run_monitor.value = 0
-                    p.join()
-                    peak_cpu = cpu.value
-                    peak_ram = ram.value
-                    message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                else:
-                    cpu = Value('d', 0.0)
-                    ram = Value('d', 0.0)
-                    run_monitor = Value('i', 1)
-                    p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                    p.start()
-                    status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_hexaly(path)
-                    run_monitor.value = 0
-                    p.join()
-                    peak_cpu = cpu.value
-                    peak_ram = ram.value
-                    message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
-            except Exception as exception:
-                print(exception)
-                write_output(f'Error on instance {instance} using solver {solver}: {exception}', f'{OUTPUT_PATH}/results_{solver}.txt')
-                if p and p.is_alive():
-                    #p.join()
-                    p.kill()
+            if skip and solver == 'hexaly' and instance.startswith('6_Fattahi_9_'):
+                skip = False
+            if not skip:
+                # free up memory for the new run
+                p = None
+                status = None
+                fitness = None
+                lower_bound = None
+                runtime = None
+                start_times = None
+                assignments = None
+                workers = None
+                resources = None
+                history = None
+                cpu = None
+                ram = None
+                run_monitor = None
+                try:
+                    path = f'{BENCHMARK_PATH}/{instance}'
+                    print(f'Solving {instance} with {solver}...')
+                    #TODO: double check optimal/feasible status values for each solver
+                    message = ''
+                    if solver == 'gurobi':
+                        cpu = Value('d', 0.0)
+                        ram = Value('d', 0.0)
+                        run_monitor = Value('i', 1)
+                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                        p.start()
+                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_gurobi(path)
+                        run_monitor.value = 0
+                        p.join()
+                        peak_cpu = cpu.value
+                        peak_ram = ram.value
+                        message = f'{instance};{1 if status == 2 else 0 if status == 9 and len(start_times) > 0 else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                    elif solver == 'cplex_lp':
+                        cpu = Value('d', 0.0)
+                        ram = Value('d', 0.0)
+                        run_monitor = Value('i', 1)
+                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                        p.start()
+                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_lp(path)
+                        run_monitor.value = 0
+                        p.join()
+                        peak_cpu = cpu.value
+                        peak_ram = ram.value
+                        message = f'{instance};{1 if status == "OPTIMAL" else -1 if status == "INFEASIBLE" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                    elif solver == 'cplex_cp':
+                        cpu = Value('d', 0.0)
+                        ram = Value('d', 0.0)
+                        run_monitor = Value('i', 1)
+                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                        p.start()
+                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_cp(path)
+                        run_monitor.value = 0
+                        p.join()
+                        peak_cpu = cpu.value
+                        peak_ram = ram.value
+                        message = f'{instance};{1 if status == "Optimal" else 0 if status == "Feasible" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                    elif solver == 'ortools':
+                        cpu = Value('d', 0.0)
+                        ram = Value('d', 0.0)
+                        run_monitor = Value('i', 1)
+                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                        p.start()
+                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_ortools(path)
+                        run_monitor.value = 0
+                        p.join()
+                        peak_cpu = cpu.value
+                        peak_ram = ram.value
+                        message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                    else:
+                        cpu = Value('d', 0.0)
+                        ram = Value('d', 0.0)
+                        run_monitor = Value('i', 1)
+                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                        p.start()
+                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_hexaly(path)
+                        run_monitor.value = 0
+                        p.join()
+                        peak_cpu = cpu.value
+                        peak_ram = ram.value
+                        message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                        write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
+                except Exception as exception:
+                    print(exception)
+                    write_output(f'Error on instance {instance} using solver {solver}: {exception}', f'{OUTPUT_PATH}/results_{solver}.txt')
+                    if p and p.is_alive():
+                        #p.join()
+                        p.kill()
                 
+    #from subprocess import Popen
+    #processes = []
+    #sub_process_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
+    #for i in range(5):
+    #    processes.append(Popen(sub_process_path))
+    #for i in range(len(processes)):
+    #    processes[i].wait()
     if shutdown_when_finished:
         os.system("shutdown /s /t 1")
