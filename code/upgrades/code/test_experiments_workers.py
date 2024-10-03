@@ -18,7 +18,7 @@ from ortools.sat.python import cp_model
 import localsolver
 
 
-TIME_LIMIT_IN_SECONDS = 60
+TIME_LIMIT_IN_SECONDS = 1200
 
 def get_cpu_ram_stats():
     return psutil.cpu_percent(), psutil.virtual_memory().percent
@@ -570,7 +570,7 @@ def run_cplex_cp(path):
                 start_times.append(itv.start)
                 assignments.append(a[2])
                 workers.append(a[3])
-
+    #NOTE: status codes camel case
     return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, workers, resources, history
 
 def run_ortools(path):
@@ -790,7 +790,7 @@ def run_ortools(path):
                 "  task_%i_%i starts at %i ends at %i (alt %i, machine %i, worker %i, duration %i)"
                 % (job_id, task_id, start_value,start_value+duration, selected, machine, worker, duration)
             )"""
-
+    lower_bound = solver.best_objective_bound
 
     return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, workers, resources, history
 
@@ -1008,11 +1008,11 @@ if __name__ == '__main__':
     BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_with_workers\benchmarks_with_workers'
     OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\tests\worker_tests\test2'
     # test fjssp first, then wfjssp
-    solvers = ['gurobi', 'cplex_lp', 'cplex_cp', 'ortools', 'hexaly']
+    solvers = ['cplex_cp', 'gurobi', 'cplex_lp', 'ortools', 'hexaly']
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
     instances = os.listdir(BENCHMARK_PATH)
-    for instance in instances:
-        for solver in solvers:
+    for solver in solvers:
+        for instance in instances:
             p = None
             try:
                 path = f'{BENCHMARK_PATH}/{instance}'
@@ -1054,7 +1054,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance};{1 if status == "OPTIMAL" else -1 if status == "INFEASIBLE" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == "Optimal" else 0 if status == "Feasible" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'ortools':
                     cpu = Value('d', 0.0)
                     ram = Value('d', 0.0)
