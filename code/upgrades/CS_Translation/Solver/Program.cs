@@ -92,7 +92,7 @@ namespace Solver
             // TODO
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
-            bool skip = true;
+            bool skip = false;
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
             //foreach (string source in sources)
@@ -105,9 +105,21 @@ namespace Solver
             //    if (!skipSource)
             //    {
 
+            var dict = File.ReadLines("C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\analysis\\best_known.txt").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
+                if (dict.ContainsKey(instance))
+                {
+                    bool success = float.TryParse(dict[instance], out targetFitness);
+                    if (success)
+                    {
+                        criteriaStatus[2] = true;
+                    } else
+                    {
+                        targetFitness = 0.0f;
+                    }
+                }
                 //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
                 if (!File.Exists(instance+".json"))
                 {
@@ -144,7 +156,7 @@ namespace Solver
     
 
 
-            static void Main(string[] args)
+        static void Main(string[] args)
         {
             string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\2d_Hurink_vdata_20_workers.fjs"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
@@ -179,6 +191,7 @@ namespace Solver
             {
                 RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
             }
+            
             /*
             bool worker = false;
             if (!worker)

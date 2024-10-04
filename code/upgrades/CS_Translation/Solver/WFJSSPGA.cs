@@ -611,6 +611,8 @@ namespace Solver
             _functionEvaluations = 0;
             _startTime = DateTime.Now;
 
+            _output = false;
+
             WorkerHistory history = new WorkerHistory();
             bool improvement = false;
             bool match = false;
