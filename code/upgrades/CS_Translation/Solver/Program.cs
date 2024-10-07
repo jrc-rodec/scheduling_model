@@ -91,8 +91,9 @@ namespace Solver
         {
             // TODO
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
-            basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
+            //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
+            string outPath = "C:\\Users\\huda\\Desktop\\test_output\\";
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
             //foreach (string source in sources)
@@ -109,9 +110,10 @@ namespace Solver
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
-                if (dict.ContainsKey(instance))
+                string instanceName = instance.Split("\\").Last();
+                if (dict.ContainsKey(instanceName))
                 {
-                    bool success = float.TryParse(dict[instance], out targetFitness);
+                    bool success = float.TryParse(dict[instanceName], out targetFitness);
                     if (success)
                     {
                         criteriaStatus[2] = true;
@@ -121,7 +123,7 @@ namespace Solver
                     }
                 }
                 //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
-                if (!File.Exists(instance+".json"))
+                if (!File.Exists(outPath+ instanceName + ".json"))
                 {
                     PrepareFile(instance + ".json");
                 }
@@ -132,7 +134,6 @@ namespace Solver
                 }
                 if (!skip)
                 {
-                    DelimitRun(instance + ".json");
                     Console.WriteLine("Processing: " + instance);
                     WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
                     //Console.WriteLine("Parsing Complete");
@@ -149,7 +150,8 @@ namespace Solver
                     gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile("C:\\Users\\huda\\Desktop\\test_output\\" + gaResult.Name + ".json");
+                    gaResult.ToFile(outPath + gaResult.Name + ".json");
+                    DelimitRun(instance + ".json");
                 }
             }
         }
@@ -158,7 +160,7 @@ namespace Solver
 
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\2d_Hurink_vdata_20_workers.fjs"; // DEBUG
+            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 1200;//1200;//300; // in seconds
