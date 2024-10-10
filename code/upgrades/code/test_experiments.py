@@ -609,7 +609,8 @@ if __name__ == '__main__':
     BENCHMARK_PATH = r'C:\Users\localadmin\Documents\GitHub\scheduling_model\code\upgrades\benchmarks'
     OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\tests'
     # test fjssp first, then wfjssp
-    solvers = ['ortools','gurobi', 'cplex_lp', 'cplex_cp', 'hexaly']#'ortools',
+    #solvers = ['ortools','gurobi', 'cplex_lp', 'cplex_cp', 'hexaly']#'ortools',
+    solvers = ['ortools','gurobi', 'cplex_cp', 'hexaly']
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
     # NOTE: RAM and CPU stats are in percent
     """

@@ -71,7 +71,7 @@ class WorkerBenchmarkParser:
         operation_index = 0
         job_sequence = [None] * n_overall_operations
 
-        for i in range(1, len(lines)):
+        for i in range(1, len(lines)+1):
             line = lines[i-1]
             n_operations = int(line[0])
             index = 1
