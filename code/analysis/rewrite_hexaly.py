@@ -1,4 +1,4 @@
-with open(r'C:\Users\huda\Downloads\results_hexaly.txt', 'r') as in_file:
+with open(r'/home/dhu/Downloads/results/results_hexaly.txt', 'r') as in_file:
     lines = in_file.readlines()
     result = []
     for line in lines:#[-1:]:
@@ -9,10 +9,10 @@ with open(r'C:\Users\huda\Downloads\results_hexaly.txt', 'r') as in_file:
 
         result.append(';'.join(data))
         #print(result)
-    with open(r'C:\Users\huda\Downloads\results_hexaly_rewritten.txt', 'w') as out_file:
+    with open(r'/home/dhu/Downloads/results/results_hexaly_rewritten.txt', 'w') as out_file:
         out_file.writelines(result)
 
-with open(r'C:\Users\huda\Downloads\results_cplex_lp.txt', 'r') as in_file:
+with open(r'/home/dhu/Downloads/results/results_cplex_lp.txt', 'r') as in_file:
     lines = in_file.readlines()
     result = []
     for line in lines:#[-1:]:
@@ -23,5 +23,5 @@ with open(r'C:\Users\huda\Downloads\results_cplex_lp.txt', 'r') as in_file:
 
         result.append(';'.join(data))
         #print(result)
-    with open(r'C:\Users\huda\Downloads\results_cplex_lp_rewritten.txt', 'w') as out_file:
+    with open(r'/home/dhu/Downloads/results/results_cplex_lp_rewritten.txt', 'w') as out_file:
         out_file.writelines(result)
