@@ -125,7 +125,7 @@ namespace Solver
                 //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
                 if (!File.Exists(outPath+ instanceName + ".json"))
                 {
-                    PrepareFile(instance + ".json");
+                    PrepareFile(outPath + instanceName + ".json");
                 }
                 WorkerHistory gaResult = null; // free up memory
                 if (instance.EndsWith("6_Fattahi_14_workers.fjs"))
@@ -151,7 +151,7 @@ namespace Solver
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
                     gaResult.ToFile(outPath + gaResult.Name + ".json");
-                    DelimitRun(instance + ".json");
+                    DelimitRun(outPath + instanceName + ".json");
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace Solver
             string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 1200;//1200;//300; // in seconds
+            int timeLimit = 10;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
