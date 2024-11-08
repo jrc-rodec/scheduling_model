@@ -165,7 +165,7 @@ namespace Solver
             string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 1200;//1200;//300; // in seconds
+            int timeLimit = 10;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
