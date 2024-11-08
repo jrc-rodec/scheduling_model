@@ -10,9 +10,9 @@ import time
 #        os.remove(b_path + "\\" + file)
 shutdown_when_finished = False
 processes = []
-sub_process_path = r'C:\Users\huda\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
+sub_process_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
 for i in range(6):
-    processes.append(Popen(sub_process_path))
+    processes.append(Popen(sub_process_path + f' {i+1}'))
     time.sleep(1)
 for i in range(len(processes)):
     processes[i].wait()

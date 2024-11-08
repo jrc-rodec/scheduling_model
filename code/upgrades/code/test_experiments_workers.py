@@ -36,10 +36,10 @@ def run_gurobi(path):
         resources.append((cpu, ram))
         if where == gp.GRB.Callback.MIPSOL:
             time = model.cbGet(gp.GRB.Callback.RUNTIME)
-            obj_best = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST))
-            bnd = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND))
+            obj_best = model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST)
+            bnd = model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND)
             #if obj_best < history[-1][1] or bnd > history[-1][2]:
-            history.append((time, obj_best, bnd))
+            history.append((time, int(float(obj_best)+0.5), float(bnd)))
 
     f = open(path)
     lines = f.readlines()
@@ -221,8 +221,9 @@ def run_cplex_lp(path):
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             #Called at each new solution (better objective).
-            objective = round(pdata.current_objective)
-            bnd = round(pdata.best_bound)
+            objective = float(pdata.current_objective)
+            bnd = float(pdata.best_bound)
+            
             time = pdata.time
             #if objective < history[-1][1] or bnd > history[-1][2]:
             history.append((time, objective, bnd))
@@ -404,35 +405,43 @@ def run_cplex_lp(path):
 
     # Solve model
     
-    mdl.parameters.timelimit = 5#TIME_LIMIT_IN_SECONDS
+    mdl.parameters.timelimit = TIME_LIMIT_IN_SECONDS
+    #mdl.parameters.mip.strategy.variableselect = 3 # TODO: double check
     mdl.add_progress_listener(SolutionPrinter())
-    mdl.set_log_stream(None)
-    mdl.set_error_stream(None)
-    mdl.set_warning_stream(None)
-    mdl.set_results_stream(None)
+    #mdl.set_log_stream(None)
+    #mdl.set_error_stream(None)
+    #mdl.set_warning_stream(None)
+    #mdl.set_results_stream(None)
     #mdl.log_output = True
     #C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe
-    mdl.solve(execfile = r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex.exe")
+    res = mdl.solve(execfile = r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex.exe")
     #res = mdl.solve()
     #res = mdl.solve()
+    if res:
+        xsol = res.get_value_dict(X)
+        #ysol = res.get_value_dict(Y) #Bug in res.get_value_dict: wenn Y[i,j,m] negativ ist
+        csol = res.get_value_dict(C)
 
-    xsol = mdl.get_value_dict(X)
-    #ysol = res.get_value_dict(Y) #Bug in res.get_value_dict: wenn Y[i,j,m] negativ ist
-    csol = mdl.get_value_dict(C)
-
-    #Output
-    ysol = {}
-    start_times = []
-    assignments = []
-    workers = []
-    for j, k, i, s in list_Y_var:
-        ysol[j,k,i,s] = mdl.get_value(Y[j,k,i,s])
-        if ysol[j,k,i,s] > 0:
-            start_times.append(round(csol[j,k]-duration[j,k,i,s]))
-            assignments.append(i)
-            workers.append(s)
-    mdl.end()
-    return mdl.solve_status, mdl.solution.objective_values[0], mdl.solution.objective_bounds[0], mdl.get_solve_time(), start_times, assignments, workers, resources, history
+        #Output
+        ysol = {}
+        start_times = []
+        assignments = []
+        workers = []
+        for j, k, i, s in list_Y_var:
+            ysol[j,k,i,s] = res.get_value(Y[j,k,i,s])
+            if ysol[j,k,i,s] > 0:
+                start_times.append(round(csol[j,k]-duration[j,k,i,s]))
+                assignments.append(i)
+                workers.append(s)
+        #print(res)
+        obj_value = res.get_objective_value()#solution.objective_values[0]
+        bounds = res.solve_details.best_bound#objective_bounds[0]
+        mdl.end()
+        return res.solve_status, obj_value, bounds, res.solve_details.time, start_times, assignments, workers, resources, history
+    else:
+        sdetails = mdl.solve_details
+        mdl.end()
+        return "INFEASIBLE", float('inf'), sdetails.best_bound, sdetails.time, [], [], [], resources, history
 
 def run_cplex_cp(path):
     history = [(0, float('inf'), -float('inf'))]
@@ -538,10 +547,24 @@ def run_cplex_cp(path):
     mdl.add(alternative(ops[j,o], [mops[a] for a in mops if a[0:2]==(j,o)]) for j,o in ops)
 
     # Add no_overlap constraint between operations executed on the same machine
-    mdl.add(no_overlap(mops[a] for a in mops if a[2]==m) for m in range(nb_machines))
+    for m in range(nb_machines):
+        no_overlap_list = []
+        for a in mops:
+            if a[2] == m:
+                no_overlap_list.append(mops[a])
+        if len(no_overlap_list) > 0:
+            mdl.add(no_overlap(no_overlap_list))
+    #mdl.add(no_overlap(mops[a] for a in mops if a[2]==m) for m in range(nb_machines))
 
     # Add no_overlap constraint between operations executed by the same worker
-    mdl.add(no_overlap(mops[a] for a in mops if a[3]==s) for s in range(nb_workers))
+    for s in range(nb_workers):
+        no_overlap_list = []
+        for a in mops:
+            if a[3] == s:
+                no_overlap_list.append(mops[a])
+        if len(no_overlap_list) > 0:
+            mdl.add(no_overlap(no_overlap_list))
+    #mdl.add(no_overlap(mops[a] for a in mops if a[3]==s) for s in range(nb_workers))
 
     # Minimize termination date
     mdl.add(minimize(max(end_of(ops[j,o]) for j,o in ops)))
@@ -1023,18 +1046,27 @@ if __name__ == '__main__':
     shutdown_when_finished = True
     # TODO: include all paths, all instances
     BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_with_workers\benchmarks_with_workers'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\worker_results\repeat_repeat\again'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\results\reruns'
     # test fjssp first, then wfjssp 
     #solvers = ['gurobi', 'cplex_lp', 'cplex_cp', 'ortools', 'hexaly']
     #solvers = ['cplex_cp','ortools', 'gurobi', 'hexaly']
-    solvers = ['cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
+    solvers = ['gurobi', 'cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
     #solvers = ['ortools']#, 'gurobi', 'cplex_cp','hexaly']
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
+    missing_results = {
+        'cplex_cp': ['1_Brandimarte_10_workers.fjs', '1_Brandimarte_8_workers.fjs'], 
+        'cplex_lp': ['0_BehnkeGeiger_10_workers.fjs', '0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_1_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_2_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_3_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_4_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_5_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_18_workers.fjs'], 
+        'gurobi': ['0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '0_BehnkeGeiger_8_workers.fjs', '0_BehnkeGeiger_9_workers.fjs', '1_Brandimarte_10_workers.fjs', '1_Brandimarte_13_workers.fjs', '1_Brandimarte_15_workers.fjs', '2d_Hurink_vdata_27_workers.fjs', '2d_Hurink_vdata_29_workers.fjs', '2d_Hurink_vdata_30_workers.fjs', '2d_Hurink_vdata_31_workers.fjs', '2d_Hurink_vdata_32_workers.fjs', '2d_Hurink_vdata_33_workers.fjs', '2d_Hurink_vdata_34_workers.fjs', '2d_Hurink_vdata_35_workers.fjs', '2d_Hurink_vdata_36_workers.fjs', '2d_Hurink_vdata_37_workers.fjs', '2d_Hurink_vdata_38_workers.fjs', '2d_Hurink_vdata_39_workers.fjs', '2d_Hurink_vdata_40_workers.fjs', '2d_Hurink_vdata_41_workers.fjs', '2d_Hurink_vdata_42_workers.fjs', '2d_Hurink_vdata_43_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_12_workers.fjs', '3_DPpaulli_14_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_17_workers.fjs', '3_DPpaulli_18_workers.fjs', '3_DPpaulli_9_workers.fjs'], 
+        'hexaly': [], 
+        'ortools': ['0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs']}
+
     skip = False
     instances = os.listdir(BENCHMARK_PATH)
-    for solver in solvers:
+    instances.reverse()
+    for solver in missing_results:
+        instances = missing_results[solver]
         for instance in instances:
-            if skip and solver == 'hexaly' and instance.startswith('6_Fattahi_9_'):
+            if skip and solver == 'cplex_lp' and instance.startswith('1'): # skip behnkeGeiger
                 skip = False
             if not skip:
                 # free up memory for the new run
@@ -1116,7 +1148,7 @@ if __name__ == '__main__':
                         peak_cpu = cpu.value
                         peak_ram = ram.value
                         message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                        write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
+                    write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
                 except Exception as exception:
                     print(exception)
                     write_output(f'Error on instance {instance} using solver {solver}: {exception}', f'{OUTPUT_PATH}/results_{solver}.txt')
