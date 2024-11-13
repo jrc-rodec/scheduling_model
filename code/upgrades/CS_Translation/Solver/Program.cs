@@ -9,7 +9,8 @@ namespace Solver
 {
     internal class Program
     {
-
+        static int index = 0;
+        static ConsoleColor[] _colors = { ConsoleColor.Red, ConsoleColor.Green, ConsoleColor.Blue, ConsoleColor.Yellow, ConsoleColor.White, ConsoleColor.Magenta};
         static void RunExperiment(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations)
         {
             // TODO
@@ -87,13 +88,13 @@ namespace Solver
         {
             File.AppendAllText(filename, "];");
         }
-        static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool localSearch)
+        static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool localSearch, int iteration)
         {
             // TODO
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\huda\\Desktop\\test_output\\";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_single_results\\";
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
             //foreach (string source in sources)
@@ -106,10 +107,11 @@ namespace Solver
             //    if (!skipSource)
             //    {
 
-            var dict = File.ReadLines("C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\analysis\\best_known.txt").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
+            var dict = File.ReadLines("C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\analysis\\best_known.txt").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
+                Console.ForegroundColor = _colors[index - 1];
                 string instanceName = instance.Split("\\").Last();
                 if (dict.ContainsKey(instanceName))
                 {
@@ -134,7 +136,7 @@ namespace Solver
                 }
                 if (!skip)
                 {
-                    Console.WriteLine("Processing: " + instance);
+                    Console.WriteLine(index + ": Processing: " + instanceName + " - Run #" + (iteration+1));
                     WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
                     //Console.WriteLine("Parsing Complete");
                     WorkerEncoding encoding = parser.ParseBenchmark(instance);
@@ -146,7 +148,7 @@ namespace Solver
                     WFJSSPGA ga = new WFJSSPGA(config, true, encoding.Durations);
                     //Console.WriteLine("GA Creation Complete");
                     ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-                    Console.WriteLine("Starting Run");
+                    //Console.WriteLine("Starting Run");
                     gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
@@ -160,7 +162,7 @@ namespace Solver
 
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\"; // DEBUG
+            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
             int timeLimit = 10;//1200;//300; // in seconds
@@ -169,7 +171,9 @@ namespace Solver
             int maxFunctionEvaluations = 0;
             if(args.Length > 0)
             {
-                path = args[0];
+                //path = args[0];
+                int.TryParse(args[0], out index);
+                Console.ForegroundColor = _colors[index-1];
                 if(args.Length > 1)
                 {
                     int.TryParse(args[1], out maxGenerations);
@@ -184,43 +188,15 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            int nExperiments = 1;
+            int nExperiments = 3;
             bool keepMultiple = false;
             bool localSearch = false;
 
             //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
-                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch);
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i);
             }
-            
-            /*
-            bool worker = false;
-            if (!worker)
-            {
-                BenchmarkParser parser = new BenchmarkParser();
-                Encoding result = parser.ParseBenchmark(path);
-                DecisionVariables variables = new DecisionVariables(result);
-                GAConfiguration configuration = new GAConfiguration(result, variables);
-                GA ga = new GA(configuration, true);
-                ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-                History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-                gaResult.ToFile("test.json");
-                Console.WriteLine(gaResult.Result.ToString());
-            } else
-            {
-                WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
-                WorkerEncoding encoding = parser.ParseBenchmark(path);
-                WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
-                WorkerGAConfiguration config = new WorkerGAConfiguration(encoding, variables);
-                WFJSSPGA ga = new WFJSSPGA(config, true, encoding.Durations);
-                ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);
-                WorkerHistory gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-                gaResult.ToFile("test.json");
-                Console.WriteLine(gaResult.Result.ToString());
-            }
-            Console.ReadLine();
-            */
         }
     }
 }
