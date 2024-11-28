@@ -18,7 +18,9 @@ from ortools.sat.python import cp_model
 #import localsolver
 
 
-TIME_LIMIT_IN_SECONDS = 1200
+TIME_LIMIT_IN_SECONDS = 300#1200
+RANDOM_SEED = 1
+CALLBACK = True
 
 def get_cpu_ram_stats():
     return psutil.cpu_percent(), psutil.virtual_memory().percent
@@ -178,6 +180,7 @@ def run_gurobi(path):
     m.update()
     #m.display()
     m.Params.TimeLimit = TIME_LIMIT_IN_SECONDS
+    m.Params.Seed = RANDOM_SEED
     m.Params.LogToConsole = 0
     # NOTE: FOR TESTING PURPOSES ONLY
     # TODO: REMOVE
@@ -188,8 +191,10 @@ def run_gurobi(path):
     m._solution_count = 0
     # Bei Abbruch wenn known_best erreicht
     m._known_best = 0 # 884
-    m.optimize(SolutionListener)
-    #m.optimize()
+    if CALLBACK:
+        m.optimize(SolutionListener)
+    else:
+        m.optimize()
     #----------------------------------------
 
     start_times = []
@@ -406,8 +411,10 @@ def run_cplex_lp(path):
     # Solve model
     
     mdl.parameters.timelimit = TIME_LIMIT_IN_SECONDS
+    mdl.parameters.randomseed = RANDOM_SEED
     #mdl.parameters.mip.strategy.variableselect = 3 # TODO: double check
-    mdl.add_progress_listener(SolutionPrinter())
+    if CALLBACK:
+        mdl.add_progress_listener(SolutionPrinter())
     #mdl.set_log_stream(None)
     #mdl.set_error_stream(None)
     #mdl.set_warning_stream(None)
@@ -576,7 +583,8 @@ def run_cplex_cp(path):
 
     #---------- mit solution listener----------------
     context.solver.solve_with_search_next = True
-    mdl.add_solver_listener(SolutionPrinter())
+    if CALLBACK:
+        mdl.add_solver_listener(SolutionPrinter())
     #------------------------------------------------
 
     # Solve model
@@ -585,7 +593,7 @@ def run_cplex_cp(path):
 
     #---------- ohne solution listener--------
     #res = mdl.solve(FailLimit=1000000,TimeLimit=10)
-    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
+    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, RandomSeed=RANDOM_SEED, LogVerbosity = 'Quiet')
     #print('Solution:')
     #res.print_solution()
     start_times = []
@@ -787,10 +795,13 @@ def run_ortools(path):
     solver = cp_model.CpSolver()
     # Sets a time limit in seconds.
     solver.parameters.max_time_in_seconds = TIME_LIMIT_IN_SECONDS
-
+    solver.parameters.random_seed = RANDOM_SEED
     #Meldung bei jeder neuen Lösung 
     solution_printer = SolutionPrinter()
-    status = solver.solve(model, solution_printer)
+    if CALLBACK:
+        status = solver.solve(model, solution_printer)
+    else:
+        status = solver.solve(model)   
     #print("Finished Solving the problem")
     #Ohne Meldung bei jeder neuen Lösung
     #status = solver.solve(model)
@@ -998,6 +1009,7 @@ def run_hexaly(path):
         # Parameterize the solver
         ls.param.time_limit = TIME_LIMIT_IN_SECONDS
         ls.param.verbosity = 0 #1 defaul 0 quiet 2 detailed
+        ls.param.seed = RANDOM_SEED
         
         #---------- ohne solution listener--------
         #ls.solve()
@@ -1005,7 +1017,8 @@ def run_hexaly(path):
         #---------- mit solution listener--------
         ls.param.time_between_ticks = 1 # default 1sec INT!!
         cb = SolutionListener()
-        ls.add_callback(localsolver.LSCallbackType.TIME_TICKED, cb.my_callback)
+        if CALLBACK:
+            ls.add_callback(localsolver.LSCallbackType.TIME_TICKED, cb.my_callback)
         ls.solve()
         #----------------------------------------
         
@@ -1046,116 +1059,148 @@ if __name__ == '__main__':
     shutdown_when_finished = True
     # TODO: include all paths, all instances
     BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_with_workers\benchmarks_with_workers'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\results\reruns'
+    #BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\other\repetitions'
     # test fjssp first, then wfjssp 
-    #solvers = ['gurobi', 'cplex_lp', 'cplex_cp', 'ortools', 'hexaly']
+    #solvers = ['cplex_cp', 'ortools', 'hexaly', 'cplex_lp', 'gurobi']
+    runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
+    runs = [['cplex_lp', 'gurobi']]
+    #solvers = ['hexaly']
     #solvers = ['cplex_cp','ortools', 'gurobi', 'hexaly']
-    solvers = ['gurobi', 'cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
+    #solvers = ['gurobi', 'cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
     #solvers = ['ortools']#, 'gurobi', 'cplex_cp','hexaly']
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
-    missing_results = {
-        'cplex_cp': ['1_Brandimarte_10_workers.fjs', '1_Brandimarte_8_workers.fjs'], 
-        'cplex_lp': ['0_BehnkeGeiger_10_workers.fjs', '0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_1_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_2_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_3_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_4_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_5_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_18_workers.fjs'], 
-        'gurobi': ['0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '0_BehnkeGeiger_8_workers.fjs', '0_BehnkeGeiger_9_workers.fjs', '1_Brandimarte_10_workers.fjs', '1_Brandimarte_13_workers.fjs', '1_Brandimarte_15_workers.fjs', '2d_Hurink_vdata_27_workers.fjs', '2d_Hurink_vdata_29_workers.fjs', '2d_Hurink_vdata_30_workers.fjs', '2d_Hurink_vdata_31_workers.fjs', '2d_Hurink_vdata_32_workers.fjs', '2d_Hurink_vdata_33_workers.fjs', '2d_Hurink_vdata_34_workers.fjs', '2d_Hurink_vdata_35_workers.fjs', '2d_Hurink_vdata_36_workers.fjs', '2d_Hurink_vdata_37_workers.fjs', '2d_Hurink_vdata_38_workers.fjs', '2d_Hurink_vdata_39_workers.fjs', '2d_Hurink_vdata_40_workers.fjs', '2d_Hurink_vdata_41_workers.fjs', '2d_Hurink_vdata_42_workers.fjs', '2d_Hurink_vdata_43_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_12_workers.fjs', '3_DPpaulli_14_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_17_workers.fjs', '3_DPpaulli_18_workers.fjs', '3_DPpaulli_9_workers.fjs'], 
-        'hexaly': [], 
-        'ortools': ['0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs']}
+    #missing_results = {
+    #    'cplex_cp': ['1_Brandimarte_10_workers.fjs', '1_Brandimarte_8_workers.fjs'], 
+    #    'cplex_lp': ['0_BehnkeGeiger_10_workers.fjs', '0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_1_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_2_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_3_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_4_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_5_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_18_workers.fjs'], 
+    #    'gurobi': ['0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '0_BehnkeGeiger_8_workers.fjs', '0_BehnkeGeiger_9_workers.fjs', '1_Brandimarte_10_workers.fjs', '1_Brandimarte_13_workers.fjs', '1_Brandimarte_15_workers.fjs', '2d_Hurink_vdata_27_workers.fjs', '2d_Hurink_vdata_29_workers.fjs', '2d_Hurink_vdata_30_workers.fjs', '2d_Hurink_vdata_31_workers.fjs', '2d_Hurink_vdata_32_workers.fjs', '2d_Hurink_vdata_33_workers.fjs', '2d_Hurink_vdata_34_workers.fjs', '2d_Hurink_vdata_35_workers.fjs', '2d_Hurink_vdata_36_workers.fjs', '2d_Hurink_vdata_37_workers.fjs', '2d_Hurink_vdata_38_workers.fjs', '2d_Hurink_vdata_39_workers.fjs', '2d_Hurink_vdata_40_workers.fjs', '2d_Hurink_vdata_41_workers.fjs', '2d_Hurink_vdata_42_workers.fjs', '2d_Hurink_vdata_43_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_12_workers.fjs', '3_DPpaulli_14_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_17_workers.fjs', '3_DPpaulli_18_workers.fjs', '3_DPpaulli_9_workers.fjs'], 
+    #    'hexaly': [], 
+    #    'ortools': ['0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs']}
 
     skip = False
-    instances = os.listdir(BENCHMARK_PATH)
-    instances.reverse()
-    for solver in missing_results:
-        instances = missing_results[solver]
-        for instance in instances:
-            if skip and solver == 'cplex_lp' and instance.startswith('1'): # skip behnkeGeiger
-                skip = False
-            if not skip:
-                # free up memory for the new run
-                p = None
-                status = None
-                fitness = None
-                lower_bound = None
-                runtime = None
-                start_times = None
-                assignments = None
-                workers = None
-                resources = None
-                history = None
-                cpu = None
-                ram = None
-                run_monitor = None
-                try:
-                    path = f'{BENCHMARK_PATH}/{instance}'
-                    print(f'Solving {instance} with {solver}...')
-                    #TODO: double check optimal/feasible status values for each solver
-                    message = ''
-                    if solver == 'gurobi':
-                        cpu = Value('d', 0.0)
-                        ram = Value('d', 0.0)
-                        run_monitor = Value('i', 1)
-                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                        p.start()
-                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_gurobi(path)
-                        run_monitor.value = 0
-                        p.join()
-                        peak_cpu = cpu.value
-                        peak_ram = ram.value
-                        message = f'{instance};{1 if status == 2 else 0 if status == 9 and len(start_times) > 0 else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                    elif solver == 'cplex_lp':
-                        cpu = Value('d', 0.0)
-                        ram = Value('d', 0.0)
-                        run_monitor = Value('i', 1)
-                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                        p.start()
-                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_lp(path)
-                        run_monitor.value = 0
-                        p.join()
-                        peak_cpu = cpu.value
-                        peak_ram = ram.value
-                        message = f'{instance};{1 if status == "OPTIMAL" else -1 if status == "INFEASIBLE" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                    elif solver == 'cplex_cp':
-                        cpu = Value('d', 0.0)
-                        ram = Value('d', 0.0)
-                        run_monitor = Value('i', 1)
-                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                        p.start()
-                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_cp(path)
-                        run_monitor.value = 0
-                        p.join()
-                        peak_cpu = cpu.value
-                        peak_ram = ram.value
-                        message = f'{instance};{1 if status == "Optimal" else 0 if status == "Feasible" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                    elif solver == 'ortools':
-                        cpu = Value('d', 0.0)
-                        ram = Value('d', 0.0)
-                        run_monitor = Value('i', 1)
-                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                        p.start()
-                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_ortools(path)
-                        run_monitor.value = 0
-                        p.join()
-                        peak_cpu = cpu.value
-                        peak_ram = ram.value
-                        message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                    else:
-                        cpu = Value('d', 0.0)
-                        ram = Value('d', 0.0)
-                        run_monitor = Value('i', 1)
-                        p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
-                        p.start()
-                        status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_hexaly(path)
-                        run_monitor.value = 0
-                        p.join()
-                        peak_cpu = cpu.value
-                        peak_ram = ram.value
-                        message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
-                    write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
-                except Exception as exception:
-                    print(exception)
-                    write_output(f'Error on instance {instance} using solver {solver}: {exception}', f'{OUTPUT_PATH}/results_{solver}.txt')
-                    if p and p.is_alive():
-                        #p.join()
-                        p.kill()
-                
+    instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
+    for i in range(len(runs)):
+        solvers = runs[i]
+        if i == 0 and False:
+            instances = os.listdir(BENCHMARK_PATH)
+        else:
+            instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
+        n_experiments = 5
+        #instances.reverse()
+        for i in range(n_experiments):
+            for solver in solvers:
+                #instances = missing_results[solver]
+                for instance in instances:
+                    if skip and solver == 'cplex_lp' and instance.startswith('1'): # skip behnkeGeiger
+                        skip = False
+                    if not skip:
+                        # free up memory for the new run
+                        p = None
+                        status = None
+                        fitness = None
+                        lower_bound = None
+                        runtime = None
+                        start_times = None
+                        assignments = None
+                        workers = None
+                        resources = None
+                        history = None
+                        cpu = None
+                        ram = None
+                        run_monitor = None
+                        peak_cpu = None
+                        peak_ram = None
+                        try:
+                            path = f'{BENCHMARK_PATH}/{instance}'
+                            print(f'Solving {instance} with {solver}...')
+                            #TODO: double check optimal/feasible status values for each solver
+                            message = ''
+                            if solver == 'gurobi':
+                                cpu = Value('d', 0.0)
+                                ram = Value('d', 0.0)
+                                run_monitor = Value('i', 1)
+                                p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                                p.start()
+                                status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_gurobi(path)
+                                run_monitor.value = 0
+                                p.join()
+                                peak_cpu = cpu.value
+                                peak_ram = ram.value
+                                message = f'{instance};{1 if status == 2 else 0 if status == 9 and len(start_times) > 0 else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                            elif solver == 'cplex_lp':
+                                cpu = Value('d', 0.0)
+                                ram = Value('d', 0.0)
+                                run_monitor = Value('i', 1)
+                                p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                                p.start()
+                                status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_lp(path)
+                                run_monitor.value = 0
+                                p.join()
+                                peak_cpu = cpu.value
+                                peak_ram = ram.value
+                                message = f'{instance};{1 if status == "OPTIMAL" else -1 if status == "INFEASIBLE" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                            elif solver == 'cplex_cp':
+                                cpu = Value('d', 0.0)
+                                ram = Value('d', 0.0)
+                                run_monitor = Value('i', 1)
+                                p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                                p.start()
+                                status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_cplex_cp(path)
+                                run_monitor.value = 0
+                                p.join()
+                                peak_cpu = cpu.value
+                                peak_ram = ram.value
+                                message = f'{instance};{1 if status == "Optimal" else 0 if status == "Feasible" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                            elif solver == 'ortools':
+                                cpu = Value('d', 0.0)
+                                ram = Value('d', 0.0)
+                                run_monitor = Value('i', 1)
+                                p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                                p.start()
+                                status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_ortools(path)
+                                run_monitor.value = 0
+                                p.join()
+                                peak_cpu = cpu.value
+                                peak_ram = ram.value
+                                message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                            else:
+                                cpu = Value('d', 0.0)
+                                ram = Value('d', 0.0)
+                                run_monitor = Value('i', 1)
+                                p = Process(target=monitor_resources, args=(cpu, ram, 5, run_monitor))
+                                p.start()
+                                status, fitness, lower_bound, runtime, start_times, assignments, workers, resources, history = run_hexaly(path)
+                                run_monitor.value = 0
+                                p.join()
+                                peak_cpu = cpu.value
+                                peak_ram = ram.value
+                                message = f'{instance};{1 if status == "OPTIMAL" else 0 if status == "FEASIBLE" else -1};{fitness};{lower_bound};{runtime};{start_times};{assignments};{workers};{peak_cpu};{peak_ram};{resources};{history}'
+                            write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
+                        except Exception as exception:
+                            print(exception)
+                            write_output(f'Error on instance {instance} using solver {solver}: {exception}', f'{OUTPUT_PATH}/results_{solver}.txt')
+                            if p and p.is_alive():
+                                #p.join()
+                                p.kill()
+                                p.join()
+                        p.close()
+                        del p
+                        del status
+                        del fitness
+                        del lower_bound
+                        del runtime
+                        del start_times
+                        del assignments
+                        del workers
+                        del resources
+                        del history
+                        del cpu
+                        del ram
+                        del run_monitor
+                        del peak_ram
+                        del peak_cpu
+                        del message
+                    
     #from subprocess import Popen
     #processes = []
     #sub_process_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
@@ -1164,4 +1209,4 @@ if __name__ == '__main__':
     #for i in range(len(processes)):
     #    processes[i].wait()
     if shutdown_when_finished:
-        os.system("shutdown /s /t 1")
+        os.system("shutdown /s /t 0")

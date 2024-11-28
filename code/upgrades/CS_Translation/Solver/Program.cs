@@ -76,7 +76,7 @@ namespace Solver
 
         static void PrepareFile(string filename)
         {
-            File.AppendAllText(filename, "results=[");
+            File.AppendAllText(filename, "{results:[");
         }
 
         static void DelimitRun(string filename)
@@ -94,7 +94,23 @@ namespace Solver
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_single_results\\";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\ga\\";
+            //if (localSearch)
+            //{
+            if(iteration == 0)
+            {
+                outPath += "dissimilarity\\";
+                WFJSSPIndividual.UseDissimilarity = true;
+            } else
+            {
+                outPath += "no_dissimilarity\\";
+                WFJSSPIndividual.UseDissimilarity = false;
+            }
+            //outPath += ((iteration+1)*50).ToString()+"_populationSize\\";
+            //} else
+            //{
+            //    outPath += "nolocal\\";
+            //}
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
             //foreach (string source in sources)
@@ -113,6 +129,7 @@ namespace Solver
             {
                 Console.ForegroundColor = _colors[index - 1];
                 string instanceName = instance.Split("\\").Last();
+                
                 if (dict.ContainsKey(instanceName))
                 {
                     bool success = float.TryParse(dict[instanceName], out targetFitness);
@@ -144,6 +161,8 @@ namespace Solver
                     WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
                     //Console.WriteLine("Decision Variables Complete");
                     WorkerGAConfiguration config = new WorkerGAConfiguration(encoding, variables);
+                    
+
                     //Console.WriteLine("Configuration Complete");
                     WFJSSPGA ga = new WFJSSPGA(config, true, encoding.Durations);
                     //Console.WriteLine("GA Creation Complete");
@@ -162,10 +181,10 @@ namespace Solver
 
         static void Main(string[] args)
         {
-            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\"; // DEBUG
+            string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
             int maxGenerations = 0;
-            int timeLimit = 10;//1200;//300; // in seconds
+            int timeLimit = 300;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
@@ -188,14 +207,14 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            int nExperiments = 3;
+            int nExperiments = 2;
             bool keepMultiple = false;
-            bool localSearch = false;
+            int restartGenerations = 25;
 
             //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
-                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i);
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, false, i);
             }
         }
     }

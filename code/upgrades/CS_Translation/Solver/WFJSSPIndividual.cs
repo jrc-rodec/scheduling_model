@@ -21,6 +21,7 @@ namespace Solver
         public static float MaxDissimilarity;
         public static int MaxInitializationAttemps = 100; // TODO add parameter
         public static float DistanceAdjustmentRate = 0.75f; // TODO add parameter
+        public static bool UseDissimilarity = true;
         public int[] Workers { get => _workers; set => _workers = value; }
 
         public Dictionary<Criteria, float> Fitness { get => _fitness; set => _fitness = value; }
@@ -53,7 +54,7 @@ namespace Solver
 
         public WFJSSPIndividual(List<WFJSSPIndividual> population) : this(true)
         {
-            if(population.Count < 1)
+            if(population.Count < 1 || !UseDissimilarity)
             {
                 Randomize();
             } else
