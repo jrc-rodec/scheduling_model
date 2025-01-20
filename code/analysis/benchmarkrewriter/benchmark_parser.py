@@ -96,28 +96,3 @@ class WorkerBenchmarkParser:
                 
         return WorkerEncoding(durations, job_sequence)
 
-"""def main(): 
-    #path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
-    #parser = WorkerBenchmarkParser()
-    #result = parser.parse_benchmark(path)
-
-    path = "C:\\Users\\Bianca\\OneDrive - FH Vorarlberg\\JRZ\\JRZ\\Scheduling\\scheduling_model\\code\\external_test_data\\FJSSPinstances\\6_Fattahi\\Fattahi20.fjs"
-    parser = WorkerBenchmarkParser()
-    result = parser.parse_benchmark(path)
-
-    for i in range(0, result.durations().shape[0]):
-        for j in range(0, result.durations().shape[1]):
-            for k in range(0, result.durations().shape[2]):
-                print(f"{result.durations()[i, j, k]},")
-
-    print(f"n_jobs: {result.n_jobs()}")
-    print(f"n_machines: {result.n_machines()}")
-    print(f"n_operations: {result.n_operations()}")
-    print(f"get_workers_for_operation: {result.get_workers_for_operation(1)}")
-    print(f"get_all_machines_for_all_operations: {result.get_all_machines_for_all_operations()}")
-    print(f"get_workers_for_operation_on_machine: {result.get_workers_for_operation_on_machine(1, 1)}")
-    print(f"is_possible: {result.is_possible(1,1,1)}")
-
-if __name__ == "__main__":
-    main()"""
-
