@@ -1,7 +1,6 @@
 import os 
 import inspect
 import random
-import io
 
 def read_file(source : str, id : int, path : str) -> list[str]:
     if source.startswith('0'):
@@ -31,7 +30,6 @@ def read_file(source : str, id : int, path : str) -> list[str]:
 
 def write_file(benchmark : list[list[int]], path : str, file_name : str) -> None:
     file = open(path + file_name, 'w')
-    # there's probably an easier way to do this
     for line in benchmark:
         output = ''
         for value in line:
@@ -79,7 +77,7 @@ def rewrite_all_from_source(source : str, read_path : str, write_path : str, low
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 read_path = currentdir + '/FJSSPinstances/'
-write_path = currentdir + '/../changed_benchmarks/'
+write_path = currentdir + '/out/'
 sources = ['0_BehnkeGeiger', '1_Brandimarte', '2a_Hurink_sdata', '2b_Hurink_edata', '2c_Hurink_rdata', '2d_Hurink_vdata', '3_DPpaulli', '4_ChambersBarnes', '5_Kacem', '6_Fattahi']
 """
     EXAMPLE USAGES:

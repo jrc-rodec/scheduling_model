@@ -25,6 +25,8 @@ namespace BenchmarkParsing
             List<int> uniqueDurations = new List<int>();
             int overallOptions = 0;
             int[] onMachines = new int[encoding.NMachines];
+            int[,,] combinations = new int[encoding.Durations.GetLength(0), encoding.Durations.GetLength(1), encoding.Durations.GetLength(2)];
+            int unique = 0;
             for (int i = 0; i < encoding.Durations.GetLength(0); ++i)
             {
                 int machineCount = 0;
@@ -42,13 +44,20 @@ namespace BenchmarkParsing
                             ++onMachines[j];
                             ++overallOptions;
                             ++machineCount;
+                            if (combinations[i,j,k] == 0)
+                            {
+                                unique += 1;
+                            }
+                            combinations[i, j, k] += 1;
                         }
                     }
                 }
                 _averageMachines += machineCount;
             }
-            _averageMachines /= encoding.NOperations;
-            _flexibility = _averageMachines / encoding.NMachines;
+            float a_avg = overallOptions / encoding.NOperations;
+            _flexibility = a_avg / unique;
+            //_averageMachines /= encoding.NOperations;
+            //_flexibility = _averageMachines / encoding.NMachines;
             _durationVariety = (uniqueDurations.Count + 0.0f) / (overallOptions + 0.0f);
             _averageOperations = (encoding.NOperations + 0.0f) / (encoding.NJobs + 0.0f);
             _averageOperationsOnMachines = 0;
