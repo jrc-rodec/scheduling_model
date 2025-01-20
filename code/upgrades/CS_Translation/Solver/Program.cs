@@ -157,14 +157,7 @@ namespace Solver
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\adjustment\\";
-            if (adjustment)
-            {
-                outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\adjustment\\with\\";
-            } else
-            {
-                outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\adjustment\\without\\";
-            }
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\flex\\";
             //if (localSearch)
             //{
             //if(iteration == 0)
@@ -253,7 +246,7 @@ namespace Solver
         {
             //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
-            string path = path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\";
+            string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\";
             int maxGenerations = 0;
             int timeLimit = 300;// 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
@@ -270,7 +263,8 @@ namespace Solver
                 if (mode.Equals("ADJUSTMENT"))
                 {
                     adjustment = true;//path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\";
-                } 
+                }
+                adjustment = false;
                 //else
                 //{
                 //   path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\";
