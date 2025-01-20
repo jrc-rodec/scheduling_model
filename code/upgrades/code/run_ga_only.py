@@ -11,10 +11,14 @@ import time
 shutdown_when_finished = False
 processes = []
 sub_process_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
-for i in range(6):
-    processes.append(Popen(sub_process_path + f' {i+1}'))
-    time.sleep(1)
-for i in range(len(processes)):
-    processes[i].wait()
+for j in range(2):
+    for i in range(6):
+        if j == 0:
+            processes.append(Popen(sub_process_path + f' {i+1} NO_ADJUSTMENT'))
+        else:
+            processes.append(Popen(sub_process_path + f' {i+1} ADJUSTMENT'))
+        time.sleep(1)
+    for i in range(len(processes)):
+        processes[i].wait()
 if shutdown_when_finished:
     os.system("shutdown /s /t 1")

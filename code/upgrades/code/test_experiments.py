@@ -17,7 +17,7 @@ from ortools.sat.python import cp_model
 import collections
 
 # import hexaly stuff
-import localsolver
+#import localsolver
 
 
 import warnings
@@ -36,13 +36,18 @@ def run_gurobi(path):
         cpu, ram = get_cpu_ram_stats()
         resources.append((cpu, ram))
         if where == gp.GRB.Callback.MIPSOL:
+            #time = model.cbGet(gp.GRB.Callback.RUNTIME)
+            #obj_best = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST))
+            #bnd = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND))
+            ##print(obj_best)
+            ##input("prompt")
+            ##if obj_best < history[-1][1] or bnd > history[-1][2]:
+            #history.append((time, obj_best, bnd))
             time = model.cbGet(gp.GRB.Callback.RUNTIME)
-            obj_best = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST))
-            bnd = round(model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND))
-            #print(obj_best)
-            #input("prompt")
+            obj_best = model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST)
+            bnd = model.cbGet(gp.GRB.Callback.MIPSOL_OBJBND)
             #if obj_best < history[-1][1] or bnd > history[-1][2]:
-            history.append((time, obj_best, bnd))
+            history.append((time, int(float(obj_best)+0.5), float(bnd)))
 
     f = open(path)
     lines = f.readlines()
@@ -154,11 +159,21 @@ def run_cplex_lp(path):
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             #Called at each new solution (better objective).
-            objective = round(pdata.current_objective)
-            bnd = round(pdata.best_bound)
+            #objective = round(pdata.current_objective)
+            #bnd = round(pdata.best_bound)
             time = pdata.time
             #if objective < history[-1][1] or bnd > history[-1][2]:
-            history.append((time, objective, bnd))
+            history.append((time, pdata.current_objective, pdata.best_bound))
+
+            """
+            esources.append((cpu, ram))
+            time = ls.statistics.running_time
+            #obj = round(ls.model.objectives[0].value)
+            #bnd = round(ls.solution.get_objective_bound(0))
+            #if obj < history[-1][1] or bnd > history[-1][2]:
+            # found better objective or better lower bound
+            history.append((time, ls.model.get_objective(0).get_value(), ls.solution.get_objective_bound(0)))
+            """
                 
 
     f = open(path)
@@ -262,7 +277,8 @@ def run_cplex_lp(path):
 
     mdl.end()
 
-    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
+    #return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
+    return res.solve_status, res.get_objective_value(), res.solve_details.best_bound, res.solve_details.time, start_times, assignments, resources, history
 
 def run_cplex_cp(path):
     history = [(0, float('inf'), -float('inf'))]
@@ -321,16 +337,23 @@ def run_cplex_cp(path):
     mdl.add_solver_listener(SolutionPrinter())
 
     res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
-    start_times = []
-    assignments = []
-    for a in mops:
-        itv = res.get_var_solution(mops[a])
-        for m in range(nb_machines):
-            if a[3]==m and itv.is_present():
-                start_times.append(itv.start)
-                assignments.append(a[3])
-
-    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
+    if res:
+        start_times = []
+        assignments = []
+        #for a in mops:
+        #    itv = res.get_var_solution(mops[a])
+        #    for m in range(nb_machines):
+        #        if a[3]==m and itv.is_present():
+        #            start_times.append(itv.start)
+        #            assignments.append(a[3])
+        #mdl.end()
+        #return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
+        #return res.solve_status, res.export_as_json_string(), start_times, assignments, resources, history
+        return res.solve_status, res.get_objective_value(), res.solve_details.best_bound, res.solve_details.time, start_times, assignments, resources, history
+    else:
+        sdetails = mdl.solve_details
+        mdl.end()
+        return "INFEASIBLE", float('inf'), sdetails.best_bound, sdetails.time, [], [], [], resources, history
 
 def run_ortools(path):
     history = [(0, float('inf'), -float('inf'))]
@@ -482,6 +505,7 @@ def run_ortools(path):
     return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, resources, history
 
 def run_hexaly(path):
+    import localsolver
     history = []
     resources = [(0,0)]
 
@@ -492,11 +516,11 @@ def run_hexaly(path):
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             time = ls.statistics.running_time
-            obj = round(ls.model.objectives[0].value)
-            bnd = round(ls.solution.get_objective_bound(0))
-            if obj < history[-1][1] or bnd > history[-1][2]:
-                # found better objective or better lower bound
-                history.append((time, obj, bnd))
+            #obj = round(ls.model.objectives[0].value)
+            #bnd = round(ls.solution.get_objective_bound(0))
+            #if obj < history[-1][1] or bnd > history[-1][2]:
+            # found better objective or better lower bound
+            history.append((time, ls.model.get_objective(0).get_value(), ls.solution.get_objective_bound(0)))
 
     status = -1
     fitness = -1
@@ -596,7 +620,7 @@ def run_hexaly(path):
         lower_bound = ls.solution.get_objective_bound(0)
         runtime = ls.statistics.running_time
 
-    lower_bound = solver.objective_value
+    #lower_bound = solver.objective_value
 
     return status, fitness, lower_bound, runtime, start_times, assignments, resources, history
 
@@ -605,16 +629,18 @@ def write_output(message, path):
         f.write(f'{message}\n')
 
 if __name__ == '__main__':
-    shutdown_when_finished = True
+    import sys
+    selected_solver = sys.argv[1]
+    shutdown_when_finished = False
     BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks_no_workers'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\fjssp'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\all\fjssp'
     # test fjssp first, then wfjssp
     #solvers = ['ortools','gurobi', 'cplex_lp', 'cplex_cp', 'hexaly']#'ortools',
-    solvers = ['ortools', 'cplex_cp']
+    solvers = [selected_solver]
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
     # NOTE: RAM and CPU stats are in percent
     """
-     num = Value('d', 0.0)
+        num = Value('d', 0.0)
     arr = Array('i', range(10))
 
     p = Process(target=f, args=(num, arr))
@@ -625,6 +651,7 @@ if __name__ == '__main__':
     print(arr[:])
     """
     instances = os.listdir(BENCHMARK_PATH)
+    #instances = ['HurinkVdata30.fjs']
     #for source in sources:
     #instances = os.listdir(BENCHMARK_PATH + '/' + source)
     for instance in instances:
@@ -710,8 +737,8 @@ if __name__ == '__main__':
                     peak_ram = ram.value
                     message = f'{instance[-4]};{1 if status == "LSSolutionStatus.OPTIMAL" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
-            except:
-                write_output(f'Error on instance {instance} using solver {solver}!', f'{OUTPUT_PATH}/results_{solver}.txt')
+            except Exception as e:
+                write_output(f'Error on instance {instance} using solver {solver}! {e}', f'{OUTPUT_PATH}/results_{solver}.txt')
                 p.kill()
             p.join()
             p.close()

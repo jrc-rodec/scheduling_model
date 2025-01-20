@@ -389,7 +389,7 @@ namespace Solver
             Console.ResetColor();
         }
 
-        public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations)
+        public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool useLocalSearch)
         {
             CreatePopulation(_configuration.PopulationSize);
             Console.WriteLine("Created Initial Population");
@@ -439,7 +439,7 @@ namespace Solver
                             }
                         }
                         //overallBest = currentBest;
-                    } else if(localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
+                    } else if(keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
                     {
                         overallBest.Add(localMinimum);
                         match = true;
@@ -501,7 +501,7 @@ namespace Solver
                         }
                     }
                     lastProgress = generation;
-                } else if (_population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
+                } else if (keepMultiple && _population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
                 {
                     List<Individual> equals = GetAllEqual(_population[0], _population);
                     for(int i = 0; i < equals.Count; ++i)

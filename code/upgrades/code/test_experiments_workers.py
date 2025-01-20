@@ -18,7 +18,7 @@ from ortools.sat.python import cp_model
 #import localsolver
 
 
-TIME_LIMIT_IN_SECONDS = 300#1200
+TIME_LIMIT_IN_SECONDS = 1200#1200
 RANDOM_SEED = 1
 CALLBACK = True
 
@@ -839,6 +839,7 @@ def run_ortools(path):
     return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, workers, resources, history
 
 def run_hexaly(path):
+    import localsolver
     history = []
     resources = [(0,0)]
 
@@ -1056,15 +1057,17 @@ def run_hexaly(path):
 
 
 if __name__ == '__main__':
-    shutdown_when_finished = True
+    import sys
+    selected_solver = sys.argv[1]
+    shutdown_when_finished = False
     # TODO: include all paths, all instances
-    BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_with_workers\benchmarks_with_workers'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
     #BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\other\repetitions'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\all\fjssp_w'
     # test fjssp first, then wfjssp 
     #solvers = ['cplex_cp', 'ortools', 'hexaly', 'cplex_lp', 'gurobi']
-    runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
-    runs = [['cplex_lp', 'gurobi']]
+    #runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
+    #runs = [['cplex_lp', 'gurobi']]
     #solvers = ['hexaly']
     #solvers = ['cplex_cp','ortools', 'gurobi', 'hexaly']
     #solvers = ['gurobi', 'cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
@@ -1078,14 +1081,17 @@ if __name__ == '__main__':
     #    'ortools': ['0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs']}
 
     skip = False
-    instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
+    #instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
+
+    instances = os.listdir(BENCHMARK_PATH)
+    runs = [[selected_solver]]
     for i in range(len(runs)):
         solvers = runs[i]
-        if i == 0 and False:
-            instances = os.listdir(BENCHMARK_PATH)
-        else:
-            instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
-        n_experiments = 5
+        #if i == 0 and False:
+        #    instances = os.listdir(BENCHMARK_PATH)
+        #else:
+        #    instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
+        n_experiments = 1
         #instances.reverse()
         for i in range(n_experiments):
             for solver in solvers:
