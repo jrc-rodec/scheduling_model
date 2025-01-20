@@ -75,7 +75,7 @@ class WorkerEncoding:
 
     def n_workers(self):
         return self.__durations.shape[2]
-    
+
     def n_jobs(self):
         return self.__n_jobs
     
