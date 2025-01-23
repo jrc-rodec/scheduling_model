@@ -25,7 +25,7 @@ namespace BenchmarkParsing
             List<int> uniqueDurations = new List<int>();
             int overallOptions = 0;
             int[] onMachines = new int[encoding.NMachines];
-            int[,,] combinations = new int[encoding.Durations.GetLength(0), encoding.Durations.GetLength(1), encoding.Durations.GetLength(2)];
+            int[,] combinations = new int[encoding.Durations.GetLength(1), encoding.Durations.GetLength(2)];
             int unique = 0;
             for (int i = 0; i < encoding.Durations.GetLength(0); ++i)
             {
@@ -44,11 +44,11 @@ namespace BenchmarkParsing
                             ++onMachines[j];
                             ++overallOptions;
                             ++machineCount;
-                            if (combinations[i,j,k] == 0)
+                            if (combinations[j,k] == 0)
                             {
                                 unique += 1;
                             }
-                            combinations[i, j, k] += 1;
+                            combinations[j, k] += 1;
                         }
                     }
                 }

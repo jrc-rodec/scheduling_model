@@ -157,7 +157,7 @@ namespace Solver
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\flex\\";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\flex\\repeat\\";
             //if (localSearch)
             //{
             //if(iteration == 0)
