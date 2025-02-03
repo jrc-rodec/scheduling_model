@@ -11,13 +11,13 @@ namespace GA_Uncertainty
     public class History
     {
         private string _name;
-        private List<float> _overallBestFitness;
-        private List<float> _resetBestHistory;
+        private List<Dictionary<Criteria, float> _overallBestFitness;
+        private List<Dictionary<Criteria, float> _resetBestHistory;
         private List<int> _nEqualOverallBestSolutions;
         private List<int> _nEqualResetBestSolutions;
         private List<float> _mutationProbability;
         private List<int> _populationSize;
-        private List<float> _averagePopulationFitness;
+        private List<Dictionary<Criteria, float> _averagePopulationFitness;
         private Result _result;
 
         public History()
@@ -35,18 +35,35 @@ namespace GA_Uncertainty
 
         public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population)
         {
-            _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
-            _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
+            // TODO: parameter to determine which criteria are needed
+            Dictionary<Criteria, float> overallBest = new Dictionary<Criteria, float>{
+                {Criteria.Makespan, overallBest[0].Fitness[Criteria.Makespan]},
+                {Criteria.AverageRobustness, overallBest[0].Fitness[Criteria.AverageRobustness]}
+            }
+            _overallBestFitness.Add(overallBest);
+            Dictionary<Criteria, float> resetBest = new Dictionary<Criteria, float>{
+                {Criteria.Makespan, overallBest[0].Fitness[Criteria.Makespan]},
+                {Criteria.AverageRobustness, overallBest[0].Fitness[Criteria.AverageRobustness]}
+            }
+            _resetBestHistory.Add(resetBest);
+            //_overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
+            //_resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
             _nEqualOverallBestSolutions.Add(overallBest.Count);
             _nEqualResetBestSolutions.Add(currentBest.Count);
             _mutationProbability.Add(p);
             _populationSize.Add(population.Count);
-            float average = 0.0f;
+            float averageMakespan = 0.0f;
+            float averageAverageRobustness = 0.0f;
             for (int i = 0; i < population.Count; ++i)
             {
-                average += population[i].Fitness[Criteria.Makespan];
+                averageMakespan += population[i].Fitness[Criteria.Makespan];
+                averageAverageRobustness += population[i].Fitness[Criteria.AverageRobustness];
             }
-            _averagePopulationFitness.Add(average / population.Count);
+            Dictionary<Criteria, float> averageBest = new Dictionary<Criteria, float>{
+                {Criteria.Makespan, averageMakespan / population.Count},
+                {Criteria.AverageRobustness, averageAverageRobustness / population.Count}
+            }
+            _averagePopulationFitness.Add(averageBest);
         }
 
         public void ToFile(string path)

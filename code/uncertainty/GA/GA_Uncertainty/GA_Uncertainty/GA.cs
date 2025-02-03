@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace GA_Uncertainty
 {
-    public class GA //: GA
+    public class GA
     {
         protected List<Individual> _population;
-        //private GAConfiguration _configuration;
         protected Random _random;
 
         protected bool _generationStop = false;
@@ -47,9 +46,11 @@ namespace GA_Uncertainty
             Reset();
             _workerDurations = workerDurations;
             _evaluators = new List<Evaluation>();
+            // not necessarily all are needed for comparison
             _evaluators.Add(new Makespan(configuration, workerDurations));
             _evaluators.Add(new AverageRobustness(configuration, workerDurations, 10, 0.1f)); // TODO
             // TODO: parameters
+            // determine which ones are used to compare individuals
             List<Criteria> highestRank = [Criteria.Makespan];
             List<Criteria> secondRank = [Criteria.AverageRobustness];
             Individual.ranking.Add(highestRank);
@@ -64,6 +65,7 @@ namespace GA_Uncertainty
             {
                 evaluation.Evaluate(individual);
             }
+            _functionEvaluations++;
         }
 
         protected Individual TournamentSelection(int tournamentSize)
@@ -85,10 +87,13 @@ namespace GA_Uncertainty
             Individual winner = _population[participants[0]];
             for (int i = 1; i < participants.Count; ++i)
             {
-                if (_population[participants[i]].Fitness[Criteria.Makespan] < winner.Fitness[Criteria.Makespan])
-                {
+                if(Individual.Compare(_population[participants[i]], winner) == 1){
                     winner = _population[participants[i]];
                 }
+                /*if (_population[participants[i]].Fitness[Criteria.Makespan] < winner.Fitness[Criteria.Makespan])
+                {
+                    winner = _population[participants[i]];
+                }*/
             }
             return winner;
         }
@@ -116,7 +121,8 @@ namespace GA_Uncertainty
                 Evaluate(individual);
                 _population.Add(individual);
             }
-            _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
+            _population = Individual.RankedSort(_population);
+            //_population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
         }
 
         protected void CreateOffspring(List<Individual> offspring, int offspringAmount, int tournamentSize, float mutationProbability)
@@ -152,10 +158,13 @@ namespace GA_Uncertainty
             List<Individual> result = new List<Individual>();
             for (int i = 0; i < individuals.Count; ++i)
             {
-                if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
-                {
+                if(Individual.CompareRanked(original, individuals[i]) == 0){
                     result.Add(individuals[i]);
                 }
+                /*if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
+                {
+                    result.Add(individuals[i]);
+                }*/
             }
             return result;
         }
@@ -181,7 +190,6 @@ namespace GA_Uncertainty
 
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple)
         {
-            bool rankedComparison = false; // TODO: parameter
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
             // Setup all required parameters using the decision variables
@@ -215,9 +223,32 @@ namespace GA_Uncertainty
                 }
                 if (mutationProbability > maxMutationProbability)
                 {
-                    Individual localMinimum = currentBest[0];
+                    int compare = Individual.Compare(currentBest[0], overallBest[0]);
                     // only necessary if local search is conducted
-                    if (localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
+                    if (compare == 1){
+                        overallBest.Clear();
+                        improvement = true;
+                        if(keepMultiple){
+                            foreach(Individual individual in currentBest){
+                                // TODO: double check this if
+                                if(individual.Compare(currentBest[0], individual) == 0){
+                                    overallBest.Add(individual);
+                                }
+                            }
+                        } else {
+                            overallBest.Add(currentBest[0]);
+                        }
+                    } else if(keepMultiple && compare == 0){
+                        foreach(Individual individual in currentBest){
+                            // TODO: double check this if
+                            if(Individual.Compare(overallBest[0], individual) == 0){
+                                overallBest.Add(individual);
+                            }
+                        }
+                        match = true;
+                    }
+                    //Individual localMinimum = currentBest[0];
+                    /*if (localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
                         overallBest.Clear(); // just never happened without local search
                         improvement = true;
@@ -246,7 +277,7 @@ namespace GA_Uncertainty
                             }
                         }
                         match = true;
-                    }
+                    }*/
                     if (_output)
                     {
                         Debug_Report(generation - 1, overallBest, currentBest, restarts, improvement, match);
@@ -277,20 +308,22 @@ namespace GA_Uncertainty
                     // NOTE: population should always be sorted at this point
                     pool.Add(_population[i]);
                 }
-                if (rankedComparison)
-                {
+                //if (rankedComparison)
+                //{
                     pool = Individual.RankedSort(pool);
-                } else
-                {
-                    pool.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
-                }
+                //} else
+                //{
+                //    pool.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
+                //}
                 _population = new List<Individual>();
                 for (int i = 0; i < populationSize; ++i)
                 {
                     _population.Add(pool[i]);
                 }
 
-                if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
+                int compare = Individual.Compare(_population[0], currentBest[0]);
+                //if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
+                if (currentBest.Count == 0 || compare == 1)
                 {
                     if (keepMultiple)
                     {
@@ -301,7 +334,9 @@ namespace GA_Uncertainty
                         currentBest.Clear();
                         currentBest.Add(_population[0]);
                     }
-                    if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
+                    //if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
+                    int currentCompare = Individual.Compare(currentBest[0], overallBest[0]);
+                    if (compare == 1)
                     {
                         overallBest.Clear();
                         improvement = true;
@@ -314,7 +349,8 @@ namespace GA_Uncertainty
                             overallBest.Add(currentBest[0]);
                         }
                     }
-                    else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
+                    //else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
+                    else if (keepMultiple && currentCompare == 0)
                     {
                         match = true;
                         for (int i = 0; i < currentBest.Count; ++i)
@@ -327,7 +363,8 @@ namespace GA_Uncertainty
                     }
                     lastProgress = generation;
                 }
-                else if (keepMultiple && _population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
+                //else if (keepMultiple && _population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
+                else if (keepMultiple && compare == 0)
                 {
                     List<Individual> equals = GetAllEqual(_population[0], _population);
                     for (int i = 0; i < equals.Count; ++i)
@@ -337,7 +374,8 @@ namespace GA_Uncertainty
                             currentBest.Add(equals[i]);
                         }
                     }
-                    if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
+                    //if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
+                    if (Individual.Compare(currentBest[0], overallBest[0]) == 0)
                     {
                         for (int i = 0; i < currentBest.Count; ++i)
                         {

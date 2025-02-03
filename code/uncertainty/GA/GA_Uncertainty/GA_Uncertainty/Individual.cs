@@ -39,6 +39,19 @@ namespace GA_Uncertainty
                         .ThenBy(r => r.Fitness[ranking[1][0]])];
         }
 
+        public static int CompareRanked(Individual a, Individual b){
+            foreach(List<Criteria> rank in ranking){
+                // TODO: enable more than one per rank
+                if(a[rank[0]] < b[rank[0]]){
+                    return 1;
+                }
+                if(a[rank[0]] > b[rank[0]]){
+                    return -1;
+                }
+            }
+            return 0;
+        }
+
         public Individual DeepCopy()
         {
             Individual copy = new Individual(false);
