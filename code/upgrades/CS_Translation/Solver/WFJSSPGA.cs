@@ -68,9 +68,36 @@ namespace Solver
             configuration.MutationProbability = 1.0f / (configuration.NOperations * 3.0f);
         }
 
+        private bool WorkerAvailable(Dictionary<string, int> gap, int operation, int operationIndex, WFJSSPIndividual individual, int index, int[] operationEndTimes)
+        {
+            int machine = individual.Assignments[operationIndex];
+
+            int worker = individual.Workers[operationIndex];
+
+            int duration = _workerDurations[operation, machine, worker];
+            int[] nextOperation = new int[_configuration.NJobs];
+            for (int i = 0; i < index; i++)
+            {
+                int opId = _configuration.JobStartIndices[_configuration.JobSequence[i]] + nextOperation[_configuration.JobSequence[i]]++;
+                if (individual.Workers[opId] == worker)
+                {
+                    int end = operationEndTimes[opId];
+                    int d = _workerDurations[opId, individual.Assignments[opId], individual.Workers[opId]];
+                    int start = end - d;
+                    if ((gap["start"] >= start && gap["start"] <= end) || (gap["end"] >= start && gap["end"] <= end) || (start >= gap["start"] && start <= gap["end"]) || (end >= gap["start"] && end <= gap["end"])){
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         private void Adjust(WFJSSPIndividual nIndividual)
         {
-            return;
+            if (!adjust)
+            {
+                return;
+            }
             WFJSSPIndividual individual = (WFJSSPIndividual)nIndividual;
             // TODO
             List<List<Dictionary<string, int>>> gaps = new List<List<Dictionary<string, int>>>();
@@ -87,7 +114,7 @@ namespace Solver
 
             for (int i = 0; i < individual.Sequence.Length; ++i)
             {
-                int job = 0;
+                int job = _configuration.JobSequence[i];
                 int operation = nextOperation[job]++;
                 int operationIndex = _configuration.JobStartIndices[job] + operation;
                 int machine = individual.Assignments[operationIndex];
@@ -102,7 +129,8 @@ namespace Solver
                     Dictionary<string, int> gap = gaps[machine][j];
                     if (gap["end"] - gap["start"] >= duration)
                     {
-                        if (operationIndex == 0 || _configuration.JobSequence[operationIndex - 1] == _configuration.JobSequence[operationIndex] && endTimesOfOperations[operationIndex - 1] <= gap["end"] - duration)
+                        if (operationIndex == 0 || _configuration.JobSequence[operationIndex - 1] == _configuration.JobSequence[operationIndex] 
+                            && endTimesOfOperations[operationIndex - 1] <= gap["end"] - duration && WorkerAvailable(gap, operation, operationIndex, individual, i, endTimesOfOperations))
                         {
                             // gap can be used
                             inserted = true;
@@ -591,8 +619,11 @@ namespace Solver
             Console.ResetColor();
         }
 
-        public WorkerHistory Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool doLocalSearch)
+
+        private bool adjust = false;
+        public WorkerHistory Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool doLocalSearch, bool adjustment)
         {
+            adjust = adjustment;
             CreatePopulation(_configuration.PopulationSize);
             List<WFJSSPIndividual> offspring = new List<WFJSSPIndividual>();
             // Setup all required parameters using the decision variables

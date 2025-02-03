@@ -108,7 +108,7 @@ namespace GAWorkerProcess
                 GA ga = new GA(configuration, false);
                 ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
                 
-                History history = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+                History history = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false);
                 // done
                 ResponseMessage resultMessage = new ResponseMessage();
                 resultMessage.history = history;

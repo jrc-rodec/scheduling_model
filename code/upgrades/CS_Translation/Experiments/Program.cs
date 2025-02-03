@@ -49,7 +49,7 @@ namespace Experiments
         {
             GA ga = new GA(configuration, false);
             ga.SetStoppingCriteriaStatus(stoppingCriteria[0], stoppingCriteria[1], stoppingCriteria[3], stoppingCriteria[2]); // TODO: change signature parameter order
-            return ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
+            return ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false);
         }
 
         static void Main(string[] args)
