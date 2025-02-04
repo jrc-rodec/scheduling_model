@@ -114,7 +114,24 @@ namespace GA_Uncertainty
 
         static void Main(string[] args)
         {
-
+            int index = 0;
+            string config = "";
+            if (args.Length > 0)
+            {
+                for(int i = 0; i < args.Length; ++i)
+                {
+                    if (args[i] == "-i")
+                    {
+                        int.TryParse(args[++i], out index);
+                        Console.ForegroundColor = _colors[(index - 1) % _colors.Length];
+                    } else if (args[i] == "-c")
+                    {
+                        config = args[++i];
+                    }
+                    Console.WriteLine(args[i]);
+                }
+            }
+            /*
             string path = "<insert path to benchmarks here>";
             string outPath = "<insert output path here>";
             string knownBestPath = "<insert path to best known results here>";
@@ -122,12 +139,6 @@ namespace GA_Uncertainty
             int timeLimit = 300; // in seconds
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
-            if (args.Length > 0)
-            {
-                //path = args[0];
-                int.TryParse(args[0], out index);
-                Console.ForegroundColor = _colors[index - 1];
-            }
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0 };
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
             {
@@ -141,6 +152,7 @@ namespace GA_Uncertainty
             {
                 RunExperiment(path, outPath, knownBestPath, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, i);
             }
+            */
         }
     }
 }

@@ -138,27 +138,36 @@ namespace GA_Uncertainty
         }
     }
 
-    public class AverageRobustness : Evaluation
+    public abstract class RobustEvaluation : Evaluation
     {
 
-        private int _nExperiments;
-        private Makespan _evaluator;
-        private Random _random;
-        private float _stdev;
-        public AverageRobustness(GAConfiguration configuration, int[,,] workerDurations, int nExperiments, float stdev) : base(configuration, workerDurations)
+        protected int _nExperiments;
+        protected Random _random;
+        protected float _stdev;
+        public RobustEvaluation(GAConfiguration configuration, int[,,] workerDurations, int nExperiments) : base(configuration, workerDurations)
         {
             _nExperiments = nExperiments;
-            _evaluator = new Makespan(configuration, workerDurations);
             _random = new Random();
-            _stdev = stdev;
+            _stdev = 0.1f;
         }
 
-        private double RandomNormal(float mean)
+        protected double RandomNormal(float mean)
         {
             double u1 = 1.0 - _random.NextDouble(); //uniform(0,1] random doubles
             double u2 = 1.0 - _random.NextDouble();
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
             return mean + _stdev * randStdNormal;
+        }
+    }
+
+    public class AverageRobustness : RobustEvaluation
+    {
+
+        public AverageRobustness(GAConfiguration configuration, int[,,] workerDurations, int nExperiments, float stdev) : base(configuration, workerDurations, nExperiments)
+        {
+            _nExperiments = nExperiments;
+            _random = new Random();
+            _stdev = stdev;
         }
 
         public float Simulate(Individual individual)
@@ -235,4 +244,93 @@ namespace GA_Uncertainty
             _functionEvaluations++;
         }
     }
+
+    public class RandomDelayRobustnessEvaluation : RobustEvaluation
+    {
+        float[] _machineProbabilities;
+
+        public RandomDelayRobustnessEvaluation(GAConfiguration configuration, int[,,] workerDurations, float[] machineProbabilities, int nExperiments) : base(configuration, workerDurations, nExperiments)
+        {
+            _machineProbabilities = machineProbabilities;
+        }
+
+        private float Simulate(Individual individual)
+        {
+            int[] nextOperation = new int[_configuration.NJobs];
+            List<TimeSlot>[] endOnMachines = new List<TimeSlot>[_configuration.NMachines];
+            for (int i = 0; i < endOnMachines.Length; ++i)
+            {
+                endOnMachines[i] = new List<TimeSlot>();
+                endOnMachines[i].Add(new TimeSlot(0, 0));
+            }
+            List<TimeSlot>[] endOfWorkers = new List<TimeSlot>[_workerDurations.GetLength(2)];
+            for (int i = 0; i < endOfWorkers.Length; ++i)
+            {
+                endOfWorkers[i] = new List<TimeSlot>();
+                endOfWorkers[i].Add(new TimeSlot(0, 0));
+            }
+            int[] endTimes = new int[_configuration.JobSequence.Length];
+            for (int i = 0; i < individual.Sequence.Length; ++i)
+            {
+                int job = individual.Sequence[i];
+                int operation = nextOperation[job];
+                ++nextOperation[job];
+                int startIndex = _configuration.JobStartIndices[job] + operation;
+                int machine = individual.Assignments[startIndex];
+
+                int worker = individual.Workers[startIndex];
+                //int duration = Math.Min(1, (int)(RandomNormal(_workerDurations[startIndex, machine, worker]) + 0.5));
+                int duration = _workerDurations[startIndex, machine, worker];
+                if(_random.NextDouble() < _machineProbabilities[machine])
+                {
+                    duration += (int)((duration * _random.NextDouble()) + 0.5); //TODO: parameter for max/min ranges
+                }
+                if (duration == 0)
+                {
+                    Console.WriteLine("0 DURATION, INVALID ASSIGNMENT!");
+                }
+                int offset = 0;
+                if (operation > 0)
+                {
+                    if (endTimes[startIndex - 1] > offset)
+                    {
+                        // need to wait for previous operation to finish
+                        offset = endTimes[startIndex - 1];
+                    }
+                }
+                if (endOnMachines[machine].Count > 0 && endOnMachines[machine].Last().End >= offset)
+                {
+                    // need to wait for machine to be available
+                    offset = endOnMachines[machine].Last().End;
+                }
+                // (could be on other machine at a later time already)
+                if (endOfWorkers[worker].Count > 0)
+                {
+                    TimeSlot workerEarliest = EarliestFit(endOfWorkers[worker], new TimeSlot(offset, offset + duration));
+                    if (workerEarliest.End >= offset)
+                    //if (endOfWorkers[worker].Last().End >= offset)
+                    {
+                        // need to wait for worker to be ready
+                        offset = workerEarliest.End;
+                    }
+                }
+                endTimes[startIndex] = offset + duration;
+                endOnMachines[machine].Add(new TimeSlot(offset, offset + duration));
+                endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration));
+            }
+            return endTimes.Max();
+        }
+
+        public override void Evaluate(Individual individual)
+        {
+            float fitness = 0.0f;
+            for (int i = 0; i < _nExperiments; ++i)
+            {
+                fitness += Simulate(individual);
+            }
+            individual.Fitness[Criteria.AverageRobustness] = fitness / _nExperiments;
+            _functionEvaluations++;
+        }
+    }
+    
 }
