@@ -87,7 +87,7 @@ namespace GA_Uncertainty
             Individual winner = _population[participants[0]];
             for (int i = 1; i < participants.Count; ++i)
             {
-                if(Individual.Compare(_population[participants[i]], winner) == 1){
+                if(Individual.CompareRanked(_population[participants[i]], winner) == 1){
                     winner = _population[participants[i]];
                 }
                 /*if (_population[participants[i]].Fitness[Criteria.Makespan] < winner.Fitness[Criteria.Makespan])
@@ -223,25 +223,25 @@ namespace GA_Uncertainty
                 }
                 if (mutationProbability > maxMutationProbability)
                 {
-                    int compare = Individual.Compare(currentBest[0], overallBest[0]);
+                    int compareBest = Individual.CompareRanked(currentBest[0], overallBest[0]);
                     // only necessary if local search is conducted
-                    if (compare == 1){
+                    if (compareBest == 1){
                         overallBest.Clear();
                         improvement = true;
                         if(keepMultiple){
                             foreach(Individual individual in currentBest){
                                 // TODO: double check this if
-                                if(individual.Compare(currentBest[0], individual) == 0){
+                                if(Individual.CompareRanked(currentBest[0], individual) == 0){
                                     overallBest.Add(individual);
                                 }
                             }
                         } else {
                             overallBest.Add(currentBest[0]);
                         }
-                    } else if(keepMultiple && compare == 0){
+                    } else if(keepMultiple && compareBest == 0){
                         foreach(Individual individual in currentBest){
                             // TODO: double check this if
-                            if(Individual.Compare(overallBest[0], individual) == 0){
+                            if(Individual.CompareRanked(overallBest[0], individual) == 0){
                                 overallBest.Add(individual);
                             }
                         }
@@ -321,7 +321,7 @@ namespace GA_Uncertainty
                     _population.Add(pool[i]);
                 }
 
-                int compare = Individual.Compare(_population[0], currentBest[0]);
+                int compare = Individual.CompareRanked(_population[0], currentBest[0]);
                 //if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
                 if (currentBest.Count == 0 || compare == 1)
                 {
@@ -335,7 +335,7 @@ namespace GA_Uncertainty
                         currentBest.Add(_population[0]);
                     }
                     //if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
-                    int currentCompare = Individual.Compare(currentBest[0], overallBest[0]);
+                    int currentCompare = Individual.CompareRanked(currentBest[0], overallBest[0]);
                     if (compare == 1)
                     {
                         overallBest.Clear();
@@ -375,7 +375,7 @@ namespace GA_Uncertainty
                         }
                     }
                     //if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
-                    if (Individual.Compare(currentBest[0], overallBest[0]) == 0)
+                    if (Individual.CompareRanked(currentBest[0], overallBest[0]) == 0)
                     {
                         for (int i = 0; i < currentBest.Count; ++i)
                         {

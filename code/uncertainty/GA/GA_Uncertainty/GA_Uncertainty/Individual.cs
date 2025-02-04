@@ -42,10 +42,10 @@ namespace GA_Uncertainty
         public static int CompareRanked(Individual a, Individual b){
             foreach(List<Criteria> rank in ranking){
                 // TODO: enable more than one per rank
-                if(a[rank[0]] < b[rank[0]]){
+                if(a.Fitness[rank[0]] < b.Fitness[rank[0]]){
                     return 1;
                 }
-                if(a[rank[0]] > b[rank[0]]){
+                if(a.Fitness[rank[0]] > b.Fitness[rank[0]]){
                     return -1;
                 }
             }

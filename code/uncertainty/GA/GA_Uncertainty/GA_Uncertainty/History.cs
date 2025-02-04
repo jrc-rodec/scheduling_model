@@ -11,24 +11,24 @@ namespace GA_Uncertainty
     public class History
     {
         private string _name;
-        private List<Dictionary<Criteria, float> _overallBestFitness;
-        private List<Dictionary<Criteria, float> _resetBestHistory;
+        private List<Dictionary<Criteria, float>> _overallBestFitness;
+        private List<Dictionary<Criteria, float>> _resetBestHistory;
         private List<int> _nEqualOverallBestSolutions;
         private List<int> _nEqualResetBestSolutions;
         private List<float> _mutationProbability;
         private List<int> _populationSize;
-        private List<Dictionary<Criteria, float> _averagePopulationFitness;
+        private List<Dictionary<Criteria, float>> _averagePopulationFitness;
         private Result _result;
 
         public History()
         {
-            _overallBestFitness = new List<float>();
-            _resetBestHistory = new List<float>();
+            _overallBestFitness = new List<Dictionary<Criteria, float>>();
+            _resetBestHistory = new List<Dictionary<Criteria, float>>();
             _mutationProbability = new List<float>();
             _populationSize = new List<int>();
             _nEqualOverallBestSolutions = new List<int>();
             _nEqualResetBestSolutions = new List<int>();
-            _averagePopulationFitness = new List<float>();
+            _averagePopulationFitness = new List<Dictionary<Criteria, float>>();
             _name = "";
 
         }
@@ -36,15 +36,15 @@ namespace GA_Uncertainty
         public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population)
         {
             // TODO: parameter to determine which criteria are needed
-            Dictionary<Criteria, float> overallBest = new Dictionary<Criteria, float>{
+            Dictionary<Criteria, float> overallBestDict = new Dictionary<Criteria, float>{
                 {Criteria.Makespan, overallBest[0].Fitness[Criteria.Makespan]},
                 {Criteria.AverageRobustness, overallBest[0].Fitness[Criteria.AverageRobustness]}
-            }
-            _overallBestFitness.Add(overallBest);
+            };
+            _overallBestFitness.Add(overallBestDict);
             Dictionary<Criteria, float> resetBest = new Dictionary<Criteria, float>{
                 {Criteria.Makespan, overallBest[0].Fitness[Criteria.Makespan]},
                 {Criteria.AverageRobustness, overallBest[0].Fitness[Criteria.AverageRobustness]}
-            }
+            };
             _resetBestHistory.Add(resetBest);
             //_overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             //_resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -62,7 +62,7 @@ namespace GA_Uncertainty
             Dictionary<Criteria, float> averageBest = new Dictionary<Criteria, float>{
                 {Criteria.Makespan, averageMakespan / population.Count},
                 {Criteria.AverageRobustness, averageAverageRobustness / population.Count}
-            }
+            };
             _averagePopulationFitness.Add(averageBest);
         }
 
@@ -72,13 +72,13 @@ namespace GA_Uncertainty
             File.AppendAllText(@path, text);
         }
 
-        public List<float> OverallBestFitness { get => _overallBestFitness; }
-        public List<float> ResetBestHistory { get => _resetBestHistory; }
+        public List<Dictionary<Criteria, float>> OverallBestFitness { get => _overallBestFitness; }
+        public List<Dictionary<Criteria, float>> ResetBestHistory { get => _resetBestHistory; }
         public List<int> NEqualOverallBestSolutions { get => _nEqualOverallBestSolutions; }
         public List<int> NEqualResetBestSolutions { get => _nEqualResetBestSolutions; }
         public List<float> MutationProbability { get => _mutationProbability; }
         public List<int> PopulationSize { get => _populationSize; }
-        public List<float> AveragePopulationFitness { get => _averagePopulationFitness; }
+        public List<Dictionary<Criteria, float>> AveragePopulationFitness { get => _averagePopulationFitness; }
         public Result Result { get => _result; set => _result = value; }
         public string Name { get => _name; set => _name = value; }
     }
