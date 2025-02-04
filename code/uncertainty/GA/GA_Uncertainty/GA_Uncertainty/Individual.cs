@@ -6,6 +6,56 @@ using System.Linq;
 namespace GA_Uncertainty
 {
 
+    public class IndividualLoader {
+
+        private static List<string> ReadFile(string path){
+            List<string> lines = "";
+            try {
+                StreamReader reader = new StreamReader(path);
+                while(reader.Peek() >= 0){
+                    lines.Add(reader.ReadLine());
+                }
+            } catch (IOException e) {
+                Console.WriteLine("Error reading file:\n" + e.Message);
+            } finally {
+                reader.Close();
+            }
+            return lines;
+        }
+
+        private static Individual ParseJson(string path){
+            List<string> lines = ReadFile(path);
+            string text = string.Join("", lines);
+            Dictionary<string,string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(text);
+            Individual individual = new Individual();
+            // fill Individual
+
+            return individual;
+        }
+
+        private static Individual ParseCSV(string path){
+            List<string> lines = ReadFile(path);
+            // find benchmark ? load all ? 
+            Individual individual = new Individual();
+            // fill individual
+
+            return new individual;
+        }
+
+        public static void LoadInstance(string instancePath, string resultPath){
+            Individual individual;
+            if(resultPath.EndsWith(".json")){
+                individual = ParseJson(resultPath);
+            } else {
+                individual = ParseCSV(resultPath);
+            }
+            BenchmarkParser parser = new BenchmarkParser();
+            Encoding encoding = parser.ParseBenchmark(instancePath);
+            Individual.Durations = encoding.Durations;
+            Individual.AvailableWorkers = encoding.GetAllWorkersForAllOperations();
+            Individual.AvailableMachines = encoding.GetAllMachinesForAllOperations();
+        }
+    }
     public class Individual //: Individual
     {
         public static List<List<Criteria>> ranking;
