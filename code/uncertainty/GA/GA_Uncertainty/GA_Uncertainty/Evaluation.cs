@@ -158,6 +158,11 @@ namespace GA_Uncertainty
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
             return mean + _stdev * randStdNormal;
         }
+
+        public void SetNormalStdev(float stdev)
+        {
+            _stdev = stdev;
+        }
     }
 
     public class AverageRobustness : RobustEvaluation
