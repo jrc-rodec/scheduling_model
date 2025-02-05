@@ -1,6 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 
 namespace GA_Uncertainty
@@ -9,9 +11,9 @@ namespace GA_Uncertainty
     public class IndividualLoader {
 
         private static List<string> ReadFile(string path){
-            List<string> lines = "";
+            List<string> lines = new List<string>();
+            StreamReader reader = new StreamReader(path);
             try {
-                StreamReader reader = new StreamReader(path);
                 while(reader.Peek() >= 0){
                     lines.Add(reader.ReadLine());
                 }
@@ -27,7 +29,7 @@ namespace GA_Uncertainty
             List<string> lines = ReadFile(path);
             string text = string.Join("", lines);
             Dictionary<string,string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(text);
-            Individual individual = new Individual();
+            Individual individual = new Individual(true);
             // fill Individual
 
             return individual;
@@ -36,10 +38,10 @@ namespace GA_Uncertainty
         private static Individual ParseCSV(string path){
             List<string> lines = ReadFile(path);
             // find benchmark ? load all ? 
-            Individual individual = new Individual();
+            Individual individual = new Individual(true);
             // fill individual
 
-            return new individual;
+            return individual;
         }
 
         public static void LoadInstance(string instancePath, string resultPath){
