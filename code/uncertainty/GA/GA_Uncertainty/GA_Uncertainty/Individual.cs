@@ -19,7 +19,7 @@ namespace GA_Uncertainty
             public String Instance { get; set; }
             public float Ffitness { get; set; }
             public List<int> Sequence { get; set; }
-            public List<int> Sachines { get; set; }
+            public List<int> Machines { get; set; }
             public List<int> Worker { get; set; }
         }
 
