@@ -114,7 +114,8 @@ namespace GA_Uncertainty
 
         static void Main(string[] args)
         {
-            int index = 0;
+            IndividualLoader.LoadInstance("C:\\Users\\huda\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\", "C:\\Users\\huda\\Documents\\ResultRewriting\\ga_results.json");
+            /*int index = 0;
             string config = "";
             if (args.Length > 0)
             {
@@ -130,7 +131,7 @@ namespace GA_Uncertainty
                     }
                     Console.WriteLine(args[i]);
                 }
-            }
+            }*/
             /*
             string path = "<insert path to benchmarks here>";
             string outPath = "<insert output path here>";

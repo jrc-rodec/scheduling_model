@@ -10,6 +10,19 @@ namespace GA_Uncertainty
 
     public class IndividualLoader {
 
+        private class JSONResultList
+        {
+            public List<JSONResult> JSONResults { get; set; }
+        }
+        private class JSONResult
+        {
+            public String Instance { get; set; }
+            public float Ffitness { get; set; }
+            public List<int> Sequence { get; set; }
+            public List<int> Sachines { get; set; }
+            public List<int> Worker { get; set; }
+        }
+
         private static List<string> ReadFile(string path){
             List<string> lines = new List<string>();
             StreamReader reader = new StreamReader(path);
@@ -27,8 +40,9 @@ namespace GA_Uncertainty
 
         private static Individual ParseJson(string path){
             List<string> lines = ReadFile(path);
-            string text = string.Join("", lines);
-            Dictionary<string,string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(text);
+            string text = lines[0];
+            JSONResultList data = JsonSerializer.Deserialize<JSONResultList>(text);
+            // load benchmark data for context
             Individual individual = new Individual(true);
             // fill Individual
 
