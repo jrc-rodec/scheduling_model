@@ -114,7 +114,7 @@ namespace GA_Uncertainty
 
         static void Main(string[] args)
         {
-            IndividualLoader.LoadInstance("C:\\Users\\huda\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\", "C:\\Users\\huda\\Documents\\ResultRewriting\\ga_results.json");
+            IndividualLoader.LoadResults("C:\\Users\\huda\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\", "C:\\Users\\huda\\Documents\\ResultRewriting\\cplex_cp_results.json", true);
             /*int index = 0;
             string config = "";
             if (args.Length > 0)
