@@ -1,6 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 
 namespace GA_Uncertainty
@@ -8,10 +10,23 @@ namespace GA_Uncertainty
 
     public class IndividualLoader {
 
+        private class JSONResultList
+        {
+            public List<JSONResult> results { get; set; }
+        }
+        private class JSONResult
+        {
+            public String instance { get; set; }
+            public float fitness { get; set; }
+            public List<int> sequence { get; set; }
+            public List<int> machines { get; set; }
+            public List<int> worker { get; set; }
+        }
+
         private static List<string> ReadFile(string path){
-            List<string> lines = "";
+            List<string> lines = new List<string>();
+            StreamReader reader = new StreamReader(path);
             try {
-                StreamReader reader = new StreamReader(path);
                 while(reader.Peek() >= 0){
                     lines.Add(reader.ReadLine());
                 }
@@ -23,37 +38,86 @@ namespace GA_Uncertainty
             return lines;
         }
 
-        private static Individual ParseJson(string path){
+        private static List<Individual> ParseJson(string path, string benchmarkPath, bool translateOperations){
             List<string> lines = ReadFile(path);
-            string text = string.Join("", lines);
-            Dictionary<string,string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(text);
-            Individual individual = new Individual();
-            // fill Individual
+            string text = lines[0];
+            JSONResultList data = JsonSerializer.Deserialize<JSONResultList>(text);
+            //List<JSONResult> data = JsonSerializer.Deserialize<List<JSONResult>>(text);
+            List<Individual> solutions = new List<Individual>();
+            
+            foreach (JSONResult result in data.results)
+            {
+                Console.WriteLine(result.instance);
+                // load benchmark data for context
+                BenchmarkParser parser = new BenchmarkParser();
+                Encoding encoding = parser.ParseBenchmark(benchmarkPath + result.instance);
+                DecisionVariables variables = new DecisionVariables(encoding);
+                GAConfiguration configuration = new GAConfiguration(encoding, variables);
+                Individual.Durations = encoding.Durations;
+                Individual.AvailableWorkers = encoding.GetAllWorkersForAllOperations();
+                Individual.AvailableMachines = encoding.GetAllMachinesForAllOperations();
+                Individual.JobSequence = encoding.JobSequence;
+                Individual individual = new Individual(true);
+                
+                // fill Individual
+                individual.Sequence = result.sequence.ToArray();
+                if (translateOperations) { 
+                    // sequence values are currently the start times
+                    for(int i = 0; i < individual.Sequence.Length; ++i)
+                    {
+                        // TODO: translate GA to start times instead of start times to sequence
+                    }
+                }
+                individual.Assignments = result.machines.ToArray();
+                individual.Workers = result.worker.ToArray();
+                
+                // for testing
+                Evaluation evaluation = new Makespan(configuration, encoding.Durations);
+                evaluation.Evaluate(individual);
+                // double check if everything is loaded correctly
+                if (individual.Fitness[Criteria.Makespan] != result.fitness)
+                {
+                    Console.WriteLine("SOMETHING DOESN'T ADD UP!");
+                }
 
-            return individual;
+                Evaluation processingTimes = new AverageRobustness(configuration, encoding.Durations, 10, 0.4f);
+                float[] machineProbabilities = new float[result.machines.Max()+1];
+                for(int i = 0; i < machineProbabilities.Length; ++i)
+                {
+                    machineProbabilities[i] = 0.1f;
+                }
+                Evaluation randomDelays = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10);
+                processingTimes.Evaluate(individual);
+                randomDelays.Evaluate(individual);
+                Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
+            }
+
+
+            return solutions;
         }
 
-        private static Individual ParseCSV(string path){
+        private static List<Individual> ParseCSV(string path){
             List<string> lines = ReadFile(path);
+            List<Individual> solutions = new List<Individual>();
             // find benchmark ? load all ? 
-            Individual individual = new Individual();
+            Individual individual = new Individual(true);
             // fill individual
 
-            return new individual;
+            return solutions;
         }
 
-        public static void LoadInstance(string instancePath, string resultPath){
-            Individual individual;
+        public static void LoadResults(string benchmarkPath, string resultPath)
+        {
+            LoadResults(benchmarkPath, resultPath, false);
+        }
+        public static void LoadResults(string benchmarkPath, string resultPath, bool translateOperations){
+            List<Individual> individual;
             if(resultPath.EndsWith(".json")){
-                individual = ParseJson(resultPath);
+                individual = ParseJson(resultPath, benchmarkPath, translateOperations);
             } else {
                 individual = ParseCSV(resultPath);
             }
-            BenchmarkParser parser = new BenchmarkParser();
-            Encoding encoding = parser.ParseBenchmark(instancePath);
-            Individual.Durations = encoding.Durations;
-            Individual.AvailableWorkers = encoding.GetAllWorkersForAllOperations();
-            Individual.AvailableMachines = encoding.GetAllMachinesForAllOperations();
+
         }
     }
     public class Individual //: Individual

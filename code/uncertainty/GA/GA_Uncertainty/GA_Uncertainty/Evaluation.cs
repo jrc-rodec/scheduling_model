@@ -9,7 +9,7 @@ namespace GA_Uncertainty
 {
     public enum Criteria
     {
-        Makespan, IdleTime, QueueTime, Tardiness, AverageRobustness
+        Makespan, IdleTime, QueueTime, Tardiness, AverageRobustness, RandomDelays
     }
 
     public class TimeSlot
@@ -158,6 +158,11 @@ namespace GA_Uncertainty
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
             return mean + _stdev * randStdNormal;
         }
+
+        public void SetNormalStdev(float stdev)
+        {
+            _stdev = stdev;
+        }
     }
 
     public class AverageRobustness : RobustEvaluation
@@ -196,7 +201,7 @@ namespace GA_Uncertainty
                 int machine = individual.Assignments[startIndex];
 
                 int worker = individual.Workers[startIndex];
-                int duration = Math.Min(1, (int)(RandomNormal(_workerDurations[startIndex, machine, worker])+0.5));
+                int duration = Math.Max(1, (int)(RandomNormal(_workerDurations[startIndex, machine, worker])+0.5));
                 if (duration == 0)
                 {
                     Console.WriteLine("0 DURATION, INVALID ASSIGNMENT!");
@@ -328,7 +333,7 @@ namespace GA_Uncertainty
             {
                 fitness += Simulate(individual);
             }
-            individual.Fitness[Criteria.AverageRobustness] = fitness / _nExperiments;
+            individual.Fitness[Criteria.RandomDelays] = fitness / _nExperiments;
             _functionEvaluations++;
         }
     }
