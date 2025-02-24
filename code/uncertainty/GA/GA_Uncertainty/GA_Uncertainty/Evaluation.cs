@@ -131,7 +131,7 @@ namespace GA_Uncertainty
 
                 endTimes[startIndex] = offset + duration;
                 endOnMachines[machine].Add(new TimeSlot(offset, offset + duration));
-                endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration));
+                endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration)); // Sort?
             }
             individual.Fitness[Criteria.Makespan] = endTimes.Max();
             _functionEvaluations++;
