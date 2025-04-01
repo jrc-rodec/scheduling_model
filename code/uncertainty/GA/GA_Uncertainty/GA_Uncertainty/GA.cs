@@ -48,7 +48,7 @@ namespace GA_Uncertainty
             _evaluators = new List<Evaluation>();
             // not necessarily all are needed for comparison
             _evaluators.Add(new Makespan(configuration, workerDurations));
-            _evaluators.Add(new AverageRobustness(configuration, workerDurations, 10, 0.1f)); // TODO
+            _evaluators.Add(new AverageRobustness(configuration, workerDurations, 10, 0.1f, 0.1f, 0.4f)); // TODO
             // TODO: parameters
             // determine which ones are used to compare individuals
             List<Criteria> highestRank = [Criteria.Makespan];

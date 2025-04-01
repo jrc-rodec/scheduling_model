@@ -38,7 +38,7 @@ namespace GA_Uncertainty
             return lines;
         }
 
-        private static List<Individual> ParseJson(string path, string benchmarkPath, bool translateOperations){
+        private static List<Individual> ParseJson(string path, string benchmarkPath, bool translateOperations, bool worker = false){
             List<string> lines = ReadFile(path);
             string text = lines[0];
             JSONResultList data = JsonSerializer.Deserialize<JSONResultList>(text);
@@ -71,7 +71,7 @@ namespace GA_Uncertainty
                 individual.Assignments = result.machines.ToArray();
                 individual.Workers = result.worker.ToArray();
                 
-                // for testing
+                // Evaluation
                 Evaluation evaluation = new Makespan(configuration, encoding.Durations);
                 evaluation.Evaluate(individual);
                 // double check if everything is loaded correctly
@@ -80,16 +80,28 @@ namespace GA_Uncertainty
                     Console.WriteLine("SOMETHING DOESN'T ADD UP!");
                 }
 
-                Evaluation processingTimes = new AverageRobustness(configuration, encoding.Durations, 10, 0.4f);
+                Evaluation processingTimes = new AverageRobustness(configuration, encoding.Durations, 10, 0.4f, 0.1f, 0.4f);
                 float[] machineProbabilities = new float[result.machines.Max()+1];
                 for(int i = 0; i < machineProbabilities.Length; ++i)
                 {
                     machineProbabilities[i] = 0.1f;
                 }
-                Evaluation randomDelays = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10);
+                Evaluation randomDelays = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
                 processingTimes.Evaluate(individual);
                 randomDelays.Evaluate(individual);
-                Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
+                //Console.WriteLine("SHIFTING:");
+                //Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
+                //Console.WriteLine("ADJUSTING:");
+                Individual adjusted = Adjustment.Adjust(individual, configuration);
+                Evaluation evaluationAdjusted = new Makespan(configuration, encoding.Durations);
+                evaluationAdjusted.Evaluate(adjusted);
+                Evaluation processingTimesAdjusted = new AdjustedAverageRobustness(configuration, encoding.Durations, 10, 0.4f, 0.1f, 0.4f);
+                Evaluation randomDelaysAdjusted = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
+                processingTimesAdjusted.Evaluate(individual);
+                randomDelaysAdjusted.Evaluate(adjusted);
+                //Console.WriteLine(result.fitness + " | " + adjusted.Fitness[Criteria.Makespan] + " | " + adjusted.Fitness[Criteria.AverageRobustness] + " | " + adjusted.Fitness[Criteria.RandomDelays]);
+                string summary = result.instance + ";" + result.fitness + ";" + individual.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AverageRobustness] + ";" + adjusted.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AdjustedAverageRobustness] + "\n";
+                File.AppendAllText(@"C:\Users\huda\Documents\shifting\adjusted_results.csv", summary);
             }
 
 
@@ -106,17 +118,18 @@ namespace GA_Uncertainty
             return solutions;
         }
 
-        public static void LoadResults(string benchmarkPath, string resultPath)
+        public static List<Individual> LoadResults(string benchmarkPath, string resultPath, bool worker = false)
         {
-            LoadResults(benchmarkPath, resultPath, false);
+            return LoadResults(benchmarkPath, resultPath, false, worker);
         }
-        public static void LoadResults(string benchmarkPath, string resultPath, bool translateOperations){
+        public static List<Individual> LoadResults(string benchmarkPath, string resultPath, bool translateOperations, bool worker = false){
             List<Individual> individual;
             if(resultPath.EndsWith(".json")){
-                individual = ParseJson(resultPath, benchmarkPath, translateOperations);
+                individual = ParseJson(resultPath, benchmarkPath, translateOperations, worker);
             } else {
                 individual = ParseCSV(resultPath);
             }
+            return individual;
 
         }
     }

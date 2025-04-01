@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using MathNet.Numerics.Distributions;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace GA_Uncertainty
 {
@@ -114,7 +116,18 @@ namespace GA_Uncertainty
 
         static void Main(string[] args)
         {
-            IndividualLoader.LoadResults("C:\\Users\\huda\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\", "C:\\Users\\huda\\Documents\\ResultRewriting\\ga_results.json", true);
+            List<Individual> individuals = IndividualLoader.LoadResults("C:\\Users\\huda\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\", "C:\\Users\\huda\\Documents\\ResultRewriting\\ga_results.json", true);
+
+            //Beta beta = new Beta(0.1f, 0.4f);
+            //for(int i = 0; i < 100; ++i)
+            //{
+            //    Console.WriteLine(beta.Sample());
+            //}
+            //Poisson poisson = new Poisson(0.2f);
+            //for(int i = 0; i < 100; ++i)
+            //{
+            //    Console.WriteLine(poisson.Sample());
+            //}
             /*int index = 0;
             string config = "";
             if (args.Length > 0)

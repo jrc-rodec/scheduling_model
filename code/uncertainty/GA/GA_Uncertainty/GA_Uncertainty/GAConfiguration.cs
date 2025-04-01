@@ -9,7 +9,7 @@ namespace GA_Uncertainty
     public class GAConfiguration
     {
 
-        private readonly int[,,] _durations;
+        private int[,,] _durations;
         private readonly int[] _jobSequence;
         private readonly int[] _jobStartIndices;
         private readonly DecisionVariables _decisionVariables;
@@ -52,7 +52,7 @@ namespace GA_Uncertainty
             }
         }
 
-        public int[,,] Durations => _durations;
+        public int[,,] Durations { get => _durations; set => _durations = value; }
         public int[] JobSequence => _jobSequence;
         public float Flexibility => _decisionVariables.Flexibility;
         public float AverageMachines => _decisionVariables.AverageMachines;
