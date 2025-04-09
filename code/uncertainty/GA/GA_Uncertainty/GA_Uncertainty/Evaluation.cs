@@ -411,7 +411,6 @@ namespace GA_Uncertainty
 
                 int worker = individual.Workers[startIndex];
 
-
                 //int duration = Math.Max(1, (int)(RandomNormal(_workerDurations[startIndex, machine, worker])+0.5));
                 int duration = durations[startIndex, machine, worker];// Math.Max(1, (int)(durations[startIndex, machine, worker] * (1.0 + b.Sample()) + 0.5)); // beta distribution
 

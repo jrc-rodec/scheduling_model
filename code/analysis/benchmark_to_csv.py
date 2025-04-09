@@ -46,7 +46,7 @@ def flexibility(benchmark):
             if durations[i][j] > 0:
                 n_assignments += 1
     average_assignments = n_assignments / o
-    return average_assignments / n_assignments
+    return average_assignments / m
 
 def get_flexibility_and_dv_worker(benchmark):
     all = 0
@@ -179,8 +179,8 @@ def read_fjssp_w(path):
 if __name__ == '__main__':
     mode = 'FJSSP'
     outpath = r'C:\Users\huda\Desktop\Data'
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
+    #if len(sys.argv) > 1:
+    #    mode = sys.argv[1]
     if mode == 'FJSSP-W':
         data = read_fjssp_w(r'C:\Users\huda\Documents\GitHub\scheduling_model_jrc\code\upgrades\benchmarks_with_workers')
         outpath += r'\FJSSP-W\data.csv'
