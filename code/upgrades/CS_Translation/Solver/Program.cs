@@ -1,9 +1,8 @@
 ﻿using BenchmarkParsing;
-using Microsoft.VisualBasic;
 using System.IO;
 using System.Runtime.InteropServices;
 using static BenchmarkParsing.BenchmarkParser;
-using static System.Net.Mime.MediaTypeNames;
+
 
 
 namespace Solver
@@ -14,74 +13,11 @@ namespace Solver
         static ConsoleColor[] _colors = { ConsoleColor.Red, ConsoleColor.Green, ConsoleColor.Blue, ConsoleColor.Yellow, ConsoleColor.White, ConsoleColor.Magenta};
         static void RunExperiment(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations, int iteration)
         {
-            /*// TODO
-            bool skip = false;
-            bool skipSource = false;
-            string[] sources = Directory.GetDirectories(basepath);
-            foreach (string source in sources)
-            {
-                History gaResult = null;
-                //Console.WriteLine(source);
-                if (source.EndsWith("6_Fattahi"))
-                {
-                    skipSource = false;
-                }
-                if (!skipSource)
-                {
 
-                    string[] instances = Directory.GetFiles(source);
-                    foreach (string instance in instances)
-                    {
-                        if (instance.EndsWith("Fattahi4.fjs"))
-                        {
-                            skip = false;
-                        }
-                        if (!skip)
-                        {
-                            Console.WriteLine("Processing: " + instance);
-                            BenchmarkParser parser = new BenchmarkParser();
-                            //Console.WriteLine("Parsing Complete");
-                            Encoding result = parser.ParseBenchmark(instance);
-                            //Console.WriteLine("Encoding Complete");
-                            DecisionVariables variables = new DecisionVariables(result);
-                            //Console.WriteLine("Decision Variables Complete");
-                            GAConfiguration configuration = new GAConfiguration(result, variables);
-                            //Console.WriteLine("Configuration Complete");
-                            GA ga = new GA(configuration, true);
-                            //Console.WriteLine("GA Creation Complete");
-                            ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-                            Console.WriteLine("Starting Run");
-                            gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-                            string[] fullPath = instance.Split("\\");
-                            gaResult.Name = fullPath.Last();
-                            gaResult.ToFile("C:\\Users\\huda\\Desktop\\experiments\\results_1_second.json");
-                        }
-                    }
-                }
-                //Console.ReadLine();
-            }
-            */
-            // TODO
-            //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
-            //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
             string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\ga_sorted\\";
 
-            //bool skipSource = true;
-            //string[] sources = Directory.GetDirectories(basepath);
-            //foreach (string source in sources)
-            //{
-            //Console.WriteLine(source);
-            //    if (source.EndsWith("6_Fattahi"))
-            //    {
-            //        skipSource = false;
-            //    }
-            //    if (!skipSource)
-            //    {
-
-            //var dict = File.ReadLines("C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\analysis\\best_known.txt").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
-            //string[] instances = { "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\HurinkVdata30.fjs" };
             
             foreach (string instance in instances)
             {
@@ -89,7 +25,6 @@ namespace Solver
                 string instanceName = instance.Split("\\").Last();
 
                 targetFitness = 0.0f;
-                //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
                 if (!File.Exists(outPath + instanceName + ".json"))
                 {
                     PrepareFile(outPath + instanceName + ".json");
@@ -123,18 +58,6 @@ namespace Solver
                     DelimitRun(outPath + instanceName + ".json");
                 }
             }
-
-            /*
-            BenchmarkParser parser = new BenchmarkParser();
-            Encoding result = parser.ParseBenchmark(path);
-            DecisionVariables variables = new DecisionVariables(result);
-            GAConfiguration configuration = new GAConfiguration(result, variables);
-            GA ga = new GA(configuration, true);
-            ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]); // TODO: change signature parameter order
-            History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
-            // TODO
-            gaResult.ToFile("test.json");
-            Console.WriteLine(gaResult.Result.ToString());*/
         }
 
         static void PrepareFile(string filename)
@@ -153,9 +76,7 @@ namespace Solver
         }
         static void RunExperimentWorkers(string basepath, bool[] criteriaStatus, int maxGenerations, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool localSearch, int iteration, bool adjustment)
         {
-            // TODO
-            //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
-            //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
+
             bool skip = false;
             WFJSSPGA.SORT = true;
             string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\SORTED_GA\\";
@@ -192,7 +113,7 @@ namespace Solver
             //    if (!skipSource)
             //    {
 
-            var dict = File.ReadLines("C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model_jrc\\code\\analysis\\best_known.txt").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
+            var dict = File.ReadLines("<insert path to best known results here>").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
@@ -210,7 +131,6 @@ namespace Solver
                         targetFitness = 0.0f;
                     }
                 }
-                //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\worker_results\\ga_results\\with_localsearch\\" + gaResult.Name + ".json";
                 if (!File.Exists(outPath+ instanceName + ".json"))
                 {
                     PrepareFile(outPath + instanceName + ".json");
@@ -258,30 +178,11 @@ namespace Solver
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
-            string mode = "";
-            bool adjustment = false;
             if (args.Length > 0)
             {
                 //path = args[0];
                 int.TryParse(args[0], out index);
                 Console.ForegroundColor = _colors[index-1];
-                mode = args[1];
-                if (mode.Equals("ADJUSTMENT"))
-                {
-                    adjustment = true;//path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\";
-                }
-                adjustment = false;
-                //else
-                //{
-                //   path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\";
-                //}
-                //if(args.Length > 1)
-                //{
-                //    int.TryParse(args[1], out maxGenerations);
-                //    int.TryParse(args[2], out timeLimit);
-                //    float.TryParse(args[3], out targetFitness);
-                //    int.TryParse(args[4], out maxFunctionEvaluations);
-                //}
             }
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0};
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -290,10 +191,11 @@ namespace Solver
                 return;
             }
             int nExperiments = 1;
-            //bool keepMultiple = false;
+            bool keepMultiple = false;
+            bool localSearch = false;
+            bool adjustmentStep = false;
             //int restartGenerations = 25;
 
-            //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations);
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
                 //if (mode.Equals("FJSSP"))
