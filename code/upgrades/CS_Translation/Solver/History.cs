@@ -20,6 +20,7 @@ namespace Solver
         private List<float> _mutationProbability;
         private List<int> _populationSize;
         private List<float> _averagePopulationFitness;
+        private List<double> _updateTimeStamps;
         private WorkerResult _result;
 
         public WorkerHistory()
@@ -31,11 +32,12 @@ namespace Solver
             _nEqualOverallBestSolutions = new List<int>();
             _nEqualResetBestSolutions = new List<int>();
             _averagePopulationFitness = new List<float>();
+            _updateTimeStamps = new List<double>();
             _name = "";
 
         }
 
-        public void Update(List<WFJSSPIndividual> overallBest, List<WFJSSPIndividual> currentBest, float p, List<WFJSSPIndividual> population)
+        public void Update(List<WFJSSPIndividual> overallBest, List<WFJSSPIndividual> currentBest, float p, List<WFJSSPIndividual> population, TimeSpan runtime)
         {
             _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -43,6 +45,7 @@ namespace Solver
             _nEqualResetBestSolutions.Add(currentBest.Count);
             _mutationProbability.Add(p);
             _populationSize.Add(population.Count);
+            _updateTimeStamps.Add(runtime.TotalMilliseconds / 1000.0);
             float average = 0.0f;
             for (int i = 0; i < population.Count; ++i)
             {
@@ -79,6 +82,7 @@ namespace Solver
         private List<float> _mutationProbability;
         private List<int> _populationSize;
         private List<float> _averagePopulationFitness;
+        private List<double> _updateTimeStamps;
         private Result _result;
 
         public History()
@@ -90,10 +94,11 @@ namespace Solver
             _nEqualOverallBestSolutions = new List<int>();
             _nEqualResetBestSolutions = new List<int>();
             _averagePopulationFitness = new List<float>();
+            _updateTimeStamps = new List<double>();
 
         }
 
-        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population)
+        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime)
         {
             _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -101,6 +106,7 @@ namespace Solver
             _nEqualResetBestSolutions.Add(currentBest.Count);
             _mutationProbability.Add(p);
             _populationSize.Add(population.Count);
+            _updateTimeStamps.Add(runtime.TotalMilliseconds / 1000.0);
             float average = 0.0f;
             for(int i = 0; i < population.Count; ++i)
             {

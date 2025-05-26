@@ -32,6 +32,9 @@ namespace Solver
         private int[,,] _workerDurations;
         private WorkerGAConfiguration _configuration;
 
+
+        public static bool SORT = true;
+
         public void Reset()
         {
             _random = new Random();
@@ -318,6 +321,10 @@ namespace Solver
                 //endTimes[startIndex] = Math.Max(endOnMachines[machine], endOfWorkers[worker]) + duration + offset;
                 endOnMachines[machine].Add(new TimeSlot(offset, offset + duration));
                 endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration));
+                if (SORT)
+                {
+                    endOfWorkers[worker] = endOfWorkers[worker].OrderBy(o => o.Start).ToList();
+                }
                 //endOnMachines[machine] = endTimes[startIndex];
                 //endOfWorkers[worker] = endTimes[startIndex];
             }
@@ -650,7 +657,7 @@ namespace Solver
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population);
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime));
                 if (generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);

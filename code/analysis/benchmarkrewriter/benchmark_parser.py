@@ -1,5 +1,5 @@
 
-from .encoding import Encoding, WorkerEncoding
+from encoding import Encoding, WorkerEncoding
 
 
 import numpy as np

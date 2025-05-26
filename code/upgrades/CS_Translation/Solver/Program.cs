@@ -15,7 +15,7 @@ namespace Solver
         {
 
             bool skip = false;
-            string outPath = "<insert output path here>";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\ga_sorted\\";
 
             string[] instances = Directory.GetFiles(basepath);
             
@@ -78,7 +78,40 @@ namespace Solver
         {
 
             bool skip = false;
-            string outPath = "<insert output path here>";
+            WFJSSPGA.SORT = true;
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\SORTED_GA\\";
+            if (index == 1)
+            {
+                outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\GA_SORTING_TEST\\unsorted\\";
+                WFJSSPGA.SORT = false;
+            } 
+            //if (localSearch)
+            //{
+            //if(iteration == 0)
+            //{
+            //    outPath += "dissimilarity\\";
+            //    WFJSSPIndividual.UseDissimilarity = true;
+            //} else
+            //{
+            //    outPath += "no_dissimilarity\\";
+            //    WFJSSPIndividual.UseDissimilarity = false;
+            //}
+            //outPath += ((iteration+1)*50).ToString()+"_populationSize\\";
+            //} else
+            //{
+            //    outPath += "nolocal\\";
+            //}
+            //bool skipSource = true;
+            //string[] sources = Directory.GetDirectories(basepath);
+            //foreach (string source in sources)
+            //{
+            //Console.WriteLine(source);
+            //    if (source.EndsWith("6_Fattahi"))
+            //    {
+            //        skipSource = false;
+            //    }
+            //    if (!skipSource)
+            //    {
 
             var dict = File.ReadLines("<insert path to best known results here>").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
@@ -137,9 +170,12 @@ namespace Solver
 
         static void Main(string[] args)
         {
-            string path = "<insert path to benchmarks here>";
+            //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
+            //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
+            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
             int maxGenerations = 0;
-            int timeLimit = 300; // in seconds
+            int timeLimit = 1200;// 300;// 1200;//1200;//300; // in seconds
+            //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
             if (args.Length > 0)
@@ -162,7 +198,13 @@ namespace Solver
 
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
-                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i, adjustmentStep);
+                //if (mode.Equals("FJSSP"))
+                //{
+                    //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
+                //} else
+                //{
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false, i, adjustment);
+                //}
             }
         }
     }
