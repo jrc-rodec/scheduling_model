@@ -15,6 +15,8 @@ from docplex.mp.progress import ProgressListener, ProgressClock
 import collections
 from ortools.sat.python import cp_model
 
+import math
+
 #import localsolver
 
 
@@ -472,13 +474,13 @@ def run_cplex_cp(path):
     lines = f.readlines()
     first_line = lines[0].split()
     # Number of jobs
-    nb_jobs = int(first_line[0])
+    nb_jobs = int(float(first_line[0]))
     # Number of machines
-    nb_machines = int(first_line[1])
+    nb_machines = int(float(first_line[1]))
     # Number of workers
-    nb_workers = int(first_line[2])
+    nb_workers = int(float(first_line[2]))
     # Number of operations for each job
-    nb_operations = [int(lines[j + 1].split()[0]) for j in range(nb_jobs)]
+    nb_operations = [int(float(lines[j + 1].split()[0])) for j in range(nb_jobs)]
 
     # Constant for incompatible machines
     INFINITE = 1000000
@@ -500,16 +502,16 @@ def run_cplex_cp(path):
         line = lines[j + 1].split()
         tmp_idx = 1
         for o in range(nb_operations[j]):
-            nb_machines_operation = int(line[tmp_idx])
+            nb_machines_operation = int(float(line[tmp_idx]))
             tmp_idx += 1
             m_w_helper=[]
             for i in range(nb_machines_operation):
-                machine = int(line[tmp_idx])-1
-                nb_m_workers = int(line[tmp_idx + 1])
+                machine = int(float(line[tmp_idx]))
+                nb_m_workers = int(float(line[tmp_idx + 1]))
                 tmp_idx += 2
                 for s in range(nb_m_workers):
-                    worker = int(line[tmp_idx])-1
-                    time = int(line[tmp_idx + 1])
+                    worker = int(float(line[tmp_idx]))
+                    time = int(math.ceil(float(line[tmp_idx + 1])))
                     tmp_idx += 2
                     task_processing_time[j][o][machine][worker] = time
                     m_w_helper += [(time,machine,worker)]
@@ -1064,21 +1066,6 @@ if __name__ == '__main__':
     BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\OneDrive_1_25-04-2025\instance_variants'
     #BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
     OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\variants\worker'
-    # test fjssp first, then wfjssp 
-    #solvers = ['cplex_cp', 'ortools', 'hexaly', 'cplex_lp', 'gurobi']
-    #runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
-    #runs = [['cplex_lp', 'gurobi']]
-    #solvers = ['hexaly']
-    #solvers = ['cplex_cp','ortools', 'gurobi', 'hexaly']
-    #solvers = ['gurobi', 'cplex_lp']#['hexaly', 'cplex_lp'] # 'hexaly', 
-    #solvers = ['ortools']#, 'gurobi', 'cplex_cp','hexaly']
-    #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
-    #missing_results = {
-    #    'cplex_cp': ['1_Brandimarte_10_workers.fjs', '1_Brandimarte_8_workers.fjs'], 
-    #    'cplex_lp': ['0_BehnkeGeiger_10_workers.fjs', '0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_1_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_2_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_3_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_4_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_5_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_18_workers.fjs'], 
-    #    'gurobi': ['0_BehnkeGeiger_11_workers.fjs', '0_BehnkeGeiger_12_workers.fjs', '0_BehnkeGeiger_13_workers.fjs', '0_BehnkeGeiger_14_workers.fjs', '0_BehnkeGeiger_15_workers.fjs', '0_BehnkeGeiger_16_workers.fjs', '0_BehnkeGeiger_17_workers.fjs', '0_BehnkeGeiger_18_workers.fjs', '0_BehnkeGeiger_19_workers.fjs', '0_BehnkeGeiger_20_workers.fjs', '0_BehnkeGeiger_21_workers.fjs', '0_BehnkeGeiger_22_workers.fjs', '0_BehnkeGeiger_23_workers.fjs', '0_BehnkeGeiger_24_workers.fjs', '0_BehnkeGeiger_25_workers.fjs', '0_BehnkeGeiger_26_workers.fjs', '0_BehnkeGeiger_27_workers.fjs', '0_BehnkeGeiger_28_workers.fjs', '0_BehnkeGeiger_29_workers.fjs', '0_BehnkeGeiger_30_workers.fjs', '0_BehnkeGeiger_31_workers.fjs', '0_BehnkeGeiger_32_workers.fjs', '0_BehnkeGeiger_33_workers.fjs', '0_BehnkeGeiger_34_workers.fjs', '0_BehnkeGeiger_35_workers.fjs', '0_BehnkeGeiger_36_workers.fjs', '0_BehnkeGeiger_37_workers.fjs', '0_BehnkeGeiger_38_workers.fjs', '0_BehnkeGeiger_39_workers.fjs', '0_BehnkeGeiger_40_workers.fjs', '0_BehnkeGeiger_41_workers.fjs', '0_BehnkeGeiger_42_workers.fjs', '0_BehnkeGeiger_43_workers.fjs', '0_BehnkeGeiger_44_workers.fjs', '0_BehnkeGeiger_45_workers.fjs', '0_BehnkeGeiger_46_workers.fjs', '0_BehnkeGeiger_47_workers.fjs', '0_BehnkeGeiger_48_workers.fjs', '0_BehnkeGeiger_49_workers.fjs', '0_BehnkeGeiger_50_workers.fjs', '0_BehnkeGeiger_51_workers.fjs', '0_BehnkeGeiger_52_workers.fjs', '0_BehnkeGeiger_53_workers.fjs', '0_BehnkeGeiger_54_workers.fjs', '0_BehnkeGeiger_55_workers.fjs', '0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs', '0_BehnkeGeiger_6_workers.fjs', '0_BehnkeGeiger_7_workers.fjs', '0_BehnkeGeiger_8_workers.fjs', '0_BehnkeGeiger_9_workers.fjs', '1_Brandimarte_10_workers.fjs', '1_Brandimarte_13_workers.fjs', '1_Brandimarte_15_workers.fjs', '2d_Hurink_vdata_27_workers.fjs', '2d_Hurink_vdata_29_workers.fjs', '2d_Hurink_vdata_30_workers.fjs', '2d_Hurink_vdata_31_workers.fjs', '2d_Hurink_vdata_32_workers.fjs', '2d_Hurink_vdata_33_workers.fjs', '2d_Hurink_vdata_34_workers.fjs', '2d_Hurink_vdata_35_workers.fjs', '2d_Hurink_vdata_36_workers.fjs', '2d_Hurink_vdata_37_workers.fjs', '2d_Hurink_vdata_38_workers.fjs', '2d_Hurink_vdata_39_workers.fjs', '2d_Hurink_vdata_40_workers.fjs', '2d_Hurink_vdata_41_workers.fjs', '2d_Hurink_vdata_42_workers.fjs', '2d_Hurink_vdata_43_workers.fjs', '2d_Hurink_vdata_46_workers.fjs', '2d_Hurink_vdata_47_workers.fjs', '2d_Hurink_vdata_48_workers.fjs', '3_DPpaulli_12_workers.fjs', '3_DPpaulli_14_workers.fjs', '3_DPpaulli_15_workers.fjs', '3_DPpaulli_17_workers.fjs', '3_DPpaulli_18_workers.fjs', '3_DPpaulli_9_workers.fjs'], 
-    #    'hexaly': [], 
-    #    'ortools': ['0_BehnkeGeiger_56_workers.fjs', '0_BehnkeGeiger_57_workers.fjs', '0_BehnkeGeiger_58_workers.fjs', '0_BehnkeGeiger_59_workers.fjs', '0_BehnkeGeiger_60_workers.fjs']}
 
     skip = False
     #instances = ['6_Fattahi_1_workers.fjs', '6_Fattahi_2_workers.fjs', '6_Fattahi_3_workers.fjs', '6_Fattahi_4_workers.fjs', '6_Fattahi_5_workers.fjs', '6_Fattahi_6_workers.fjs', '6_Fattahi_7_workers.fjs', '6_Fattahi_8_workers.fjs', '6_Fattahi_9_workers.fjs', '6_Fattahi_10_workers.fjs',  '6_Fattahi_11_workers.fjs',  '6_Fattahi_12_workers.fjs', '6_Fattahi_13_workers.fjs', '6_Fattahi_14_workers.fjs', '6_Fattahi_15_workers.fjs']
@@ -1275,12 +1262,5 @@ if __name__ == '__main__':
                         del peak_cpu
                         del message
                     
-    #from subprocess import Popen
-    #processes = []
-    #sub_process_path = r'C:\Users\localadmin\Documents\GitHub\scheduling_model_jrc\code\upgrades\CS_Translation\Solver\bin\Release\net8.0\Solver.exe'
-    #for i in range(5):
-    #    processes.append(Popen(sub_process_path))
-    #for i in range(len(processes)):
-    #    processes[i].wait()
     if shutdown_when_finished:
         os.system("shutdown /s /t 0")

@@ -65,7 +65,7 @@ namespace Solver
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\all\\ga_fjssp\\";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\ga_sorted\\";
 
             //bool skipSource = true;
             //string[] sources = Directory.GetDirectories(basepath);
@@ -157,7 +157,13 @@ namespace Solver
             //basepath = "C:\\Users\\localadmin\\Documents\\GitHub\\scheduling_model\\code\\reworked_data_model\\benchmarks_with_workers\\";
             //basepath = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks_with_workers\\";
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\flex\\repeat\\";
+            WFJSSPGA.SORT = true;
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\SORTED_GA\\";
+            if (index == 1)
+            {
+                outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\GA_SORTING_TEST\\unsorted\\";
+                WFJSSPGA.SORT = false;
+            } 
             //if (localSearch)
             //{
             //if(iteration == 0)
@@ -246,9 +252,9 @@ namespace Solver
         {
             //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
-            string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks\\";
+            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
             int maxGenerations = 0;
-            int timeLimit = 300;// 1200;//1200;//300; // in seconds
+            int timeLimit = 1200;// 300;// 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
@@ -292,10 +298,10 @@ namespace Solver
             {
                 //if (mode.Equals("FJSSP"))
                 //{
-                 //   RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
+                    //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
                 //} else
                 //{
-                    RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false, i, adjustment);
+                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false, i, adjustment);
                 //}
             }
         }

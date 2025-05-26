@@ -279,6 +279,7 @@ def run_cplex_lp(path):
 
     #return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
     return res.solve_status, res.get_objective_value(), res.solve_details.best_bound, res.solve_details.time, start_times, assignments, resources, history
+    #return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
 
 def run_cplex_cp(path):
     history = [(0, float('inf'), -float('inf'))]
@@ -330,7 +331,14 @@ def run_cplex_cp(path):
             for j,J in enumerate(JOBS) for o,O in enumerate(J) for k, (m, d) in enumerate(O)}
     mdl.add(end_before_start(ops[j,o-1], ops[j,o]) for j,o in ops if 0<o)
     mdl.add(alternative(ops[j,o], [mops[a] for a in mops if a[0:2]==(j,o)]) for j,o in ops)
-    mdl.add(no_overlap(mops[a] for a in mops if a[3]==m) for m in range(nb_machines))
+    for m in range(nb_machines):
+        no_overlap_list = []
+        for a in mops:
+            if a[2] == m:
+                no_overlap_list.append(mops[a])
+        if len(no_overlap_list) > 0:
+            mdl.add(no_overlap(no_overlap_list))
+    #mdl.add(no_overlap(mops[a] for a in mops if a[3]==m) for m in range(nb_machines))
     mdl.add(minimize(max(end_of(ops[j,o]) for j,o in ops)))
 
     context.solver.solve_with_search_next = True
@@ -349,7 +357,9 @@ def run_cplex_cp(path):
         #mdl.end()
         #return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
         #return res.solve_status, res.export_as_json_string(), start_times, assignments, resources, history
-        return res.solve_status, res.get_objective_value(), res.solve_details.best_bound, res.solve_details.time, start_times, assignments, resources, history
+        #    return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, workers, resources, history
+        #return res.solve_status, res.get_objective_value(), res.solve_details.best_bound, res.solve_details.time, start_times, assignments, resources, history
+        return res.solve_status, res.solution.objective_values[0], res.solution.objective_bounds[0], res.get_solve_time(), start_times, assignments, resources, history
     else:
         sdetails = mdl.solve_details
         mdl.end()
@@ -632,10 +642,10 @@ if __name__ == '__main__':
     import sys
     selected_solver = sys.argv[1]
     shutdown_when_finished = False
-    BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks_no_workers'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\all\fjssp'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_no_workers\benchmarks_no_workers'#r'C:\Users\localadmin\Downloads\DemirkolBenchmarksJobShop\reformat'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\hexaly_fjssp_rerun'
     # test fjssp first, then wfjssp
-    #solvers = ['ortools','gurobi', 'cplex_lp', 'cplex_cp', 'hexaly']#'ortools',
+    #solvers = ['cplex_cp', 'cplex_lp', 'hexaly']#'ortools',
     solvers = [selected_solver]
     #instances = [('0_BehnkeGeiger', 'Behnke60.fjs'), ('6_Fattahi', 'Fattahi20.fjs'), ('1_Brandimarte', 'BrandimarteMk11.fjs'), ('4_ChambersBarnes', 'ChambersBarnes10.fjs'), ('5_Kacem', 'Kacem3.fjs')]
     # NOTE: RAM and CPU stats are in percent
@@ -651,6 +661,7 @@ if __name__ == '__main__':
     print(arr[:])
     """
     instances = os.listdir(BENCHMARK_PATH)
+    #instances = ['BrandimarteMk8.fjs', 'BrandimarteMk10.fjs']
     #instances = ['HurinkVdata30.fjs']
     #for source in sources:
     #instances = os.listdir(BENCHMARK_PATH + '/' + source)
@@ -687,7 +698,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance[:-4]};{1 if status == 2 else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == 2 else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'cplex_lp':
                     cpu = Value('d', 0.0)
                     ram = Value('d', 0.0)
@@ -699,7 +710,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance[:-4]};{1 if status == "Optimal" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == "Optimal" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'cplex_cp':
                     cpu = Value('d', 0.0)
                     ram = Value('d', 0.0)
@@ -711,7 +722,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance[:-4]};{1 if status == "Optimal" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == "Optimal" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 elif solver == 'ortools':
                     cpu = Value('d', 0.0)
                     ram = Value('d', 0.0)
@@ -723,7 +734,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance[-4]};{1 if status == "OPTIMAL" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == "OPTIMAL" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 else:
                     cpu = Value('d', 0.0)
                     ram = Value('d', 0.0)
@@ -735,7 +746,7 @@ if __name__ == '__main__':
                     p.join()
                     peak_cpu = cpu.value
                     peak_ram = ram.value
-                    message = f'{instance[-4]};{1 if status == "LSSolutionStatus.OPTIMAL" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
+                    message = f'{instance};{1 if status == "LSSolutionStatus.OPTIMAL" else 0};{fitness};{lower_bound};{runtime};{start_times};{assignments};{peak_cpu};{peak_ram};{resources};{history}'
                 write_output(message, f'{OUTPUT_PATH}/results_{solver}.txt')
             except Exception as e:
                 write_output(f'Error on instance {instance} using solver {solver}! {e}', f'{OUTPUT_PATH}/results_{solver}.txt')
