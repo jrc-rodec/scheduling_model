@@ -89,19 +89,20 @@ namespace GA_Uncertainty
                 Evaluation randomDelays = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
                 processingTimes.Evaluate(individual);
                 randomDelays.Evaluate(individual);
-                //Console.WriteLine("SHIFTING:");
-                //Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
-                //Console.WriteLine("ADJUSTING:");
+                Console.WriteLine("SHIFTING:");
+                Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
+                Console.WriteLine("ADJUSTING:");
                 Individual adjusted = Adjustment.Adjust(individual, configuration);
                 Evaluation evaluationAdjusted = new Makespan(configuration, encoding.Durations);
                 evaluationAdjusted.Evaluate(adjusted);
                 Evaluation processingTimesAdjusted = new AdjustedAverageRobustness(configuration, encoding.Durations, 10, 0.4f, 0.1f, 0.4f);
                 Evaluation randomDelaysAdjusted = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
-                processingTimesAdjusted.Evaluate(individual);
+                processingTimesAdjusted.Evaluate(adjusted);
                 randomDelaysAdjusted.Evaluate(adjusted);
-                //Console.WriteLine(result.fitness + " | " + adjusted.Fitness[Criteria.Makespan] + " | " + adjusted.Fitness[Criteria.AverageRobustness] + " | " + adjusted.Fitness[Criteria.RandomDelays]);
-                string summary = result.instance + ";" + result.fitness + ";" + individual.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AverageRobustness] + ";" + adjusted.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AdjustedAverageRobustness] + "\n";
-                File.AppendAllText(@"C:\Users\huda\Documents\shifting\adjusted_results.csv", summary);
+                Console.WriteLine(result.fitness + " | " + adjusted.Fitness[Criteria.Makespan] + " | " + adjusted.Fitness[Criteria.AdjustedAverageRobustness] + " | " + adjusted.Fitness[Criteria.RandomDelays]);
+                //string summary = result.instance + ";" + result.fitness + ";" + individual.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AverageRobustness] + ";" + adjusted.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AdjustedAverageRobustness] + "\n";
+                //File.AppendAllText(@"C:\Users\huda\Documents\shifting\adjusted_results.csv", summary);
+                
             }
 
 
