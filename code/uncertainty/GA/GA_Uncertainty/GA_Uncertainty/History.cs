@@ -17,6 +17,7 @@ namespace GA_Uncertainty
         private List<int> _nEqualResetBestSolutions;
         private List<float> _mutationProbability;
         private List<int> _populationSize;
+        private List<double> _updateTimestamps;
         private List<Dictionary<Criteria, float>> _averagePopulationFitness;
         private Result _result;
 
@@ -29,11 +30,12 @@ namespace GA_Uncertainty
             _nEqualOverallBestSolutions = new List<int>();
             _nEqualResetBestSolutions = new List<int>();
             _averagePopulationFitness = new List<Dictionary<Criteria, float>>();
+            _updateTimestamps = new List<double>();
             _name = "";
 
         }
 
-        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population)
+        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime)
         {
             // TODO: parameter to determine which criteria are needed
             Dictionary<Criteria, float> overallBestDict = new Dictionary<Criteria, float>{
@@ -52,6 +54,7 @@ namespace GA_Uncertainty
             _nEqualResetBestSolutions.Add(currentBest.Count);
             _mutationProbability.Add(p);
             _populationSize.Add(population.Count);
+            _updateTimestamps.Add(runtime.TotalMilliseconds / 1000.0);
             float averageMakespan = 0.0f;
             float averageAverageRobustness = 0.0f;
             for (int i = 0; i < population.Count; ++i)
