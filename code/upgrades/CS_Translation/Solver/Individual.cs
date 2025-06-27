@@ -10,7 +10,7 @@ namespace Solver
 
     public enum Criteria
     {
-        Makespan, IdleTime, QueueTime, Tardiness
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE
     }
 
     public class Individual
