@@ -13,7 +13,7 @@ namespace Solver
         Makespan, IdleTime, QueueTime, Tardiness, JRMSE
     }
 
-    public class Individual
+    public class Individual : IEquatable<Individual>
     {
         protected int[] _sequence;
         protected int[] _assignments;
@@ -246,16 +246,13 @@ namespace Solver
         }
 
 
-        public bool Equals(Individual other)
+        public override bool Equals(object other)
         {
             // NOTE: _sequence and _assignments are always the same length
+            Individual o = (Individual)other;
             for(int i = 0; i < _sequence.Length; ++i)
             {
-                if (_sequence[i] != other._sequence[i])
-                {
-                    return false;
-                }
-                if (_assignments[i] != other._assignments[i])
+                if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i])
                 {
                     return false;
                 }
@@ -263,5 +260,17 @@ namespace Solver
             return true;
         }
 
+        public bool Equals(Individual? other)
+        {
+            // NOTE: _sequence and _assignments are always the same length
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_sequence[i] != other._sequence[i] || _assignments[i] != other._assignments[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

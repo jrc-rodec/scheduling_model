@@ -1,4 +1,5 @@
 ﻿using BenchmarkParsing;
+using System.Collections;
 using System.IO;
 using System.Runtime.InteropServices;
 using static BenchmarkParsing.BenchmarkParser;
@@ -165,14 +166,131 @@ namespace Solver
                 }
             }
         }
-    
 
+        private class TestObject
+        {
+            public List<int> a;
+            public List<int> b;
+            public string name;
+
+
+            public TestObject(List<int> c, List<int> d, string n)
+            {
+                a = c;
+                b = d;
+                name = n;
+            }
+
+            public override bool Equals(object? other)
+            {
+                TestObject o = (TestObject)other;
+                if (a.Count != o.a.Count() || b.Count != o.b.Count() || name != o.name)
+                {
+                    return false;
+                }
+                for (int i = 0; i < a.Count; ++i)
+                {
+                    if (a[i] != o.a[i])
+                    {
+                        return false;
+                    }
+                }
+                for (int i = 0; i < b.Count; ++i)
+                {
+                    if (b[i] != o.b[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+                //return GetHashCode() == other.GetHashCode();
+            }
+
+            public override int GetHashCode()
+            {
+                return 0;//a[0] * 10 + b[b.Count - 1] + name.GetHashCode();//a.AsReadOnly().GetHashCode() ^ b.AsReadOnly().GetHashCode() ^ name.GetHashCode();
+            }
+        }
 
         static void Main(string[] args)
         {
+            HashSet<int> list = new HashSet<int>();
+            List<int> a = new(){ 1, 2, 3, 4, 5 };
+            List<int> b = new() { 4, 5, 6, 7, 8 };
+            List<int> c = new() { 1, 5, 6, 9, 0 };
+
+            list.UnionWith(a);
+            list.UnionWith(b);
+            list.UnionWith(c);
+            for(int i = 0; i < list.Count; ++i)
+            {
+                Console.Write(list.ElementAt(i));
+            }
+
+            HashSet<TestObject> list1 = new HashSet<TestObject>();
+            TestObject ta = new TestObject(a, b, "a");
+            TestObject tb = new TestObject(b, a, "b");
+            TestObject tc = new TestObject(a, b, "a");
+            TestObject td = new TestObject(a, c, "c");
+            TestObject te = new TestObject(b, c, "d");
+            TestObject tf = new TestObject(c, b, "e");
+            TestObject tg = new TestObject(c, b, "f");
+
+            list1.Add(ta);
+            list1.Add(tb);
+            list1.Add(tc);
+            list1.Add(td);
+            list1.Add(te);
+            list1.Add(tf);
+            list1.Add(tg);
+            Console.WriteLine();
+
+            for (int i = 0; i < list1.Count; ++i)
+            {
+                Console.Write(list1.ElementAt(i).name);
+            }
+            
+            Dictionary<TestObject, int> testDict = new Dictionary<TestObject, int>();
+            if (!testDict.ContainsKey(ta))
+            {
+                testDict.Add(ta, 1);
+            }
+            if (!testDict.ContainsKey(tb))
+            {
+                testDict.Add(tb, 1);
+            }
+            if (!testDict.ContainsKey(tc))
+            {
+                testDict.Add(tc, 1);
+            }
+            if (!testDict.ContainsKey(td))
+            {
+                testDict.Add(td, 1);
+            }
+            if (!testDict.ContainsKey(te))
+            {
+                testDict.Add(te, 1);
+            }
+            if (!testDict.ContainsKey(tf))
+            {
+                testDict.Add(tf, 1);
+            }
+            if (!testDict.ContainsKey(tg))
+            {
+                testDict.Add(tg, 1);
+            }
+
+            Console.WriteLine();
+
+            foreach(TestObject t in testDict.Keys)
+            {
+                Console.Write(t.name);
+            }
+
+
             //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
-            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
+            /*string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
             int maxGenerations = 0;
             int timeLimit = 1200;// 300;// 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
@@ -205,7 +323,7 @@ namespace Solver
                 //{
                 RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false, i, adjustment);
                 //}
-            }
+            }*/
         }
     }
 }

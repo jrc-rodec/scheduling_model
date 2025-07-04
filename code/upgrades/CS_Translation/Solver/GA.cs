@@ -276,7 +276,7 @@ namespace Solver
             {
                 if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
                 {
-                    result.Add(individuals[i]);
+                    result.Add(new Individual(individuals[i]));
                 }
             }
             return result;
@@ -431,6 +431,26 @@ namespace Solver
                     Individual localMinimum = currentBest[0];
                     if(localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan]){
                         improvement = true;
+                        overallBest.Clear();
+                        if (keepMultiple)
+                        {
+                            currentBest = GetAllEqual(localMinimum, _population);
+                            foreach (Individual individual in currentBest)
+                            {
+                                if (!overallBest.Contains(individual))
+                                {
+                                    overallBest.Add(individual);
+                                }
+                            }
+
+                        } else
+                        {
+                            overallBest.Add(new Individual(localMinimum));
+                        }
+                        //overallBest = currentBest;
+                    } else if(keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
+                    {
+                        currentBest = GetAllEqual(localMinimum, _population);
                         foreach(Individual individual in currentBest)
                         {
                             if (!overallBest.Contains(individual))
@@ -438,10 +458,7 @@ namespace Solver
                                 overallBest.Add(individual);
                             }
                         }
-                        //overallBest = currentBest;
-                    } else if(keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
-                    {
-                        overallBest.Add(localMinimum);
+                        //overallBest.Add(new Individual(localMinimum));
                         match = true;
                     }
                     if (_output)
@@ -484,12 +501,26 @@ namespace Solver
 
                 if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
                 {
-                    currentBest = GetAllEqual(_population[0], _population);
+                    if (keepMultiple)
+                    {
+                        currentBest = GetAllEqual(_population[0], _population);
+                    } else
+                    {
+                        currentBest.Clear();
+                        currentBest.Add(new Individual(_population[0]));
+                    }
                     if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
+                        overallBest.Clear();
                         improvement = true;
-                        overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
-                    } else if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
+                        if (keepMultiple)
+                        {
+                            overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
+                        } else
+                        {
+                            overallBest.Add(new Individual(currentBest[0]));
+                        }
+                    } else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
                         match = true;
                         for (int i = 0; i < currentBest.Count; ++i)
@@ -518,7 +549,7 @@ namespace Solver
                             if (!overallBest.Contains(currentBest[i]))
                             {
                                 match = true;
-                                overallBest.Add(currentBest[i]);
+                                overallBest.Add(new Individual(currentBest[i]));
                             }
                         }
                     }

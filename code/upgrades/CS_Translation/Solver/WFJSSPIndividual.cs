@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Solver
 {
-    public class WFJSSPIndividual //: Individual
+    public class WFJSSPIndividual : IEquatable<WFJSSPIndividual> //: Individual
     {
         private int[] _workers;
         public static List<List<List<int>>> AvailableWorkers;
@@ -296,9 +296,22 @@ namespace Solver
             }
         }
 
-        public bool Equals(WFJSSPIndividual other)
+        public override bool Equals(object other)
         {
+            WFJSSPIndividual o = (WFJSSPIndividual)other;
             for(int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i] || _workers[i] != o._workers[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public bool Equals(WFJSSPIndividual? other)
+        {
+            for (int i = 0; i < _sequence.Length; ++i)
             {
                 if (_sequence[i] != other._sequence[i] || _assignments[i] != other._assignments[i] || _workers[i] != other._workers[i])
                 {

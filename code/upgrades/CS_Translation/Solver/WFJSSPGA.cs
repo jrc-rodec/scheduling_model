@@ -612,7 +612,7 @@ namespace Solver
             {
                 if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
                 {
-                    result.Add(individuals[i]);
+                    result.Add(new WFJSSPIndividual(individuals[i]));
                 }
             }
             return result;
@@ -776,8 +776,9 @@ namespace Solver
                     // only necessary if local search is conducted
                     if (localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
-                        overallBest.Clear(); // just never happened without local search
+                        overallBest.Clear();
                         improvement = true;
+                        currentBest = GetAllEqual(localMinimum, _population);
                         if (keepMultiple)
                         {
                             foreach (WFJSSPIndividual individual in currentBest)
@@ -790,13 +791,22 @@ namespace Solver
                         }
                         else
                         {
-                            overallBest.Add(localMinimum);
+                            overallBest.Add(new WFJSSPIndividual(localMinimum));
                         }
                         //overallBest = currentBest;
                     }
                     else if (keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
                     {
-                        overallBest.Add(localMinimum);
+                        currentBest = GetAllEqual(localMinimum, _population);
+                        currentBest.Add(localMinimum);
+                        foreach(WFJSSPIndividual individual in currentBest)
+                        {
+                            if (!overallBest.Contains(individual))
+                            {
+                                overallBest.Add(individual);
+                            }
+                        }
+                        //overallBest.Add(localMinimum);
                         match = true;
                     }
                     if (_output)
@@ -845,7 +855,7 @@ namespace Solver
                     } else
                     {
                         currentBest.Clear();
-                        currentBest.Add(_population[0]);
+                        currentBest.Add(new WFJSSPIndividual(_population[0]));
                     }
                     if (currentBest[0].Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
@@ -856,7 +866,7 @@ namespace Solver
                             overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
                         } else
                         {
-                            overallBest.Add(currentBest[0]);
+                            overallBest.Add(new WFJSSPIndividual(currentBest[0]));
                         }
                     }
                     else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
@@ -889,7 +899,7 @@ namespace Solver
                             if (!overallBest.Contains(currentBest[i]))
                             {
                                 match = true;
-                                overallBest.Add(currentBest[i]);
+                                overallBest.Add(new WFJSSPIndividual(currentBest[i]));
                             }
                         }
                     }
