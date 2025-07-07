@@ -276,7 +276,7 @@ namespace Solver
             {
                 if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
                 {
-                    result.Add(new Individual(individuals[i]));
+                    result.Add(individuals[i]);
                 }
             }
             return result;
@@ -388,7 +388,17 @@ namespace Solver
             Console.WriteLine("Generation " + generation + " Overall Best: " + best[0].Fitness[Criteria.Makespan] + " (" + best.Count + " equal solutions), Current Run Best " + currentBest[0].Fitness[Criteria.Makespan] + " (" + currentBest.Count + " equal solutions) - " + restarts + " restarts" + ")");
             Console.ResetColor();
         }
-
+        public void Merge(List<Individual> a, List<Individual> b)
+        {
+            for (int i = 0; i < b.Count; ++i)
+            {
+                if (!a.Contains(b[i]))
+                {
+                    a.Add(new Individual(b[i]));
+                }
+            }
+            b.Clear();
+        }
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool useLocalSearch)
         {
             CreatePopulation(_configuration.PopulationSize);
@@ -403,8 +413,12 @@ namespace Solver
             float elitism = _configuration.ElitismRate * populationSize;
             int maxWait = _configuration.RestartGenerations;
             int restarts = 0;
-            List<Individual> overallBest = GetAllEqual(_population[0], _population);
-            List<Individual> currentBest = GetAllEqual(_population[0], _population);
+            List<Individual> overallBest = new List<Individual>();
+            List<Individual> overallTemp = GetAllEqual(_population[0], _population);
+            Merge(overallBest, overallTemp);
+            List<Individual> currentBest = new List<Individual>();
+            List<Individual> currentTemp = GetAllEqual(_population[0], _population);
+            Merge(currentBest, currentTemp);
             int lastProgress = 0;
             int generation = 0;
             _functionEvaluations = 0;
@@ -417,7 +431,7 @@ namespace Solver
             Console.WriteLine("Starting Optimization Main Loop");
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime));
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
                 if(generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
@@ -434,15 +448,19 @@ namespace Solver
                         overallBest.Clear();
                         if (keepMultiple)
                         {
-                            currentBest = GetAllEqual(localMinimum, _population);
+                            currentBest.Clear();
+
+                            currentTemp = GetAllEqual(localMinimum, _population);
+                            Merge(currentBest, currentTemp);
+                            overallTemp.Clear();
                             foreach (Individual individual in currentBest)
                             {
                                 if (!overallBest.Contains(individual))
                                 {
-                                    overallBest.Add(individual);
+                                    overallTemp.Add(individual);
                                 }
                             }
-
+                            Merge(overallBest, overallTemp);
                         } else
                         {
                             overallBest.Add(new Individual(localMinimum));
@@ -450,14 +468,19 @@ namespace Solver
                         //overallBest = currentBest;
                     } else if(keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
                     {
-                        currentBest = GetAllEqual(localMinimum, _population);
+                        currentBest.Clear();
+                        currentTemp = GetAllEqual(localMinimum, _population);
+                        Merge(currentBest, currentTemp);
+                        currentBest.Add(localMinimum);
+                        overallTemp.Clear();
                         foreach(Individual individual in currentBest)
                         {
                             if (!overallBest.Contains(individual))
                             {
-                                overallBest.Add(individual);
+                                overallTemp.Add(individual);
                             }
                         }
+                        Merge(overallBest, overallTemp);
                         //overallBest.Add(new Individual(localMinimum));
                         match = true;
                     }
@@ -503,7 +526,9 @@ namespace Solver
                 {
                     if (keepMultiple)
                     {
-                        currentBest = GetAllEqual(_population[0], _population);
+                        currentBest.Clear();
+                        currentTemp = GetAllEqual(_population[0], _population);
+                        Merge(currentBest, currentTemp);
                     } else
                     {
                         currentBest.Clear();
@@ -515,7 +540,9 @@ namespace Solver
                         improvement = true;
                         if (keepMultiple)
                         {
-                            overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
+                            overallTemp = GetAllEqual(_population[0], _population); // just to not copy currentBest
+                            overallBest.Clear();
+                            Merge(overallBest, overallTemp);
                         } else
                         {
                             overallBest.Add(new Individual(currentBest[0]));
@@ -523,25 +550,29 @@ namespace Solver
                     } else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
                         match = true;
+                        overallTemp.Clear();
                         for (int i = 0; i < currentBest.Count; ++i)
                         {
                             if (!overallBest.Contains(currentBest[i]))
                             {
-                                overallBest.Add(currentBest[i]);
+                                overallTemp.Add(currentBest[i]);
                             }
                         }
+                        Merge(overallBest, overallTemp);
                     }
                     lastProgress = generation;
                 } else if (keepMultiple && _population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
                 {
                     List<Individual> equals = GetAllEqual(_population[0], _population);
+                    currentTemp.Clear();
                     for(int i = 0; i < equals.Count; ++i)
                     {
                         if (!currentBest.Contains(equals[i]))
                         {
-                            currentBest.Add(equals[i]);
+                            currentTemp.Add(equals[i]);
                         }
                     }
+                    Merge(currentBest, currentTemp);
                     if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
                         for (int i = 0; i < currentBest.Count; ++i)
