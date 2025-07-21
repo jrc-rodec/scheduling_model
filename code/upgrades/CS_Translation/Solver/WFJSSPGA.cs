@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -612,7 +613,7 @@ namespace Solver
             {
                 if (original.Fitness[Criteria.Makespan] == individuals[i].Fitness[Criteria.Makespan])
                 {
-                    result.Add(new WFJSSPIndividual(individuals[i]));
+                    result.Add(individuals[i]);
                 }
             }
             return result;
@@ -729,6 +730,18 @@ namespace Solver
 
 
         private bool adjust = false;
+
+        public void Merge(List<WFJSSPIndividual> a, List<WFJSSPIndividual> b)
+        {
+            for(int i = 0; i < b.Count; ++i)
+            {
+                if (!a.Contains(b[i]))
+                {
+                    a.Add(new WFJSSPIndividual(b[i]));
+                }
+            }
+            b.Clear();
+        }
         public WorkerHistory Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, bool doLocalSearch, bool adjustment)
         {
             adjust = adjustment;
@@ -743,8 +756,12 @@ namespace Solver
             float elitism = _configuration.ElitismRate * populationSize;
             int maxWait = _configuration.RestartGenerations;
             int restarts = 0;
-            List<WFJSSPIndividual> overallBest = GetAllEqual(_population[0], _population);
-            List<WFJSSPIndividual> currentBest = GetAllEqual(_population[0], _population);
+            List<WFJSSPIndividual> overallBest = new List<WFJSSPIndividual>();
+            List<WFJSSPIndividual> overallTemp = GetAllEqual(_population[0], _population);
+            Merge(overallBest, overallTemp);
+            List<WFJSSPIndividual> currentBest = new List<WFJSSPIndividual>();
+            List<WFJSSPIndividual> currentTemp = GetAllEqual(_population[0], _population);
+            Merge(currentBest, currentTemp);
             int lastProgress = 0;
             int generation = 0;
             _functionEvaluations = 0;
@@ -758,7 +775,7 @@ namespace Solver
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime));
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
                 if (generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
@@ -778,16 +795,20 @@ namespace Solver
                     {
                         overallBest.Clear();
                         improvement = true;
-                        currentBest = GetAllEqual(localMinimum, _population);
+                        currentTemp = GetAllEqual(localMinimum, _population);
+                        currentBest.Clear();
+                        Merge(currentBest, currentTemp);
                         if (keepMultiple)
                         {
+                            overallTemp.Clear();
                             foreach (WFJSSPIndividual individual in currentBest)
                             {
                                 if (individual.Fitness[Criteria.Makespan] == localMinimum.Fitness[Criteria.Makespan] && !overallBest.Contains(individual))
                                 {
-                                    overallBest.Add(individual);
+                                    overallTemp.Add(individual);
                                 }
                             }
+                            Merge(overallBest, overallTemp);
                         }
                         else
                         {
@@ -797,15 +818,19 @@ namespace Solver
                     }
                     else if (keepMultiple && localMinimum.Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan] && !overallBest.Contains(localMinimum))
                     {
-                        currentBest = GetAllEqual(localMinimum, _population);
+                        currentTemp = GetAllEqual(localMinimum, _population);
+                        currentBest.Clear();
+                        Merge(currentBest, currentTemp);
                         currentBest.Add(localMinimum);
+                        overallTemp.Clear();
                         foreach(WFJSSPIndividual individual in currentBest)
                         {
                             if (!overallBest.Contains(individual))
                             {
-                                overallBest.Add(individual);
+                                overallTemp.Add(individual);
                             }
                         }
+                        Merge(overallBest, overallTemp);
                         //overallBest.Add(localMinimum);
                         match = true;
                     }
@@ -822,6 +847,7 @@ namespace Solver
                     tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
 
                     currentBest.Clear();
+                    currentTemp.Clear();
                     // NOTE: for visual purposes only
                     improvement = false;
                     match = false;
@@ -851,7 +877,9 @@ namespace Solver
                 {
                     if (keepMultiple)
                     {
-                        currentBest = GetAllEqual(_population[0], _population);
+                        currentTemp = GetAllEqual(_population[0], _population);
+                        currentBest.Clear();
+                        Merge(currentBest, currentTemp);
                     } else
                     {
                         currentBest.Clear();
@@ -863,7 +891,9 @@ namespace Solver
                         improvement = true;
                         if (keepMultiple)
                         {
-                            overallBest = GetAllEqual(_population[0], _population); // just to not copy currentBest
+                            overallTemp = GetAllEqual(_population[0], _population);
+                            overallBest.Clear(); // just to not copy currentBest
+                            Merge(overallBest, overallTemp);
                         } else
                         {
                             overallBest.Add(new WFJSSPIndividual(currentBest[0]));
@@ -872,26 +902,31 @@ namespace Solver
                     else if (keepMultiple && currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
                         match = true;
+                        overallTemp.Clear();
                         for (int i = 0; i < currentBest.Count; ++i)
                         {
                             if (!overallBest.Contains(currentBest[i]))
                             {
-                                overallBest.Add(currentBest[i]);
+                                overallTemp.Add(currentBest[i]);
                             }
                         }
+                        Merge(overallBest, overallTemp);
                     }
                     lastProgress = generation;
                 }
                 else if (keepMultiple && _population[0].Fitness[Criteria.Makespan] == currentBest[0].Fitness[Criteria.Makespan])
                 {
                     List<WFJSSPIndividual> equals = GetAllEqual(_population[0], _population);
+                    currentTemp.Clear();
                     for (int i = 0; i < equals.Count; ++i)
                     {
                         if (!currentBest.Contains(equals[i]))
                         {
-                            currentBest.Add(equals[i]);
+                            currentTemp.Add(equals[i]);
                         }
+
                     }
+                    Merge(currentBest, currentTemp);
                     if (currentBest[0].Fitness[Criteria.Makespan] == overallBest[0].Fitness[Criteria.Makespan])
                     {
                         for (int i = 0; i < currentBest.Count; ++i)

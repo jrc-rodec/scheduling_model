@@ -298,15 +298,22 @@ namespace Solver
 
         public override bool Equals(object other)
         {
-            WFJSSPIndividual o = (WFJSSPIndividual)other;
-            for(int i = 0; i < _sequence.Length; ++i)
+            try
             {
-                if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i] || _workers[i] != o._workers[i])
+                WFJSSPIndividual o = (WFJSSPIndividual)other;
+                for (int i = 0; i < _sequence.Length; ++i)
                 {
-                    return false;
+                    if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i] || _workers[i] != o._workers[i])
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         public bool Equals(WFJSSPIndividual? other)

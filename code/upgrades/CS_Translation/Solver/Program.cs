@@ -16,7 +16,7 @@ namespace Solver
         {
 
             bool skip = false;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\ga_sorted\\";
+            string outPath = "C:\\Users\\dhutt\\Desktop\\experiment\\results\\restart_tracking\\fjssp\\";
 
             string[] instances = Directory.GetFiles(basepath);
             
@@ -26,9 +26,10 @@ namespace Solver
                 string instanceName = instance.Split("\\").Last();
 
                 targetFitness = 0.0f;
-                if (!File.Exists(outPath + instanceName + ".json"))
+                string filename = outPath + instanceName + maxFunctionEvaluations + ".json";
+                if (!File.Exists(filename))
                 {
-                    PrepareFile(outPath + instanceName + ".json");
+                    PrepareFile(filename);
                 }
                 History gaResult = null; // free up memory
                 if (instance.EndsWith("6_Fattahi_14_workers.fjs"))
@@ -55,8 +56,8 @@ namespace Solver
                     gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile(outPath + gaResult.Name + ".json");
-                    DelimitRun(outPath + instanceName + ".json");
+                    gaResult.ToFile(outPath + gaResult.Name + maxFunctionEvaluations + ".json");
+                    DelimitRun(filename);
                 }
             }
         }
@@ -80,12 +81,8 @@ namespace Solver
 
             bool skip = false;
             WFJSSPGA.SORT = true;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\SORTED_GA\\";
-            if (index == 1)
-            {
-                outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\FJSSP_5\\GA_SORTING_TEST\\unsorted\\";
-                WFJSSPGA.SORT = false;
-            } 
+            string outPath = "C:\\Users\\dhutt\\Desktop\\experiment\\results\\restart_tracking\\fjssp-w\\";
+
             //if (localSearch)
             //{
             //if(iteration == 0)
@@ -114,14 +111,14 @@ namespace Solver
             //    if (!skipSource)
             //    {
 
-            var dict = File.ReadLines("<insert path to best known results here>").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
+            //var dict = File.ReadLines("<insert path to best known results here>").Select(line => line.Split(';')).ToDictionary(line => line[0], line => line[1]);
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
                 Console.ForegroundColor = _colors[index - 1];
                 string instanceName = instance.Split("\\").Last();
-                
-                if (dict.ContainsKey(instanceName))
+
+                /*if (dict.ContainsKey(instanceName))
                 {
                     bool success = float.TryParse(dict[instanceName], out targetFitness);
                     if (success)
@@ -131,10 +128,11 @@ namespace Solver
                     {
                         targetFitness = 0.0f;
                     }
-                }
-                if (!File.Exists(outPath+ instanceName + ".json"))
+                }*/
+                string filename = outPath + instanceName + maxFunctionEvaluations + ".json";
+                if (!File.Exists(filename))
                 {
-                    PrepareFile(outPath + instanceName + ".json");
+                    PrepareFile(filename);
                 }
                 WorkerHistory gaResult = null; // free up memory
                 if (instance.EndsWith("6_Fattahi_14_workers.fjs"))
@@ -161,8 +159,8 @@ namespace Solver
                     gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, adjustment);
                     string[] fullPath = instance.Split("\\");
                     gaResult.Name = fullPath.Last();
-                    gaResult.ToFile(outPath + gaResult.Name + ".json");
-                    DelimitRun(outPath + instanceName + ".json");
+                    gaResult.ToFile(outPath + gaResult.Name + maxFunctionEvaluations + ".json");
+                    DelimitRun(filename);
                 }
             }
         }
@@ -214,7 +212,7 @@ namespace Solver
 
         static void Main(string[] args)
         {
-            HashSet<int> list = new HashSet<int>();
+            /*HashSet<int> list = new HashSet<int>();
             List<int> a = new(){ 1, 2, 3, 4, 5 };
             List<int> b = new() { 4, 5, 6, 7, 8 };
             List<int> c = new() { 1, 5, 6, 9, 0 };
@@ -286,21 +284,31 @@ namespace Solver
             {
                 Console.Write(t.name);
             }
-
+            */
 
             //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
             //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
-            /*string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
+            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
             int maxGenerations = 0;
-            int timeLimit = 1200;// 300;// 1200;//1200;//300; // in seconds
+            int timeLimit = 0;// 300;// 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
             int maxFunctionEvaluations = 0;
+            string mode = "FJSSP";
             if (args.Length > 0)
             {
                 //path = args[0];
                 int.TryParse(args[0], out index);
                 Console.ForegroundColor = _colors[index-1];
+                string criteria = args[1];
+                if (criteria == "feval")
+                {
+                    int.TryParse(args[2], out maxFunctionEvaluations);
+                } else if (criteria == "target")
+                {
+                    float.TryParse(args[2], out targetFitness);
+                }
+                mode = args[3];
             }
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0};
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -309,21 +317,28 @@ namespace Solver
                 return;
             }
             int nExperiments = 1;
-            bool keepMultiple = false;
+            bool keepMultiple = true;
             bool localSearch = false;
             bool adjustmentStep = false;
             //int restartGenerations = 25;
 
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
+                if (mode == "FJSSP") 
+                {
+                    path = "C:\\Users\\dhutt\\Desktop\\experiment\\no_worker\\";
+                    RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
+                }
                 //if (mode.Equals("FJSSP"))
                 //{
-                    //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
+                //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
                 //} else
                 //{
-                RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, false, false, i, adjustment);
-                //}
-            }*/
+                else {
+                    path = "C:\\Users\\dhutt\\Desktop\\experiment\\worker\\";
+                    RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i, adjustmentStep);
+                }
+            }
         }
     }
 }
