@@ -446,90 +446,6 @@ namespace GATesting
             return (float)(p + (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
         }
 
-        protected void MutateMachineVector(Individual individual)
-        {
-            float p = 1.0f / individual.Assignments.Length;
-            for (int i = 0; i < individual.Assignments.Length; ++i)
-            {
-                if (_random.NextDouble() < p)
-                {
-                    if (Individual.AvailableMachines[i].Count > 1)
-                    {
-                        int swap;
-                        do
-                        {
-                            swap = Individual.AvailableMachines[i][_random.Next(Individual.AvailableMachines[i].Count)];
-                        } while (swap != individual.Assignments[i]);
-                        individual.Assignments[i] = swap;
-                    }
-                }
-            }
-        }
-
-        protected void MutateSequenceVector(Individual individual)
-        {
-            float p = 1.0f / individual.Sequence.Length;
-            for (int i = 0; i < individual.Sequence.Length; ++i)
-            {
-                if (_random.NextDouble() < p)
-                {
-                    int swap;
-                    do
-                    {
-                        swap = _random.Next(individual.Sequence.Length);
-                    } while (swap == i || individual.Sequence[i] == individual.Sequence[swap]);
-                    int tmp = individual.Sequence[i];
-                    individual.Sequence[i] = individual.Sequence[swap];
-                    individual.Sequence[swap] = tmp;
-                }
-            }
-        }
-
-        protected Individual SimulatedAnnealing(Individual individual)
-        {
-            int nMachineMutations = 5;
-            int nSequenceMutations = 20;
-            float initialT = 20.0f;
-            float alpha = 0.8f;
-            int nT = 7;
-            float T = initialT;
-            Individual best = new Individual(individual);
-            for (int i = 0; i < nMachineMutations; ++i)
-            {
-                Individual y = new Individual(individual);
-                if (i > 0)
-                {
-                    MutateMachineVector(y);
-                }
-                for (int j = 0; j < nT; ++j)
-                {
-                    Individual yTmp = new Individual(y);
-                    Evaluate(yTmp);
-                    for (int k = 0; k < nSequenceMutations; ++k)
-                    {
-                        Individual z = new Individual(y);
-                        MutateSequenceVector(z);
-                        Evaluate(z);
-                        if (z.Fitness[Criteria.Makespan] < yTmp.Fitness[Criteria.Makespan])
-                        {
-                            yTmp = z;
-                        }
-                    }
-                    if (yTmp.Fitness[Criteria.Makespan] < y.Fitness[Criteria.Makespan])
-                    {
-                        y = yTmp;
-                    }
-                    if (y.Fitness[Criteria.Makespan] < best.Fitness[Criteria.Makespan])
-                    {
-                        best = y;
-                    }
-                    T *= alpha;
-                }
-                T = initialT;
-            }
-            return best;
-        }
-
         public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match)
         {
             if (improvement)
@@ -543,7 +459,6 @@ namespace GATesting
             Console.WriteLine("Generation " + generation + " Overall Best: " + best[0].Fitness[Criteria.Makespan] + " (" + best.Count + " equal solutions), Current Run Best " + currentBest[0].Fitness[Criteria.Makespan] + " (" + currentBest.Count + " equal solutions) - " + restarts + " restarts" + ")");
             Console.ResetColor();
         }
-
 
         public void Merge(List<Individual> a, List<Individual> b)
         {
@@ -589,11 +504,15 @@ namespace GATesting
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
-                if (generation > 0 && lastProgress < generation - 1)
+                if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
+                    if(maxMutationProbability > 0 && !_configuration.DoRestarts)
+                    {
+                        mutationProbability = Math.Min(mutationProbability, maxMutationProbability);
+                    }
                 }
-                if (mutationProbability > maxMutationProbability)
+                if (_configuration.DoRestarts && mutationProbability > maxMutationProbability)
                 {
                     Individual localMinimum = currentBest[0];
                     // Note: shouldn't technically be necessary
@@ -644,13 +563,16 @@ namespace GATesting
                     {
                         Debug_Report(generation - 1, overallBest, currentBest, restarts, improvement, match);
                     }
-                    int maxPopulationSize = 400; // TODO: parameter
-                    int maxOffspringAmount = maxPopulationSize * 4; // TODO: parameter
+                    int maxPopulationSize = _configuration.MaxPopulationSize;
+                    int maxOffspringAmount = (int)(maxPopulationSize * _configuration.OffspringRate);
                     populationSize = (int)Math.Min(maxPopulationSize, _configuration.PopulationSizeGrowthRate * populationSize);
                     offspringAmount = (int)Math.Min(maxOffspringAmount, _configuration.PopulationSizeGrowthRate * offspringAmount);
 
-                    elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
-                    tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
+                    if (_configuration.AdaptRates)
+                    {
+                        elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
+                        tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
+                    }
 
                     currentBest.Clear();
                     currentTemp.Clear();

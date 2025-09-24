@@ -17,6 +17,8 @@ namespace GATesting
 
         private int _populationSize = 5;
         private int _offspringAmount = 20;
+        private int _maxPopulationSize = 100;
+        private float _offspringRate = 4.0f;
         private float _mutationProbability;
         private float _maxMutationProbability = 1.0f;//0.5f;//0.5f;//1.0f;
         private float _elitismRate = 0.1f;
@@ -25,6 +27,10 @@ namespace GATesting
         private float _maxElitism = 0.1f; // 1.0f // scale freely between , and + if 1
         private float _maxTournamentRate = 0.2f; // 1.0f // NOTE: 0 -> TournamentSize = 1 -> Random Selection, 1 -> TournamentSize = PopulationSize -> Rank Selection
         private int _restartGenerations = 100;//1000;//50;
+
+        private bool _adaptMutationProbability = true;
+        private bool _adaptRates = true;
+        private bool _doRestarts = true;
 
         public GAConfiguration(WorkerEncoding encoding, WorkerDecisionVariables variables)
         {
@@ -77,5 +83,11 @@ namespace GATesting
         public float MaxTournamentRate { get => _maxTournamentRate; set => _maxTournamentRate = value; }
 
         public int[] JobStartIndices => _jobStartIndices;
+
+        public int MaxPopulationSize { get => _maxPopulationSize; set => _maxPopulationSize = value; }
+        public float OffspringRate { get => _offspringRate; set => _offspringRate = value; }
+        public bool AdaptMutationProbability { get => _adaptMutationProbability; set => _adaptMutationProbability = value; }
+        public bool AdaptRates { get => _adaptRates; set => _adaptRates = value; }
+        public bool DoRestarts { get => _doRestarts; set => _doRestarts = value; }
     }
 }
