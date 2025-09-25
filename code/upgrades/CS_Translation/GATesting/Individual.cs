@@ -236,58 +236,63 @@ namespace GATesting
             }
         }
 
+        public static string MUTATIONMETHOD = "sr"; // swap / random
         public void Mutate(float p)
         {
-            // mutate sequence and assignments through base would require one unnecessary loop
-            //base.Mutate(p);
-            Random random = new Random();
-            for (int i = 0; i < _sequence.Length; ++i)
+            if (MUTATIONMETHOD == "sr")
             {
-                if (random.NextDouble() < p)
+
+                // mutate sequence and assignments through base would require one unnecessary loop
+                //base.Mutate(p);
+                Random random = new Random();
+                for (int i = 0; i < _sequence.Length; ++i)
                 {
-                    int swap;
-                    int attempts = 0;
-                    do
-                    {
-                        swap = random.Next(_sequence.Length);
-                        ++attempts;
-                    } while (_sequence[swap] == _sequence[i] && attempts < 100); // make sure it does not swap with itself
-                    int tmp = _sequence[swap];
-                    _sequence[swap] = _sequence[i];
-                    _sequence[i] = tmp;
-                }
-                // since _sequence.Length == _assignments.Length
-                if (random.NextDouble() < p)
-                {
-                    if (AvailableMachines[i].Count > 1)
+                    if (random.NextDouble() < p)
                     {
                         int swap;
                         int attempts = 0;
                         do
                         {
-                            swap = random.Next(AvailableMachines[i].Count);
+                            swap = random.Next(_sequence.Length);
                             ++attempts;
-                        } while (AvailableMachines[i][swap] == _assignments[i] && attempts < 100);
-                        _assignments[i] = AvailableMachines[i][swap];
-                        if (!AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
+                        } while (_sequence[swap] == _sequence[i] && attempts < 100); // make sure it does not swap with itself
+                        int tmp = _sequence[swap];
+                        _sequence[swap] = _sequence[i];
+                        _sequence[i] = tmp;
+                    }
+                    // since _sequence.Length == _assignments.Length
+                    if (random.NextDouble() < p)
+                    {
+                        if (AvailableMachines[i].Count > 1)
                         {
-                            // no longer feasible - randomly choose new worker
-                            _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
+                            int swap;
+                            int attempts = 0;
+                            do
+                            {
+                                swap = random.Next(AvailableMachines[i].Count);
+                                ++attempts;
+                            } while (AvailableMachines[i][swap] == _assignments[i] && attempts < 100);
+                            _assignments[i] = AvailableMachines[i][swap];
+                            if (!AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
+                            {
+                                // no longer feasible - randomly choose new worker
+                                _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
+                            }
                         }
                     }
-                }
-                if (random.NextDouble() < p)
-                {
-                    if (AvailableWorkers[i][_assignments[i]].Count > 1)
+                    if (random.NextDouble() < p)
                     {
-                        int swap;
-                        int attempts = 0;
-                        do
+                        if (AvailableWorkers[i][_assignments[i]].Count > 1)
                         {
-                            swap = random.Next(AvailableWorkers[i][_assignments[i]].Count);
-                            ++attempts;
-                        } while (AvailableWorkers[i][_assignments[i]][swap] == _workers[i] && attempts < 100);
-                        _workers[i] = AvailableWorkers[i][_assignments[i]][swap];
+                            int swap;
+                            int attempts = 0;
+                            do
+                            {
+                                swap = random.Next(AvailableWorkers[i][_assignments[i]].Count);
+                                ++attempts;
+                            } while (AvailableWorkers[i][_assignments[i]][swap] == _workers[i] && attempts < 100);
+                            _workers[i] = AvailableWorkers[i][_assignments[i]][swap];
+                        }
                     }
                 }
             }

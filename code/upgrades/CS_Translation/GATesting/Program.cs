@@ -6,9 +6,22 @@ namespace GATesting
 {
     internal class Program
     {
+
+        static void PrintOne(string test)
+        {
+            Console.WriteLine("1");
+        }
+
+        static void PrintTwo()
+        {
+            Console.WriteLine("2");
+        }
+
         static void Main(string[] args)
         {
-            string inputString = args[1];
+            var test = PrintOne;
+            Console.WriteLine(test.GetType());
+            /*string inputString = args[1];
             JsonNode data = JsonArray.Parse(inputString);
             string basepath = (string)data["path"];
             int maxGenerations = (int)data["maxGenerations"];
@@ -45,6 +58,8 @@ namespace GATesting
             bool doRestarts = (bool)data["doRestarts"];
             int restartGenerations = (int)data["restartGenerations"];
 
+
+
             GA.SORT = true;
             WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
             WorkerEncoding encoding = parser.ParseBenchmark(instance);
@@ -69,10 +84,12 @@ namespace GATesting
             config.DoRestarts = doRestarts;
 
 
+
+
             GA ga = new GA(config, true, encoding.Durations);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);
             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple);
-
+            */
         }
     }
 }

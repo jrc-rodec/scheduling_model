@@ -22,10 +22,17 @@ namespace GATesting
         protected bool _useTimeStop = true;
         protected bool _useFevalStop = true;
 
+        private string _recombinationMethod = "ts";
+        private string _mutationMethod = "sr";
+        private string _mutationRateChangeMethod = "s";
+
         DateTime _startTime;
         protected int _functionEvaluations = 0;
 
         public int FunctionEvaluations { get => _functionEvaluations; set => _functionEvaluations = value; }
+        public string RecombinationMethod { get => _recombinationMethod; set => _recombinationMethod = value; }
+        public string MutationMethod { get => _mutationMethod; set => _mutationMethod = value; }
+        public string MutationRateChangeMethod { get => _mutationRateChangeMethod; set => _mutationRateChangeMethod = value; }
 
         protected bool _output = false;
         private int[,,] _workerDurations;
@@ -41,11 +48,15 @@ namespace GATesting
             _functionEvaluations = 0;
         }
 
-        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations)// : base(configuration, output)
+        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string recombinationMethod = "ts", string mutationMethod = "sr", string mutationRateChangeMethod = "s")// : base(configuration, output)
         {
             _configuration = configuration;
             _output = output;
             Reset();
+            _recombinationMethod = recombinationMethod;
+            _mutationMethod = mutationMethod;
+            Individual.MUTATIONMETHOD = _mutationMethod;
+            _mutationRateChangeMethod = mutationRateChangeMethod;
             _workerDurations = workerDurations;
             //List<List<List<int>>> availableWorkers = new List<List<List<int>>>();
             //for(int operation = 0; operation < _workerDurations.GetLength(0); ++operation)
@@ -68,31 +79,6 @@ namespace GATesting
             //Individual.AvailableWorkers = availableWorkers;
             // TODO: update mutation probability
             configuration.MutationProbability = 1.0f / (configuration.NOperations * 3.0f);
-        }
-
-        private bool WorkerAvailable(Dictionary<string, int> gap, int operation, int operationIndex, Individual individual, int index, int[] operationEndTimes)
-        {
-            int machine = individual.Assignments[operationIndex];
-
-            int worker = individual.Workers[operationIndex];
-
-            int duration = _workerDurations[operation, machine, worker];
-            int[] nextOperation = new int[_configuration.NJobs];
-            for (int i = 0; i < index; i++)
-            {
-                int opId = _configuration.JobStartIndices[_configuration.JobSequence[i]] + nextOperation[_configuration.JobSequence[i]]++;
-                if (individual.Workers[opId] == worker)
-                {
-                    int end = operationEndTimes[opId];
-                    int d = _workerDurations[opId, individual.Assignments[opId], individual.Workers[opId]];
-                    int start = end - d;
-                    if ((gap["start"] >= start && gap["start"] <= end) || (gap["end"] >= start && gap["end"] <= end) || (start >= gap["start"] && start <= gap["end"]) || (end >= gap["start"] && end <= gap["end"]))
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
 
         class TimeSlot
@@ -126,107 +112,6 @@ namespace GATesting
                 }
             }
             return slots.Last();
-        }
-
-        private void EvaluateJobBalance(Individual nIndividual)
-        {
-
-            Individual individual = (Individual)nIndividual;
-
-            int[] nextOperation = new int[_configuration.NJobs];
-            List<TimeSlot>[] endOnMachines = new List<TimeSlot>[_configuration.NMachines];
-            for (int i = 0; i < endOnMachines.Length; ++i)
-            {
-                endOnMachines[i] = new List<TimeSlot>();
-                endOnMachines[i].Add(new TimeSlot(0, 0));
-            }
-            List<TimeSlot>[] endOfWorkers = new List<TimeSlot>[_workerDurations.GetLength(2)];
-            for (int i = 0; i < endOfWorkers.Length; ++i)
-            {
-                endOfWorkers[i] = new List<TimeSlot>();
-                endOfWorkers[i].Add(new TimeSlot(0, 0));
-            }
-
-            int[] endTimes = new int[_configuration.JobSequence.Length];
-            for (int i = 0; i < individual.Sequence.Length; ++i)
-            {
-                int job = individual.Sequence[i];
-                int operation = nextOperation[job];
-                ++nextOperation[job];
-                int startIndex = _configuration.JobStartIndices[job] + operation;
-                int machine = individual.Assignments[startIndex];
-
-                int worker = individual.Workers[startIndex];
-
-                int duration = _workerDurations[startIndex, machine, worker];
-                if (duration == 0)
-                {
-                    Console.WriteLine("0 DURATION, INVALID ASSIGNMENT!");
-                }
-                int offset = 0;
-                int minStartJob = 0;
-                if (operation > 0)
-                {
-                    if (endTimes[startIndex - 1] > offset)
-                    {
-                        // need to wait for previous operation to finish
-                        offset = endTimes[startIndex - 1];
-                    }
-                }
-                if (endOnMachines[machine].Count > 0 && endOnMachines[machine].Last().End >= offset)
-                {
-                    // need to wait for machine to be available
-                    // TODO: could check for earlier timeslot here, but complicated with worker 
-                    offset = endOnMachines[machine].Last().End;
-                }
-                // TODO: don't check if the worker is finished, check if the worker is free in the timespan instead
-                // (could be on other machine at a later time already)
-                if (endOfWorkers[worker].Count > 0)
-                {
-                    TimeSlot workerEarliest = EarliestFit(endOfWorkers[worker], new TimeSlot(offset, offset + duration));
-                    if (workerEarliest.End >= offset)
-                    {
-                        offset = workerEarliest.End;
-                    }
-                }
-
-                endTimes[startIndex] = offset + duration;
-                endOnMachines[machine].Add(new TimeSlot(offset, offset + duration));
-                endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration));
-                if (SORT)
-                {
-                    endOfWorkers[worker] = endOfWorkers[worker].OrderBy(o => o.Start).ToList();
-                }
-            }
-
-            int[] js = Individual.JobSequence;
-            HashSet<int> jobs = new HashSet<int>(js);
-            int[] ideal = new int[jobs.Count];
-            int[] realEnd = new int[jobs.Count];
-            int[] realStart = new int[jobs.Count];
-            for (int i = 0; i < js.Length; ++i)
-            {
-                int duration = _workerDurations[i, individual.Assignments[i], individual.Workers[i]];
-                ideal[js[i]] += duration;
-                if (endTimes[i] - duration < realStart[i])
-                {
-                    realStart[i] = endTimes[i] - duration;
-                }
-                if (endTimes[i] > realEnd[i])
-                {
-                    realEnd[i] = endTimes[i];
-                }
-            }
-            double mse = 0.0f;
-            for (int i = 0; i < ideal.Length; ++i)
-            {
-                mse += Math.Pow(((realEnd[i] - realStart[i]) - ideal[i]) / (realEnd[i] - realStart[i]), 2);
-            }
-            mse /= ideal.Length;
-
-            individual.Fitness[Criteria.JRMSE] = (float)mse;
-            individual.Fitness[Criteria.Makespan] = endTimes.Max();
-            _functionEvaluations++;
         }
 
         private void EvaluateSlots(Individual nIndividual)
@@ -325,7 +210,6 @@ namespace GATesting
             EvaluateSlots(nIndividual);
         }
 
-
         protected Individual TournamentSelection(int tournamentSize)
         {
             if (tournamentSize == 0)
@@ -355,16 +239,21 @@ namespace GATesting
 
         protected Individual Recombine(int tournamentSize)
         {
-            Individual parentA = TournamentSelection(tournamentSize);
-            Individual parentB;
-            int maxAttempts = 100;
-            int attempts = 0;
-            do
+            if(_recombinationMethod == "ts")
             {
-                parentB = TournamentSelection(tournamentSize);
-                ++attempts;
-            } while (parentA.Equals(parentB) && attempts < maxAttempts);
-            return new Individual(parentA, parentB);
+
+                Individual parentA = TournamentSelection(tournamentSize);
+                Individual parentB;
+                int maxAttempts = 100;
+                int attempts = 0;
+                do
+                {
+                    parentB = TournamentSelection(tournamentSize);
+                    ++attempts;
+                } while (parentA.Equals(parentB) && attempts < maxAttempts);
+                return new Individual(parentA, parentB);
+            }
+            return null; // TODO
         }
 
         protected bool HasInvalidAssignment(Individual individual)
@@ -471,6 +360,7 @@ namespace GATesting
             }
             b.Clear();
         }
+        
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple)
         {
             CreatePopulation(_configuration.PopulationSize);
@@ -497,6 +387,14 @@ namespace GATesting
 
             _output = false;
 
+            //Func<float, int, int, int, float, float> // last type is return type (if any?)
+            var mutationUpdate = UpdateMutationProbability;
+            if (_mutationRateChangeMethod == "s")
+            {
+                mutationUpdate = UpdateMutationProbability;
+            }
+
+
             History history = new History();
             bool improvement = false;
             bool match = false;
@@ -506,7 +404,7 @@ namespace GATesting
                 history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
-                    mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
+                    mutationProbability = mutationUpdate(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
                     if(maxMutationProbability > 0 && !_configuration.DoRestarts)
                     {
                         mutationProbability = Math.Min(mutationProbability, maxMutationProbability);
