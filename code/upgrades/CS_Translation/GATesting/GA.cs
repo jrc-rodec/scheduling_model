@@ -22,9 +22,10 @@ namespace GATesting
         protected bool _useTimeStop = true;
         protected bool _useFevalStop = true;
 
-        private string _recombinationMethod = "ts";
+        private string _recombinationMethod = "u";
         private string _mutationMethod = "sr";
         private string _mutationRateChangeMethod = "s";
+        private string _selectionMethod = "ts";
 
         DateTime _startTime;
         protected int _functionEvaluations = 0;
@@ -48,14 +49,16 @@ namespace GATesting
             _functionEvaluations = 0;
         }
 
-        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string recombinationMethod = "ts", string mutationMethod = "sr", string mutationRateChangeMethod = "s")// : base(configuration, output)
+        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s")// : base(configuration, output)
         {
             _configuration = configuration;
             _output = output;
             Reset();
+            _selectionMethod = selectionMethod;
             _recombinationMethod = recombinationMethod;
             _mutationMethod = mutationMethod;
             Individual.MUTATIONMETHOD = _mutationMethod;
+            Individual.RECOMBINATIONMETHOD = _recombinationMethod;
             _mutationRateChangeMethod = mutationRateChangeMethod;
             _workerDurations = workerDurations;
             //List<List<List<int>>> availableWorkers = new List<List<List<int>>>();
@@ -239,7 +242,8 @@ namespace GATesting
 
         protected Individual Recombine(int tournamentSize)
         {
-            if(_recombinationMethod == "ts")
+            _selectionMethod = "ts"; // no other selection method for now
+            if(_selectionMethod == "ts")
             {
 
                 Individual parentA = TournamentSelection(tournamentSize);
@@ -335,6 +339,11 @@ namespace GATesting
             return (float)(p + (Math.Pow((generation - lastProgress) * (1.0f / maxWait), 4) * maxP));
         }
 
+        protected float UpdateMutationProbability2(float p, int generation, int lastProgress, int maxWait, float maxP)
+        {
+            return (float)p+(((float)(generation-lastProgress) / (float)maxWait) * (maxP-p));
+        }
+
         public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match)
         {
             if (improvement)
@@ -372,6 +381,11 @@ namespace GATesting
             float mutationProbability = _configuration.MutationProbability;
             float maxMutationProbability = _configuration.MaxMutationProbability;
             float elitism = _configuration.ElitismRate * populationSize;
+            if (_configuration.AdaptRates)
+            {
+                elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
+                tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
+            }
             int maxWait = _configuration.RestartGenerations;
             int restarts = 0;
             List<Individual> overallBest = new List<Individual>();
@@ -387,14 +401,6 @@ namespace GATesting
 
             _output = false;
 
-            //Func<float, int, int, int, float, float> // last type is return type (if any?)
-            var mutationUpdate = UpdateMutationProbability;
-            if (_mutationRateChangeMethod == "s")
-            {
-                mutationUpdate = UpdateMutationProbability;
-            }
-
-
             History history = new History();
             bool improvement = false;
             bool match = false;
@@ -404,7 +410,14 @@ namespace GATesting
                 history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
-                    mutationProbability = mutationUpdate(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
+                    if(_mutationRateChangeMethod == "s")
+                    {
+                        mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
+                    } else
+                    {
+                        mutationProbability = UpdateMutationProbability2(_configuration.MutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
+                    }
+
                     if(maxMutationProbability > 0 && !_configuration.DoRestarts)
                     {
                         mutationProbability = Math.Min(mutationProbability, maxMutationProbability);

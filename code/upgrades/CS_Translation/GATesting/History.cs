@@ -70,5 +70,6 @@ namespace GATesting
         public Result Result { get => _result; set => _result = value; }
         public string Name { get => _name; set => _name = value; }
         public List<int> Restarts { get => _restarts; set => _restarts = value; }
+        public List<double> UpdateTimeStamps { get => _updateTimeStamps; set => _updateTimeStamps = value; }
     }
 }

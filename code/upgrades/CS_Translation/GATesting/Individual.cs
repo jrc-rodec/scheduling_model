@@ -141,6 +141,7 @@ namespace GATesting
             return sum / values.Length;
         }
 
+        public static string RECOMBINATIONMETHOD = "u";
         public Individual(Individual parentA, Individual parentB) : this(false)
         {
             //NOTE: Code duplication
@@ -181,15 +182,55 @@ namespace GATesting
                     _sequence[i] = parentBValues[bIndex++];
                 }
                 // since sequence length == assignments length == workers length
-                if (random.NextDouble() < 0.5)
-                {
-                    _assignments[i] = parentA._assignments[i];
-                    _workers[i] = parentA._workers[i];
+                if(RECOMBINATIONMETHOD == "u") { 
+                    if (random.NextDouble() < 0.5)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                        _workers[i] = parentA._workers[i];
+                    }
+                    else
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                        _workers[i] = parentB._workers[i];
+                    }
                 }
-                else
+            }
+            if(RECOMBINATIONMETHOD != "u")
+            {
+                if(RECOMBINATIONMETHOD == "op")
                 {
-                    _assignments[i] = parentB._assignments[i];
-                    _workers[i] = parentB._workers[i];
+                    int pA = random.Next(_assignments.Length+1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, _assignments.Length - pA);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for(int i = pA; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }*/
+                    
+                } else
+                {
+                    // two point
+                    int pA = random.Next(_assignments.Length - 1);
+                    int pB = random.Next(pA, _assignments.Length + 1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, pB - pA);
+                    Array.Copy(parentA._assignments, pB, _assignments, pB, _assignments.Length - pB);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for (int i = pA; i < pB; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }
+                    for(int i = pB; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }*/
                 }
             }
         }
@@ -239,13 +280,26 @@ namespace GATesting
         public static string MUTATIONMETHOD = "sr"; // swap / random
         public void Mutate(float p)
         {
-            if (MUTATIONMETHOD == "sr")
+            // mutate sequence and assignments through base would require one unnecessary loop
+            //base.Mutate(p);
+            Random random = new Random();
+            if(MUTATIONMETHOD != "sr")
             {
-
-                // mutate sequence and assignments through base would require one unnecessary loop
-                //base.Mutate(p);
-                Random random = new Random();
-                for (int i = 0; i < _sequence.Length; ++i)
+                // NOTE: since pA == pB is possible, it can happen that no swap is performed at all
+                int pA = random.Next(_sequence.Length-1);
+                int pB = random.Next(pA, _sequence.Length);
+                while(pA < pB)
+                {
+                    int tmp = _sequence[pA];
+                    _sequence[pA] = _sequence[pB];
+                    _sequence[pB] = tmp;
+                    ++pA;
+                    --pB;
+                }
+            }
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (MUTATIONMETHOD == "sr")
                 {
                     if (random.NextDouble() < p)
                     {
@@ -260,42 +314,43 @@ namespace GATesting
                         _sequence[swap] = _sequence[i];
                         _sequence[i] = tmp;
                     }
-                    // since _sequence.Length == _assignments.Length
-                    if (random.NextDouble() < p)
+                }
+                // since _sequence.Length == _assignments.Length
+                if (random.NextDouble() < p)
+                {
+                    if (AvailableMachines[i].Count > 1)
                     {
-                        if (AvailableMachines[i].Count > 1)
+                        int swap;
+                        int attempts = 0;
+                        do
                         {
-                            int swap;
-                            int attempts = 0;
-                            do
-                            {
-                                swap = random.Next(AvailableMachines[i].Count);
-                                ++attempts;
-                            } while (AvailableMachines[i][swap] == _assignments[i] && attempts < 100);
-                            _assignments[i] = AvailableMachines[i][swap];
-                            if (!AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
-                            {
-                                // no longer feasible - randomly choose new worker
-                                _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
-                            }
-                        }
-                    }
-                    if (random.NextDouble() < p)
-                    {
-                        if (AvailableWorkers[i][_assignments[i]].Count > 1)
+                            swap = random.Next(AvailableMachines[i].Count);
+                            ++attempts;
+                        } while (AvailableMachines[i][swap] == _assignments[i] && attempts < 100);
+                        _assignments[i] = AvailableMachines[i][swap];
+                        if (!AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
                         {
-                            int swap;
-                            int attempts = 0;
-                            do
-                            {
-                                swap = random.Next(AvailableWorkers[i][_assignments[i]].Count);
-                                ++attempts;
-                            } while (AvailableWorkers[i][_assignments[i]][swap] == _workers[i] && attempts < 100);
-                            _workers[i] = AvailableWorkers[i][_assignments[i]][swap];
+                            // no longer feasible - randomly choose new worker
+                            _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
                         }
                     }
                 }
+                if (random.NextDouble() < p)
+                {
+                    if (AvailableWorkers[i][_assignments[i]].Count > 1)
+                    {
+                        int swap;
+                        int attempts = 0;
+                        do
+                        {
+                            swap = random.Next(AvailableWorkers[i][_assignments[i]].Count);
+                            ++attempts;
+                        } while (AvailableWorkers[i][_assignments[i]][swap] == _workers[i] && attempts < 100);
+                        _workers[i] = AvailableWorkers[i][_assignments[i]][swap];
+                    }
+                }
             }
+            
         }
 
         public override bool Equals(object other)
