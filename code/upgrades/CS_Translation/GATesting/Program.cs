@@ -133,7 +133,9 @@ namespace GATesting
                 float maxMutationProbability = (float)data["maxMutationProbability"];
                 float elitismRate = (float)data["elitismRate"];
                 int tournamentSize = (int)data["tournamentSize"];
-                bool adaptRates = (bool)data["adaptRates"];
+                //bool adaptRates = (bool)data["adaptRates"];
+                bool adaptTournamentSize = (bool)data["adaptTournamentSize"];
+                bool adaptElitismRate = (bool)data["adaptElitismRate"];
                 float maxElitism = (float)data["maxElitism"];
                 float maxTournament = (float)data["maxTournamentRate"];
                 bool doRestarts = (bool)data["doRestarts"];
@@ -163,7 +165,9 @@ namespace GATesting
                 config.RestartGenerations = restartGenerations;
 
                 config.AdaptMutationProbability = adaptMutationProbability;
-                config.AdaptRates = adaptRates;
+                config.AdaptTournamentSize = adaptTournamentSize;
+                config.AdaptElitismRate = adaptElitismRate;
+                //config.AdaptRates = adaptRates;
                 config.DoRestarts = doRestarts;
 
 

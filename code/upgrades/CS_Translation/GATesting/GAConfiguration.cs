@@ -29,7 +29,9 @@ namespace GATesting
         private int _restartGenerations = 100;//1000;//50;
 
         private bool _adaptMutationProbability = true;
-        private bool _adaptRates = true;
+        //private bool _adaptRates = true;
+        private bool _adaptTournamentSize = true;
+        private bool _adaptElitismRate = true;
         private bool _doRestarts = true;
 
         public GAConfiguration(WorkerEncoding encoding, WorkerDecisionVariables variables)
@@ -87,7 +89,9 @@ namespace GATesting
         public int MaxPopulationSize { get => _maxPopulationSize; set => _maxPopulationSize = value; }
         public float OffspringRate { get => _offspringRate; set => _offspringRate = value; }
         public bool AdaptMutationProbability { get => _adaptMutationProbability; set => _adaptMutationProbability = value; }
-        public bool AdaptRates { get => _adaptRates; set => _adaptRates = value; }
+        //public bool AdaptRates { get => _adaptRates; set => _adaptRates = value; }
         public bool DoRestarts { get => _doRestarts; set => _doRestarts = value; }
+        public bool AdaptTournamentSize { get => _adaptTournamentSize; set => _adaptTournamentSize = value; }
+        public bool AdaptElitismRate { get => _adaptElitismRate; set => _adaptElitismRate = value; }
     }
 }

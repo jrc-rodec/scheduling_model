@@ -381,9 +381,11 @@ namespace GATesting
             float mutationProbability = _configuration.MutationProbability;
             float maxMutationProbability = _configuration.MaxMutationProbability;
             float elitism = _configuration.ElitismRate * populationSize;
-            if (_configuration.AdaptRates)
+            if (_configuration.AdaptElitismRate)
             {
                 elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
+            }
+            if (_configuration.AdaptTournamentSize) { 
                 tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
             }
             int maxWait = _configuration.RestartGenerations;
@@ -479,9 +481,11 @@ namespace GATesting
                     populationSize = (int)Math.Min(maxPopulationSize, _configuration.PopulationSizeGrowthRate * populationSize);
                     offspringAmount = (int)Math.Min(maxOffspringAmount, _configuration.PopulationSizeGrowthRate * offspringAmount);
 
-                    if (_configuration.AdaptRates)
+                    if (_configuration.AdaptElitismRate)
                     {
                         elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
+                    }
+                    if (_configuration.AdaptTournamentSize) { 
                         tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
                     }
 
