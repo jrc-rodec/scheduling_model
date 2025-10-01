@@ -17,6 +17,7 @@ namespace GATesting
         private List<float> _mutationProbability;
         private List<int> _populationSize;
         private List<float> _averagePopulationFitness;
+        private List<int> _fevalHistory;
         private List<double> _updateTimeStamps;
         private List<int> _restarts;
         private Result _result;
@@ -32,11 +33,12 @@ namespace GATesting
             _averagePopulationFitness = new List<float>();
             _updateTimeStamps = new List<double>();
             _restarts = new List<int>();
+            _fevalHistory = new List<int>();
             _name = "";
 
         }
 
-        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime, int restartCount)
+        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime, int restartCount, int fevals)
         {
             _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -46,6 +48,7 @@ namespace GATesting
             _populationSize.Add(population.Count);
             _updateTimeStamps.Add(runtime.TotalMilliseconds / 1000.0);
             _restarts.Add(restartCount);
+            _fevalHistory.Add(fevals);
             float average = 0.0f;
             for (int i = 0; i < population.Count; ++i)
             {
@@ -71,5 +74,6 @@ namespace GATesting
         public string Name { get => _name; set => _name = value; }
         public List<int> Restarts { get => _restarts; set => _restarts = value; }
         public List<double> UpdateTimeStamps { get => _updateTimeStamps; set => _updateTimeStamps = value; }
+        public List<int> FevalHistory { get => _fevalHistory; set => _fevalHistory = value; }
     }
 }

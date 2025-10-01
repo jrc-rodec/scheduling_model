@@ -409,7 +409,7 @@ namespace GATesting
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts);
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
                     if(_mutationRateChangeMethod == "s")
