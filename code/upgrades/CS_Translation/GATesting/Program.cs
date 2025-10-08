@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.Security;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using static BenchmarkParsing.BenchmarkParser;
 
@@ -99,13 +100,15 @@ namespace GATesting
             int[] parentB = { 6, 7, 8, 9, 0 };
             CopyTest(parentA, parentB);*/
             try { 
-                string inputString = args[1];
-                JsonNode data = JsonArray.Parse(inputString);
+                string inputString = args[0];
+                FileStream stream = File.OpenRead(inputString);
+                Dictionary<string, string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
+                //JsonNode data = JsonArray.Parse(inputString);
                 string basepath = (string)data["path"];
-                int maxGenerations = (int)data["maxGenerations"];
-                int timeLimit = (int)data["timeLimit"];
-                float targetFitness = (float)data["targetFitness"];
-                int maxFunctionEvaluations = (int)data["maxFevals"];
+                int maxGenerations = (int)int.Parse(data["maxGenerations"]);
+                int timeLimit = (int)int.Parse(data["timeLimit"]);
+                float targetFitness = (float)float.Parse(data["targetFitness"]);
+                int maxFunctionEvaluations = (int)int.Parse(data["maxFevals"]);
 
                 bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0 };
                 if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -114,32 +117,32 @@ namespace GATesting
                     return;
                 }
 
-                bool keepMultiple = (bool)data["keepMultiple"];
+                bool keepMultiple = (bool)bool.Parse(data["keepMultiple"]);
                 string instance = (string)data["instanceName"];
                 string experimentName = (string)data["name"];
 
                 string outPath = (string)data["outputPath"];
-                int nExperiments = (int)data["nExperiments"];
+                int nExperiments = (int)int.Parse(data["nExperiments"]);
 
-                int iteration = Int32.Parse(args[2]);
+                int iteration = int.Parse(args[1]);
 
-                int populationSize = (int)data["populationSize"];
-                int offspringAmount = (int)data["offspringAmount"];
-                float populationSizeGrowthRate = (float)data["populationGrowthRate"];
-                int maxPopulationSize = (int)data["maxPopulationSize"];
-                float offspringRate = (float)data["offspringRate"];
-                float mutationProbability = (float)data["mutationProbability"];
-                bool adaptMutationProbability = (bool)data["adaptMutationProbability"];
-                float maxMutationProbability = (float)data["maxMutationProbability"];
-                float elitismRate = (float)data["elitismRate"];
-                int tournamentSize = (int)data["tournamentSize"];
+                int populationSize = (int)int.Parse(data["populationSize"]);
+                int offspringAmount = (int)int.Parse(data["offspringAmount"]);
+                float populationSizeGrowthRate = (float)float.Parse(data["populationGrowthRate"]);
+                int maxPopulationSize = (int)int.Parse(data["maxPopulationSize"]);
+                float offspringRate = (float)float.Parse(data["offspringRate"]);
+                float mutationProbability = (float)float.Parse(data["mutationProbability"]);
+                bool adaptMutationProbability = (bool)bool.Parse(data["adaptMutationProbability"]);
+                float maxMutationProbability = (float)float.Parse(data["maxMutationProbability"]);
+                float elitismRate = (float)float.Parse(data["elitismRate"]);
+                int tournamentSize = (int)int.Parse(data["tournamentSize"]);
                 //bool adaptRates = (bool)data["adaptRates"];
-                bool adaptTournamentSize = (bool)data["adaptTournamentSize"];
-                bool adaptElitismRate = (bool)data["adaptElitismRate"];
-                float maxElitism = (float)data["maxElitism"];
-                float maxTournament = (float)data["maxTournamentRate"];
-                bool doRestarts = (bool)data["doRestarts"];
-                int restartGenerations = (int)data["restartGenerations"];
+                bool adaptTournamentSize = (bool)bool.Parse(data["adaptTournamentSize"]);
+                bool adaptElitismRate = (bool)bool.Parse(data["adaptElitismRate"]);
+                float maxElitism = (float)float.Parse(data["maxElitism"]);
+                float maxTournament = (float)float.Parse(data["maxTournamentRate"]);
+                bool doRestarts = (bool)bool.Parse(data["doRestarts"]);
+                int restartGenerations = (int)int.Parse(data["restartGenerations"]);
 
                 string mutationMethod = (string)data["mutationMethod"];
                 string recombinationMethod = (string)data["recombinationMethod"];
@@ -147,7 +150,7 @@ namespace GATesting
 
                 GA.SORT = true;
                 WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
-                WorkerEncoding encoding = parser.ParseBenchmark(instance);
+                WorkerEncoding encoding = parser.ParseBenchmark(basepath);
                 WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
 
                 GAConfiguration config = new GAConfiguration(encoding, variables);
@@ -169,7 +172,6 @@ namespace GATesting
                 config.AdaptElitismRate = adaptElitismRate;
                 //config.AdaptRates = adaptRates;
                 config.DoRestarts = doRestarts;
-
 
                 GA ga = new GA(config, true, encoding.Durations, recombinationMethod: recombinationMethod, mutationMethod: mutationMethod, mutationRateChangeMethod: mutationGrowthMethod);
                 ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);
