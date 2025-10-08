@@ -22,6 +22,7 @@ namespace Solver
         private List<float> _averagePopulationFitness;
         private List<double> _updateTimeStamps;
         private List<int> _updateFevals;
+        private List<int> _restarts;
         private WorkerResult _result;
 
         public WorkerHistory()
@@ -35,11 +36,12 @@ namespace Solver
             _averagePopulationFitness = new List<float>();
             _updateTimeStamps = new List<double>();
             _updateFevals = new List<int>();
+            _restarts = new List<int>();
             _name = "";
 
         }
 
-        public void Update(List<WFJSSPIndividual> overallBest, List<WFJSSPIndividual> currentBest, float p, List<WFJSSPIndividual> population, TimeSpan runtime, int fevals)
+        public void Update(List<WFJSSPIndividual> overallBest, List<WFJSSPIndividual> currentBest, float p, List<WFJSSPIndividual> population, TimeSpan runtime, int restartCount, int fevals)
         {
             _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -49,6 +51,7 @@ namespace Solver
             _populationSize.Add(population.Count);
             _updateTimeStamps.Add(runtime.TotalMilliseconds / 1000.0);
             _updateFevals.Add(fevals);
+            _restarts.Add(restartCount);
             float average = 0.0f;
             for (int i = 0; i < population.Count; ++i)
             {
@@ -75,6 +78,7 @@ namespace Solver
         public string Name { get => _name; set => _name = value; }
         public List<double> UpdateTimeStamps { get => _updateTimeStamps; }
         public List<int> UpdateFevals { get => _updateFevals; }
+        public List<int> Restarts { get => _restarts; set => _restarts = value; }
     }
     public class History
     {
@@ -90,6 +94,7 @@ namespace Solver
         private List<float> _averagePopulationFitness;
         private List<double> _updateTimeStamps;
         private List<int> _updateFevals;
+        private List<int> _restarts;
         private Result _result;
 
         public History()
@@ -102,10 +107,11 @@ namespace Solver
             _nEqualResetBestSolutions = new List<int>();
             _averagePopulationFitness = new List<float>();
             _updateTimeStamps = new List<double>();
-            _updateFevals = new List<int>();
+            _restarts = new List<int>();
+
         }
 
-        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime, int fevals)
+        public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime, int restartCount, int fevals)
         {
             _overallBestFitness.Add(overallBest[0].Fitness[Criteria.Makespan]);
             _resetBestHistory.Add(currentBest[0].Fitness[Criteria.Makespan]);
@@ -115,6 +121,7 @@ namespace Solver
             _populationSize.Add(population.Count);
             _updateTimeStamps.Add(runtime.TotalMilliseconds / 1000.0);
             _updateFevals.Add(fevals);
+            _restarts.Add(restartCount);
             float average = 0.0f;
             for(int i = 0; i < population.Count; ++i)
             {
@@ -140,5 +147,6 @@ namespace Solver
         public List<int> UpdateFevals { get => _updateFevals; }
         public Result Result { get => _result; set => _result = value; }
         public string Name { get => _name; set => _name = value; }
+        public List<int> Restarts { get => _restarts; set => _restarts = value; }
     }
 }

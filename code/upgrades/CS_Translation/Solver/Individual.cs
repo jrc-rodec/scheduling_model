@@ -10,10 +10,10 @@ namespace Solver
 
     public enum Criteria
     {
-        Makespan, IdleTime, QueueTime, Tardiness
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE
     }
 
-    public class Individual
+    public class Individual : IEquatable<Individual>
     {
         protected int[] _sequence;
         protected int[] _assignments;
@@ -246,22 +246,38 @@ namespace Solver
         }
 
 
-        public bool Equals(Individual other)
+        public override bool Equals(object other)
         {
             // NOTE: _sequence and _assignments are always the same length
-            for(int i = 0; i < _sequence.Length; ++i)
+            try
             {
-                if (_sequence[i] != other._sequence[i])
+                Individual o = (Individual)other;
+                for (int i = 0; i < _sequence.Length; ++i)
                 {
-                    return false;
+                    if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i])
+                    {
+                        return false;
+                    }
                 }
-                if (_assignments[i] != other._assignments[i])
+                return true;
+            }
+            catch (Exception ex) {
+                return false;
+            }
+
+        }
+
+        public bool Equals(Individual? other)
+        {
+            // NOTE: _sequence and _assignments are always the same length
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_sequence[i] != other._sequence[i] || _assignments[i] != other._assignments[i])
                 {
                     return false;
                 }
             }
             return true;
         }
-
     }
 }

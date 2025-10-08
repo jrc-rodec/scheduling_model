@@ -1,143 +1,19 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
+using System.Text;
+using System.Threading.Tasks;
 
-
-namespace GA_Uncertainty
+namespace GATesting
 {
 
-    public class IndividualLoader {
-
-        private class JSONResultList
-        {
-            public List<JSONResult> results { get; set; }
-        }
-        private class JSONResult
-        {
-            public String instance { get; set; }
-            public float fitness { get; set; }
-            public List<int> sequence { get; set; }
-            public List<int> machines { get; set; }
-            public List<int> worker { get; set; }
-        }
-
-        private static List<string> ReadFile(string path){
-            List<string> lines = new List<string>();
-            StreamReader reader = new StreamReader(path);
-            try {
-                while(reader.Peek() >= 0){
-                    lines.Add(reader.ReadLine());
-                }
-            } catch (IOException e) {
-                Console.WriteLine("Error reading file:\n" + e.Message);
-            } finally {
-                reader.Close();
-            }
-            return lines;
-        }
-
-        private static List<Individual> ParseJson(string path, string benchmarkPath, bool translateOperations, bool worker = false){
-            List<string> lines = ReadFile(path);
-            string text = lines[0];
-            JSONResultList data = JsonSerializer.Deserialize<JSONResultList>(text);
-            //List<JSONResult> data = JsonSerializer.Deserialize<List<JSONResult>>(text);
-            List<Individual> solutions = new List<Individual>();
-            
-            foreach (JSONResult result in data.results)
-            {
-                Console.WriteLine(result.instance);
-                // load benchmark data for context
-                BenchmarkParser parser = new BenchmarkParser();
-                Encoding encoding = parser.ParseBenchmark(benchmarkPath + result.instance);
-                DecisionVariables variables = new DecisionVariables(encoding);
-                GAConfiguration configuration = new GAConfiguration(encoding, variables);
-                Individual.Durations = encoding.Durations;
-                Individual.AvailableWorkers = encoding.GetAllWorkersForAllOperations();
-                Individual.AvailableMachines = encoding.GetAllMachinesForAllOperations();
-                Individual.JobSequence = encoding.JobSequence;
-                Individual individual = new Individual(true);
-                
-                // fill Individual
-                individual.Sequence = result.sequence.ToArray();
-                if (translateOperations) { 
-                    // sequence values are currently the start times
-                    for(int i = 0; i < individual.Sequence.Length; ++i)
-                    {
-                        // TODO: translate GA to start times instead of start times to sequence
-                    }
-                }
-                individual.Assignments = result.machines.ToArray();
-                individual.Workers = result.worker.ToArray();
-                
-                // Evaluation
-                Evaluation evaluation = new Makespan(configuration, encoding.Durations);
-                evaluation.Evaluate(individual);
-                // double check if everything is loaded correctly
-                if (individual.Fitness[Criteria.Makespan] != result.fitness)
-                {
-                    Console.WriteLine("SOMETHING DOESN'T ADD UP!");
-                }
-
-                Evaluation processingTimes = new AverageRobustness(configuration, encoding.Durations, 10, 0.4f, 0.1f, 0.4f);
-                float[] machineProbabilities = new float[result.machines.Max()+1];
-                for(int i = 0; i < machineProbabilities.Length; ++i)
-                {
-                    machineProbabilities[i] = 0.1f;
-                }
-                Evaluation randomDelays = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
-                processingTimes.Evaluate(individual);
-                randomDelays.Evaluate(individual);
-                Console.WriteLine("SHIFTING:");
-                Console.WriteLine(result.fitness + " | " + individual.Fitness[Criteria.Makespan] + " | " + individual.Fitness[Criteria.AverageRobustness] + " | " + individual.Fitness[Criteria.RandomDelays]);
-                Console.WriteLine("ADJUSTING:");
-                Individual adjusted = Adjustment.Adjust(individual, configuration);
-                Evaluation evaluationAdjusted = new Makespan(configuration, encoding.Durations);
-                evaluationAdjusted.Evaluate(adjusted);
-                Evaluation processingTimesAdjusted = new AdjustedAverageRobustness(configuration, encoding.Durations, 10, 0.4f, 0.1f, 0.4f);
-                Evaluation randomDelaysAdjusted = new RandomDelayRobustnessEvaluation(configuration, encoding.Durations, machineProbabilities, 10, 0.9f, 0.1f);
-                processingTimesAdjusted.Evaluate(adjusted);
-                randomDelaysAdjusted.Evaluate(adjusted);
-                Console.WriteLine(result.fitness + " | " + adjusted.Fitness[Criteria.Makespan] + " | " + adjusted.Fitness[Criteria.AdjustedAverageRobustness] + " | " + adjusted.Fitness[Criteria.RandomDelays]);
-                //string summary = result.instance + ";" + result.fitness + ";" + individual.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AverageRobustness] + ";" + adjusted.Fitness[Criteria.Makespan] + ";" + individual.Fitness[Criteria.AdjustedAverageRobustness] + "\n";
-                //File.AppendAllText(@"C:\Users\huda\Documents\shifting\adjusted_results.csv", summary);
-                
-            }
-
-
-            return solutions;
-        }
-
-        private static List<Individual> ParseCSV(string path){
-            List<string> lines = ReadFile(path);
-            List<Individual> solutions = new List<Individual>();
-            // find benchmark ? load all ? 
-            Individual individual = new Individual(true);
-            // fill individual
-
-            return solutions;
-        }
-
-        public static List<Individual> LoadResults(string benchmarkPath, string resultPath, bool worker = false)
-        {
-            return LoadResults(benchmarkPath, resultPath, false, worker);
-        }
-        public static List<Individual> LoadResults(string benchmarkPath, string resultPath, bool translateOperations, bool worker = false){
-            List<Individual> individual;
-            if(resultPath.EndsWith(".json")){
-                individual = ParseJson(resultPath, benchmarkPath, translateOperations, worker);
-            } else {
-                individual = ParseCSV(resultPath);
-            }
-            return individual;
-
-        }
-    }
-    public class Individual //: Individual
+    public enum Criteria
     {
-        public static List<List<Criteria>> ranking;
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE
+    }
 
+    public class Individual : IEquatable<Individual> //: Individual
+    {
         private int[] _workers;
         public static List<List<List<int>>> AvailableWorkers;
         public static int[,,] Durations;
@@ -158,40 +34,6 @@ namespace GA_Uncertainty
         public bool Feasible { get => _feasible; set => _feasible = value; }
         public int[] Sequence { get => _sequence; set => _sequence = value; }
         public int[] Assignments { get => _assignments; set => _assignments = value; }
-
-        public static List<Individual> RankedSort(List<Individual> individuals)
-        {
-            //TODO: adapt for multiple in the same rank + test speed, also for unknown amount of ranks
-            return [.. individuals
-                        .OrderBy(m => m.Fitness[ranking[0][0]])
-                        .ThenBy(r => r.Fitness[ranking[1][0]])];
-        }
-
-        public static int CompareRanked(Individual a, Individual b){
-            foreach(List<Criteria> rank in ranking){
-                // TODO: enable more than one per rank
-                if(a.Fitness[rank[0]] < b.Fitness[rank[0]]){
-                    return 1;
-                }
-                if(a.Fitness[rank[0]] > b.Fitness[rank[0]]){
-                    return -1;
-                }
-            }
-            return 0;
-        }
-
-        public Individual DeepCopy()
-        {
-            Individual copy = new Individual(false);
-            for(int i = 0; i < _workers.Length; ++i)
-            {
-                copy._workers[i] = _workers[i];
-                copy._sequence[i] = _sequence[i];
-                copy._assignments[i] = _assignments[i];
-            }
-
-            return copy;
-        }
         public Individual(bool randomize)// : base(randomize)
         {
             _workers = new int[JobSequence.Length];
@@ -244,6 +86,7 @@ namespace GA_Uncertainty
                 }
             }
         }
+
 
         public float GetDissimilarity(Individual other)
         {
@@ -298,6 +141,7 @@ namespace GA_Uncertainty
             return sum / values.Length;
         }
 
+        public static string RECOMBINATIONMETHOD = "u";
         public Individual(Individual parentA, Individual parentB) : this(false)
         {
             //NOTE: Code duplication
@@ -338,30 +182,57 @@ namespace GA_Uncertainty
                     _sequence[i] = parentBValues[bIndex++];
                 }
                 // since sequence length == assignments length == workers length
-                if (random.NextDouble() < 0.5)
-                {
-                    _assignments[i] = parentA._assignments[i];
-                    _workers[i] = parentA._workers[i];
-                }
-                else
-                {
-                    _assignments[i] = parentB._assignments[i];
-                    _workers[i] = parentB._workers[i];
+                if(RECOMBINATIONMETHOD == "u") { 
+                    if (random.NextDouble() < 0.5)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                        _workers[i] = parentA._workers[i];
+                    }
+                    else
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                        _workers[i] = parentB._workers[i];
+                    }
                 }
             }
-
-            /*for(int i = 0; i < _assignments.Length; ++i)
+            if(RECOMBINATIONMETHOD != "u")
             {
-                if(random.NextDouble() < 0.5)
+                if(RECOMBINATIONMETHOD == "op")
                 {
-                    _assignments[i] = parentA._assignments[i];
-                    _workers[i] = parentA._workers[i];
+                    int pA = random.Next(_assignments.Length+1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, _assignments.Length - pA);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for(int i = pA; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }*/
+                    
                 } else
                 {
-                    _assignments[i] = parentB._assignments[i];
-                    _workers[i] = parentB._workers[i];
+                    // two point
+                    int pA = random.Next(_assignments.Length - 1);
+                    int pB = random.Next(pA, _assignments.Length + 1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, pB - pA);
+                    Array.Copy(parentA._assignments, pB, _assignments, pB, _assignments.Length - pB);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for (int i = pA; i < pB; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }
+                    for(int i = pB; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }*/
                 }
-            }*/
+            }
         }
 
         protected void ShuffleSequence()
@@ -406,25 +277,43 @@ namespace GA_Uncertainty
             }
         }
 
+        public static string MUTATIONMETHOD = "sr"; // swap / random
         public void Mutate(float p)
         {
             // mutate sequence and assignments through base would require one unnecessary loop
             //base.Mutate(p);
             Random random = new Random();
+            if(MUTATIONMETHOD != "sr")
+            {
+                // NOTE: since pA == pB is possible, it can happen that no swap is performed at all
+                int pA = random.Next(_sequence.Length-1);
+                int pB = random.Next(pA, _sequence.Length);
+                while(pA < pB)
+                {
+                    int tmp = _sequence[pA];
+                    _sequence[pA] = _sequence[pB];
+                    _sequence[pB] = tmp;
+                    ++pA;
+                    --pB;
+                }
+            }
             for (int i = 0; i < _sequence.Length; ++i)
             {
-                if (random.NextDouble() < p)
+                if (MUTATIONMETHOD == "sr")
                 {
-                    int swap;
-                    int attempts = 0;
-                    do
+                    if (random.NextDouble() < p)
                     {
-                        swap = random.Next(_sequence.Length);
-                        ++attempts;
-                    } while (_sequence[swap] == _sequence[i] && attempts < 100); // make sure it does not swap with itself
-                    int tmp = _sequence[swap];
-                    _sequence[swap] = _sequence[i];
-                    _sequence[i] = tmp;
+                        int swap;
+                        int attempts = 0;
+                        do
+                        {
+                            swap = random.Next(_sequence.Length);
+                            ++attempts;
+                        } while (_sequence[swap] == _sequence[i] && attempts < 100); // make sure it does not swap with itself
+                        int tmp = _sequence[swap];
+                        _sequence[swap] = _sequence[i];
+                        _sequence[i] = tmp;
+                    }
                 }
                 // since _sequence.Length == _assignments.Length
                 if (random.NextDouble() < p)
@@ -461,9 +350,30 @@ namespace GA_Uncertainty
                     }
                 }
             }
+            
         }
 
-        public bool Equals(Individual other)
+        public override bool Equals(object other)
+        {
+            try
+            {
+                Individual o = (Individual)other;
+                for (int i = 0; i < _sequence.Length; ++i)
+                {
+                    if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i] || _workers[i] != o._workers[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(Individual? other)
         {
             for (int i = 0; i < _sequence.Length; ++i)
             {
@@ -475,5 +385,4 @@ namespace GA_Uncertainty
             return true;
         }
     }
-
 }
