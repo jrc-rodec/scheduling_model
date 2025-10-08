@@ -18,8 +18,8 @@ from ortools.sat.python import cp_model
 #import localsolver
 
 
-TIME_LIMIT_IN_SECONDS = 1200#1200
-RANDOM_SEED = 1
+TIME_LIMIT_IN_SECONDS = 60#1200
+#RANDOM_SEED = 1
 CALLBACK = True
 
 def get_cpu_ram_stats():
@@ -583,8 +583,7 @@ def run_cplex_cp(path):
 
     #---------- mit solution listener----------------
     context.solver.solve_with_search_next = True
-    if CALLBACK:
-        mdl.add_solver_listener(SolutionPrinter())
+    mdl.add_solver_listener(SolutionPrinter())
     #------------------------------------------------
 
     # Solve model
@@ -593,7 +592,12 @@ def run_cplex_cp(path):
 
     #---------- ohne solution listener--------
     #res = mdl.solve(FailLimit=1000000,TimeLimit=10)
-    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, RandomSeed=RANDOM_SEED, LogVerbosity = 'Quiet')
+    
+    #mdl.parameters.SolutionLimit = 1000000
+    #mdl.parameters.mip.limits.node.set(1000000)# = 1000000
+    #mdl.set_parameters()
+    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", SolutionLimit = 1000, TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
+    #res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, RandomSeed=RANDOM_SEED, LogVerbosity = 'Quiet')#
     #print('Solution:')
     #res.print_solution()
     start_times = []
@@ -615,15 +619,19 @@ def run_ortools(path):
     resources = [(0,0)]
 
     class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-
         def __init__(self):
             cp_model.CpSolverSolutionCallback.__init__(self)
+            self.max_solutions = 1000
+            self.solution_count = 0
 
         def on_solution_callback(self):
+            self.solution_count += 1
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             #if round(self.objective_value) < history[-1][1] or round(self.best_objective_bound) > history[-1][2]:
             history.append((self.wall_time, self.objective_value, self.best_objective_bound))
+            if self.solution_count >= self.max_solutions:
+                self.stop_search()
 
     f = open(path)
     lines = f.readlines()
@@ -795,13 +803,10 @@ def run_ortools(path):
     solver = cp_model.CpSolver()
     # Sets a time limit in seconds.
     solver.parameters.max_time_in_seconds = TIME_LIMIT_IN_SECONDS
-    solver.parameters.random_seed = RANDOM_SEED
+    #solver.parameters.random_seed = RANDOM_SEED
     #Meldung bei jeder neuen Lösung 
     solution_printer = SolutionPrinter()
-    if CALLBACK:
-        status = solver.solve(model, solution_printer)
-    else:
-        status = solver.solve(model)   
+    status = solver.solve(model, solution_printer)
     #print("Finished Solving the problem")
     #Ohne Meldung bei jeder neuen Lösung
     #status = solver.solve(model)
@@ -1061,9 +1066,9 @@ if __name__ == '__main__':
     selected_solver = sys.argv[1] if len(sys.argv) > 1 else 'cplex_cp'
     shutdown_when_finished = False
     # TODO: include all paths, all instances
-    BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\OneDrive_1_25-04-2025\instance_variants'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\benchmarks\fjssp-w'
     #BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\variants\worker'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\cplex\repeat\fjssp-w' if selected_solver == 'cplex_cp' else r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\ortools\fjssp-w'
     # test fjssp first, then wfjssp 
     #solvers = ['cplex_cp', 'ortools', 'hexaly', 'cplex_lp', 'gurobi']
     #runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
@@ -1115,7 +1120,7 @@ if __name__ == '__main__':
     'HurinkVdata30.fjs']
     """
     all_instances = os.listdir(BENCHMARK_PATH)
-    selected_instances = ['3_DPpaulli_5',
+    """selected_instances = ['3_DPpaulli_5',
     '6_Fattahi_14',
     '3_DPpaulli_9',
     '3_DPpaulli_18',
@@ -1144,13 +1149,13 @@ if __name__ == '__main__':
     '2c_Hurink_rdata_38',
     '2c_Hurink_rdata_28',
     '2b_Hurink_edata_1',
-    '2d_Hurink_vdata_30']
-    instances = []
-    for instance in all_instances:
+    '2d_Hurink_vdata_30']"""
+    instances = all_instances#[]
+    """for instance in all_instances:
         for possibility in selected_instances:
             if instance.startswith(possibility):
                 instances.append(instance)
-                break
+                break"""
     #runs = [[selected_solver]]
     runs = [[selected_solver]]
     for i in range(len(runs)):
@@ -1165,8 +1170,6 @@ if __name__ == '__main__':
             for solver in solvers:
                 #instances = missing_results[solver]
                 for instance in instances:
-                    if skip and solver == 'cplex_lp' and instance.startswith('1'): # skip behnkeGeiger
-                        skip = False
                     if not skip:
                         # free up memory for the new run
                         p = None

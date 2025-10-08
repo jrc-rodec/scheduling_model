@@ -23,7 +23,7 @@ import collections
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-TIME_LIMIT_IN_SECONDS = 1200
+TIME_LIMIT_IN_SECONDS = 60
 
 def get_cpu_ram_stats():
     return psutil.cpu_percent(), psutil.virtual_memory().percent
@@ -344,7 +344,9 @@ def run_cplex_cp(path):
     context.solver.solve_with_search_next = True
     mdl.add_solver_listener(SolutionPrinter())
 
-    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
+    #mdl.parameters.SolutionLimit = 1000000
+    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", SolutionLimit = 1000, TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
+    #res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
     if res:
         start_times = []
         assignments = []
@@ -373,12 +375,17 @@ def run_ortools(path):
 
         def __init__(self):
             cp_model.CpSolverSolutionCallback.__init__(self)
+            self.max_solutions = 1000
+            self.solution_count = 0
 
         def on_solution_callback(self):
+            self.solution_count += 1
             cpu, ram = get_cpu_ram_stats()
             resources.append((cpu, ram))
             if round(self.objective_value) < history[-1][1] or round(self.best_objective_bound) > history[-1][2]:
                 history.append((self.wall_time, self.objective_value, self.best_objective_bound))
+            if self.solution_count >= self.max_solutions:
+                self.stop_search()
 
     f = open(path)
     lines = f.readlines()
@@ -496,10 +503,10 @@ def run_ortools(path):
 
     solver.parameters.max_time_in_seconds = TIME_LIMIT_IN_SECONDS
     
-    #solution_printer = SolutionPrinter()
+    solution_printer = SolutionPrinter()
 
-    #status = solver.solve(model, solution_printer)
-    status = solver.solve(model)
+    status = solver.solve(model, solution_printer)
+    #status = solver.solve(model)
 
     start_times = []
     assignments = []
@@ -642,8 +649,8 @@ if __name__ == '__main__':
     import sys
     selected_solver = sys.argv[1]
     shutdown_when_finished = False
-    BENCHMARK_PATH = r'C:\Users\localadmin\Downloads\benchmarks_no_workers\benchmarks_no_workers'#r'C:\Users\localadmin\Downloads\DemirkolBenchmarksJobShop\reformat'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\hexaly_fjssp_rerun'
+    BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\benchmarks\fjssp'#r'C:\Users\localadmin\Downloads\DemirkolBenchmarksJobShop\reformat'
+    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\cplex\repeat\fjssp' if selected_solver == 'cplex_cp' else r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\ortools\fjssp'
     # test fjssp first, then wfjssp
     #solvers = ['cplex_cp', 'cplex_lp', 'hexaly']#'ortools',
     solvers = [selected_solver]

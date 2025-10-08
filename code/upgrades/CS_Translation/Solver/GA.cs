@@ -417,7 +417,7 @@ namespace Solver
             Console.WriteLine("Starting Optimization Main Loop");
             while(!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime));
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), _functionEvaluations);
                 if(generation > 0 && lastProgress < generation - 1)
                 {
                     mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
