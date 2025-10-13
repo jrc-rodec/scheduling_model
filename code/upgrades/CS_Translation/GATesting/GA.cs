@@ -407,9 +407,9 @@ namespace GATesting
             bool improvement = false;
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+            history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
                     if(_mutationRateChangeMethod == "s")
@@ -585,6 +585,7 @@ namespace GATesting
                     }
                 }
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 ++generation;
             }
             if (_output)
