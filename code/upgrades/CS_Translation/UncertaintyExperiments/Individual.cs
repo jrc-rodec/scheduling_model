@@ -1,0 +1,390 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UncertaintyExperiments
+{
+
+    public enum Criteria
+    {
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE
+    }
+
+    public class Individual : IEquatable<Individual> //: Individual
+    {
+        private int[] _workers;
+        public static List<List<List<int>>> AvailableWorkers;
+        public static int[,,] Durations;
+        protected int[] _sequence;
+        protected int[] _assignments;
+        protected Dictionary<Criteria, float> _fitness;
+        protected bool _feasible = true;
+
+        public static int[] JobSequence;
+        public static List<List<int>> AvailableMachines;
+        public static float MaxDissimilarity;
+        public static int MaxInitializationAttemps = 100; // TODO add parameter
+        public static float DistanceAdjustmentRate = 0.75f; // TODO add parameter
+        public static bool UseDissimilarity = true;
+        public int[] Workers { get => _workers; set => _workers = value; }
+
+        public Dictionary<Criteria, float> Fitness { get => _fitness; set => _fitness = value; }
+        public bool Feasible { get => _feasible; set => _feasible = value; }
+        public int[] Sequence { get => _sequence; set => _sequence = value; }
+        public int[] Assignments { get => _assignments; set => _assignments = value; }
+        public Individual(bool randomize)// : base(randomize)
+        {
+            _workers = new int[JobSequence.Length];
+            _sequence = new int[JobSequence.Length];
+            _assignments = new int[JobSequence.Length];
+            _fitness = new Dictionary<Criteria, float>();
+            if (randomize)
+            {
+                // randomize
+                Randomize();
+            }
+        }
+
+        public Individual(Individual other)// : base(other)
+        {
+            _sequence = new int[other._sequence.Length];
+            other._sequence.CopyTo(_sequence, 0);
+            _assignments = new int[other._assignments.Length];
+            other._assignments.CopyTo(_assignments, 0);
+            _fitness = other.Fitness;
+            _workers = new int[other._workers.Length];
+            other._workers.CopyTo(_workers, 0);
+        }
+
+        public Individual(List<Individual> population) : this(true)
+        {
+            if (population.Count < 1 || !UseDissimilarity)
+            {
+                Randomize();
+            }
+            else
+            {
+                //NOTE: code duplication
+                float minDistance = MaxDissimilarity;
+                int attempts = 0;
+                float[] dissimilarity = new float[population.Count];
+                while (dissimilarity.Length > 0 && Average(dissimilarity) < minDistance)
+                {
+                    if (attempts > MaxInitializationAttemps)
+                    {
+                        minDistance = minDistance * DistanceAdjustmentRate;
+                        attempts = 0;
+                    }
+                    Randomize();
+                    for (int i = 0; i < population.Count; ++i)
+                    {
+                        dissimilarity[i] = GetDissimilarity(population[i]);
+                    }
+                    ++attempts;
+                }
+            }
+        }
+
+
+        public float GetDissimilarity(Individual other)
+        {
+            float result = 0.0f;
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_assignments[i] != other._assignments[i])
+                {
+                    result += AvailableMachines[i].Count;
+                }
+                if (_sequence[i] != other._sequence[i])
+                {
+                    ++result;
+                }
+                if (_workers[i] != other._workers[i])
+                {
+                    result += AvailableWorkers[i][other._assignments[i]].Count;
+                }
+            }
+            return result;
+        }
+
+        public static void DetermineMaxDissimiarilty()
+        {
+            MaxDissimilarity = 0.0f;
+            // For every operation
+            for (int i = 0; i < AvailableMachines.Count; ++i)
+            {
+                MaxDissimilarity += AvailableMachines[i].Count;
+                int maxWorkers = 0;
+                //maxWorkers = AvailableWorkers.Count();
+                // for every machine available for the operation
+                for (int j = 0; j < AvailableMachines[i].Count; ++j)
+                {
+                    if (AvailableWorkers[i][AvailableMachines[i][j]].Count > maxWorkers)
+                    {
+                        maxWorkers = AvailableWorkers[i][AvailableMachines[i][j]].Count;
+                    }
+                }
+                MaxDissimilarity += maxWorkers;
+            }
+            MaxDissimilarity += JobSequence.Length;
+        }
+
+        protected float Average(float[] values)
+        {
+            float sum = 0;
+            for (int i = 0; i < values.Length; ++i)
+            {
+                sum += values[i];
+            }
+            return sum / values.Length;
+        }
+
+        public static string RECOMBINATIONMETHOD = "u";
+        public Individual(Individual parentA, Individual parentB) : this(false)
+        {
+            //NOTE: Code duplication
+            HashSet<int> jobs = new HashSet<int>(JobSequence);
+
+            List<int> a = new List<int>();
+            List<int> b = new List<int>();
+            Random random = new Random();
+            for (int i = 0; i < jobs.Count; ++i)
+            {
+                if (random.NextDouble() < 0.5)
+                {
+                    a.Add(jobs.ElementAt(i));
+                }
+                else
+                {
+                    b.Add(jobs.ElementAt(i));
+                }
+            }
+
+            int bIndex = 0;
+            List<int> parentBValues = new List<int>();
+            for (int i = 0; i < parentB._sequence.Length; ++i)
+            {
+                if (b.Contains(parentB._sequence[i]))
+                {
+                    parentBValues.Add(parentB._sequence[i]);
+                }
+            }
+            for (int i = 0; i < parentA._sequence.Length; ++i)
+            {
+                if (a.Contains(parentA._sequence[i]))
+                {
+                    _sequence[i] = parentA._sequence[i];
+                }
+                else
+                {
+                    _sequence[i] = parentBValues[bIndex++];
+                }
+                // since sequence length == assignments length == workers length
+                if (RECOMBINATIONMETHOD == "u")
+                {
+                    if (random.NextDouble() < 0.5)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                        _workers[i] = parentA._workers[i];
+                    }
+                    else
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                        _workers[i] = parentB._workers[i];
+                    }
+                }
+            }
+            if (RECOMBINATIONMETHOD != "u")
+            {
+                if (RECOMBINATIONMETHOD == "op")
+                {
+                    int pA = random.Next(_assignments.Length + 1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, _assignments.Length - pA);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for(int i = pA; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }*/
+
+                }
+                else
+                {
+                    // two point
+                    int pA = random.Next(_assignments.Length - 1);
+                    int pB = random.Next(pA, _assignments.Length + 1);
+                    Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
+                    Array.Copy(parentB._assignments, pA, _assignments, pA, pB - pA);
+                    Array.Copy(parentA._assignments, pB, _assignments, pB, _assignments.Length - pB);
+                    /*for(int i = 0; i < pA; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }
+                    for (int i = pA; i < pB; ++i)
+                    {
+                        _assignments[i] = parentB._assignments[i];
+                    }
+                    for(int i = pB; i < _assignments.Length; ++i)
+                    {
+                        _assignments[i] = parentA._assignments[i];
+                    }*/
+                }
+            }
+        }
+
+        protected void ShuffleSequence()
+        {
+            Random random = new Random();
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                int index = random.Next(_sequence.Length);
+                int tmp = _sequence[index];
+                _sequence[index] = _sequence[i];
+                _sequence[i] = tmp;
+            }
+        }
+
+        protected void Randomize()
+        {
+            Random random = new Random();
+            JobSequence.CopyTo(_sequence, 0);
+            ShuffleSequence();
+            for (int i = 0; i < _assignments.Length; ++i)
+            {
+                _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];
+            }
+            _workers = new int[JobSequence.Length];
+            for (int i = 0; i < _workers.Length; ++i)
+            {
+                _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(0, AvailableWorkers[i][_assignments[i]].Count)];
+            }
+        }
+
+        public static void DetermineMaxDissimilarity()
+        {
+            MaxDissimilarity = 0.0f;
+            for (int i = 0; i < AvailableMachines.Count; ++i)
+            {
+                MaxDissimilarity += AvailableMachines[i].Count;
+            }
+            MaxDissimilarity += JobSequence.Length;
+            for (int i = 0; i < AvailableWorkers.Count; ++i)
+            {
+                MaxDissimilarity += AvailableWorkers[i].Count;
+            }
+        }
+
+        public static string MUTATIONMETHOD = "sr"; // swap / random
+        public void Mutate(float p)
+        {
+            // mutate sequence and assignments through base would require one unnecessary loop
+            //base.Mutate(p);
+            Random random = new Random();
+            if (MUTATIONMETHOD != "sr")
+            {
+                // NOTE: since pA == pB is possible, it can happen that no swap is performed at all
+                int pA = random.Next(_sequence.Length - 1);
+                int pB = random.Next(pA, _sequence.Length);
+                while (pA < pB)
+                {
+                    int tmp = _sequence[pA];
+                    _sequence[pA] = _sequence[pB];
+                    _sequence[pB] = tmp;
+                    ++pA;
+                    --pB;
+                }
+            }
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (MUTATIONMETHOD == "sr")
+                {
+                    if (random.NextDouble() < p)
+                    {
+                        int swap;
+                        int attempts = 0;
+                        do
+                        {
+                            swap = random.Next(_sequence.Length);
+                            ++attempts;
+                        } while (_sequence[swap] == _sequence[i] && attempts < 100); // make sure it does not swap with itself
+                        int tmp = _sequence[swap];
+                        _sequence[swap] = _sequence[i];
+                        _sequence[i] = tmp;
+                    }
+                }
+                // since _sequence.Length == _assignments.Length
+                if (random.NextDouble() < p)
+                {
+                    if (AvailableMachines[i].Count > 1)
+                    {
+                        int swap;
+                        int attempts = 0;
+                        do
+                        {
+                            swap = random.Next(AvailableMachines[i].Count);
+                            ++attempts;
+                        } while (AvailableMachines[i][swap] == _assignments[i] && attempts < 100);
+                        _assignments[i] = AvailableMachines[i][swap];
+                        if (!AvailableWorkers[i][_assignments[i]].Contains(_workers[i]))
+                        {
+                            // no longer feasible - randomly choose new worker
+                            _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(AvailableWorkers[i][_assignments[i]].Count)];
+                        }
+                    }
+                }
+                if (random.NextDouble() < p)
+                {
+                    if (AvailableWorkers[i][_assignments[i]].Count > 1)
+                    {
+                        int swap;
+                        int attempts = 0;
+                        do
+                        {
+                            swap = random.Next(AvailableWorkers[i][_assignments[i]].Count);
+                            ++attempts;
+                        } while (AvailableWorkers[i][_assignments[i]][swap] == _workers[i] && attempts < 100);
+                        _workers[i] = AvailableWorkers[i][_assignments[i]][swap];
+                    }
+                }
+            }
+
+        }
+
+        public override bool Equals(object other)
+        {
+            try
+            {
+                Individual o = (Individual)other;
+                for (int i = 0; i < _sequence.Length; ++i)
+                {
+                    if (_sequence[i] != o._sequence[i] || _assignments[i] != o._assignments[i] || _workers[i] != o._workers[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(Individual? other)
+        {
+            for (int i = 0; i < _sequence.Length; ++i)
+            {
+                if (_sequence[i] != other._sequence[i] || _assignments[i] != other._assignments[i] || _workers[i] != other._workers[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+}
