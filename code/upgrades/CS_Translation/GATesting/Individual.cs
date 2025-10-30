@@ -202,6 +202,8 @@ namespace GATesting
                     int pA = random.Next(_assignments.Length+1);
                     Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
                     Array.Copy(parentB._assignments, pA, _assignments, pA, _assignments.Length - pA);
+                    Array.Copy(parentA._workers, 0, _workers, 0, pA);
+                    Array.Copy(parentB._workers, pA, _workers, pA, _workers.Length - pA);
                     /*for(int i = 0; i < pA; ++i)
                     {
                         _assignments[i] = parentA._assignments[i];
@@ -219,6 +221,11 @@ namespace GATesting
                     Array.Copy(parentA._assignments, 0, _assignments, 0, pA);
                     Array.Copy(parentB._assignments, pA, _assignments, pA, pB - pA);
                     Array.Copy(parentA._assignments, pB, _assignments, pB, _assignments.Length - pB);
+
+                    Array.Copy(parentA._workers, 0, _workers, 0, pA);
+                    Array.Copy(parentB._workers, pA, _workers, pA, pB - pA);
+                    Array.Copy(parentA._workers, pB, _workers, pB, _workers.Length - pB);
+
                     /*for(int i = 0; i < pA; ++i)
                     {
                         _assignments[i] = parentA._assignments[i];
