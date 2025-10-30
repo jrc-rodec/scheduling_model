@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MathNet.Numerics.Distributions;
 
-namespace GATesting
+namespace UncertaintyExperiments
 {
     public class GA //: GA
     {
@@ -40,6 +41,10 @@ namespace GATesting
         private GAConfiguration _configuration;
 
 
+        private bool _simulateUncertainty = false;
+        private Tuple<float, float>[] _uncertaintyParameters;
+        private int _nSimulations = 30;
+
         public static bool SORT = true;
 
         public void Reset()
@@ -49,7 +54,7 @@ namespace GATesting
             _functionEvaluations = 0;
         }
 
-        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s")// : base(configuration, output)
+        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30)// : base(configuration, output)
         {
             _configuration = configuration;
             _output = output;
@@ -61,35 +66,44 @@ namespace GATesting
             Individual.RECOMBINATIONMETHOD = _recombinationMethod;
             _mutationRateChangeMethod = mutationRateChangeMethod;
             _workerDurations = workerDurations;
-            //List<List<List<int>>> availableWorkers = new List<List<List<int>>>();
-            //for(int operation = 0; operation < _workerDurations.GetLength(0); ++operation)
-            //{
-            //    List<List<int>> operationWorkers = new List<List<int>>();
-            //    for(int machine = 0; machine < _workerDurations.GetLength(1); ++machine)
-            //    {
-            //        List<int> machineWorkers = new List<int>();
-            //        for(int worker = 0; worker < _workerDurations.GetLength(2); ++worker)
-            //        {
-            //            if (_workerDurations[operation,machine,worker] > 0)
-            //            {
-            //                machineWorkers.Add(worker);
-            //            }
-            //        }
-            //        operationWorkers.Add(machineWorkers);
-            //    }
-            //    availableWorkers.Add(operationWorkers);
-            //}
-            //Individual.AvailableWorkers = availableWorkers;
-            // TODO: update mutation probability
+            _simulateUncertainty = simulateUncertainty;
+            _nSimulations = nSimulations;
+            if (uncertaintyParameters == null)
+            {
+                _uncertaintyParameters = new Tuple<float, float>[_configuration.NWorkers];
+                // randomize
+                /*
+                 * alpha = 0.1 * random.random()
+                 * beta = 0.5 * random.random()
+                 */
+                float alphaValue = 0.1f; // just example values
+                float betaValue = 0.5f;
+                Random random = new Random();
+                for (int i = 0; i < configuration.NWorkers; ++i)
+                {
+                    float alpha = alphaValue * (float)random.NextDouble();
+                    float beta = betaValue * (float)random.NextDouble();
+                    Tuple<float, float> values = new Tuple<float, float>(alpha, beta);
+                    _uncertaintyParameters[i] = values;
+                }
+            }
+            else
+            {
+                _uncertaintyParameters = new Tuple<float, float>[uncertaintyParameters.Count];
+                for (int i = 0; i < _uncertaintyParameters.Length; ++i)
+                {
+                    _uncertaintyParameters[i] = uncertaintyParameters[i];
+                }
+            }
             configuration.MutationProbability = 1.0f / (configuration.NOperations * 3.0f);
         }
 
         class TimeSlot
         {
-            public int Start = 0;
-            public int End = 0;
+            public float Start = 0;
+            public float End = 0;
 
-            public TimeSlot(int start, int end)
+            public TimeSlot(float start, float end)
             {
                 Start = start;
                 End = end;
@@ -99,7 +113,7 @@ namespace GATesting
                 return Contains(other.Start) || Contains(other.End) || other.Contains(Start) || other.Contains(End);
             }
 
-            public bool Contains(int time)
+            public bool Contains(float time)
             {
                 return time >= Start && time <= End;
             }
@@ -117,15 +131,22 @@ namespace GATesting
             return slots.Last();
         }
 
+
+
         private void EvaluateSlots(Individual nIndividual)
         {
 
             Individual individual = (Individual)nIndividual;
+
             // TODO: test
             if (!individual.Feasible)
             {
                 individual.Fitness[Criteria.Makespan] = float.MaxValue;
                 return;
+            }
+            if (_simulateUncertainty && _uncertaintyParameters.Count() < 1)
+            {
+                // create random parameters
             }
             int[] nextOperation = new int[_configuration.NJobs];
             List<TimeSlot>[] endOnMachines = new List<TimeSlot>[_configuration.NMachines];
@@ -140,10 +161,7 @@ namespace GATesting
                 endOfWorkers[i] = new List<TimeSlot>();
                 endOfWorkers[i].Add(new TimeSlot(0, 0));
             }
-            //int[] endOnMachines = new int[_configuration.NMachines];
-            // TODO: need to keep record of worker times in a different format
-            //int[] endOfWorkers = new int[_workerDurations.GetLength(2)];
-            int[] endTimes = new int[_configuration.JobSequence.Length];
+            float[] endTimes = new float[_configuration.JobSequence.Length];
             for (int i = 0; i < individual.Sequence.Length; ++i)
             {
                 int job = individual.Sequence[i];
@@ -154,12 +172,17 @@ namespace GATesting
 
                 int worker = individual.Workers[startIndex];
 
-                int duration = _workerDurations[startIndex, machine, worker];
+                float duration = _workerDurations[startIndex, machine, worker];
+                if (_simulateUncertainty)
+                {
+                    Beta b = new Beta(_uncertaintyParameters[worker].Item1, _uncertaintyParameters[worker].Item2);
+                    duration *= (1.0f + (float)b.Sample());
+                }
                 if (duration == 0)
                 {
                     Console.WriteLine("0 DURATION, INVALID ASSIGNMENT!");
                 }
-                int offset = 0;
+                float offset = 0;
                 int minStartJob = 0;
                 if (operation > 0)
                 {
@@ -171,12 +194,8 @@ namespace GATesting
                 }
                 if (endOnMachines[machine].Count > 0 && endOnMachines[machine].Last().End >= offset)
                 {
-                    // need to wait for machine to be available
-                    // TODO: could check for earlier timeslot here, but complicated with worker 
                     offset = endOnMachines[machine].Last().End;
                 }
-                // TODO: don't check if the worker is finished, check if the worker is free in the timespan instead
-                // (could be on other machine at a later time already)
                 if (endOfWorkers[worker].Count > 0)
                 {
                     TimeSlot workerEarliest = EarliestFit(endOfWorkers[worker], new TimeSlot(offset, offset + duration));
@@ -207,10 +226,27 @@ namespace GATesting
             _functionEvaluations++;
         }
 
-        private void Evaluate(Individual nIndividual)
+
+
+        private void Evaluate(Individual individual)
         {
-            // just redirect for now
-            EvaluateSlots(nIndividual);
+            if (_simulateUncertainty)
+            {
+                List<float> results = new List<float>(); // NOTE: unused
+                float avg = 0.0f;
+                for (int i = 0; i < _nSimulations; ++i)
+                {
+                    EvaluateSlots(individual);
+                    avg += individual.Fitness[Criteria.Makespan];
+                    results.Add(individual.Fitness[Criteria.Makespan]);
+                }
+                individual.Fitness[Criteria.Makespan] = avg / _nSimulations; // simple robustness measure
+            }
+            else
+            {
+                // just redirect for now
+                EvaluateSlots(individual);
+            }
         }
 
         protected Individual TournamentSelection(int tournamentSize)
@@ -243,7 +279,7 @@ namespace GATesting
         protected Individual Recombine(int tournamentSize)
         {
             _selectionMethod = "ts"; // no other selection method for now
-            if(_selectionMethod == "ts")
+            if (_selectionMethod == "ts")
             {
 
                 Individual parentA = TournamentSelection(tournamentSize);
@@ -341,7 +377,7 @@ namespace GATesting
 
         protected float UpdateMutationProbability2(float p, int generation, int lastProgress, int maxWait, float maxP)
         {
-            return (float)p+(((float)(generation-lastProgress) / (float)maxWait) * (maxP-p));
+            return (float)p + (((float)(generation - lastProgress) / (float)maxWait) * (maxP - p));
         }
 
         public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match)
@@ -369,7 +405,7 @@ namespace GATesting
             }
             b.Clear();
         }
-        
+
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple)
         {
             CreatePopulation(_configuration.PopulationSize);
@@ -385,7 +421,8 @@ namespace GATesting
             {
                 elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
             }
-            if (_configuration.AdaptTournamentSize) { 
+            if (_configuration.AdaptTournamentSize)
+            {
                 tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
             }
             int maxWait = _configuration.RestartGenerations;
@@ -407,20 +444,21 @@ namespace GATesting
             bool improvement = false;
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
-            history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
-                    if(_mutationRateChangeMethod == "s")
+                    if (_mutationRateChangeMethod == "s")
                     {
                         mutationProbability = UpdateMutationProbability(mutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
-                    } else
+                    }
+                    else
                     {
                         mutationProbability = UpdateMutationProbability2(_configuration.MutationProbability, generation, lastProgress, maxWait, maxMutationProbability);
                     }
 
-                    if(maxMutationProbability > 0 && !_configuration.DoRestarts)
+                    if (maxMutationProbability > 0 && !_configuration.DoRestarts)
                     {
                         mutationProbability = Math.Min(mutationProbability, maxMutationProbability);
                     }
@@ -485,7 +523,8 @@ namespace GATesting
                     {
                         elitism = Math.Max(0, populationSize * _configuration.MaxElitismRate * _configuration.DurationVariety);
                     }
-                    if (_configuration.AdaptTournamentSize) { 
+                    if (_configuration.AdaptTournamentSize)
+                    {
                         tournamentSize = (int)Math.Max(1, (int)populationSize * _configuration.MaxTournamentRate * _configuration.DurationVariety);
                     }
 
@@ -585,7 +624,6 @@ namespace GATesting
                     }
                 }
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 ++generation;
             }
             if (_output)

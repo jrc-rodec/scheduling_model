@@ -150,6 +150,7 @@ namespace BenchmarkParsing
         public float DurationVariety => _durationVariety;
         public int NOperations => _encoding.NOperations;
         public int NMachines => _encoding.NMachines;
+        public int NWorkers => _encoding.NWorkers;
         public int NJobs => _encoding.NJobs;
         public float AverageOperations => _averageOperations;
         public float AverageOperationsOnMachines => _averageOperationsOnMachines;
