@@ -22,6 +22,8 @@ namespace GATesting
         private List<int> _restarts;
         private Result _result;
 
+        private List<Individual> _collection;
+
         public History()
         {
             _overallBestFitness = new List<float>();
@@ -35,7 +37,7 @@ namespace GATesting
             _restarts = new List<int>();
             _fevalHistory = new List<int>();
             _name = "";
-
+            _collection = new List<Individual>();
         }
 
         public void Update(List<Individual> overallBest, List<Individual> currentBest, float p, List<Individual> population, TimeSpan runtime, int restartCount, int fevals)
@@ -75,5 +77,6 @@ namespace GATesting
         public List<int> Restarts { get => _restarts; set => _restarts = value; }
         public List<double> UpdateTimeStamps { get => _updateTimeStamps; set => _updateTimeStamps = value; }
         public List<int> FevalHistory { get => _fevalHistory; set => _fevalHistory = value; }
+        public List<Individual> Collection { get => _collection; set => _collection = value; }
     }
 }

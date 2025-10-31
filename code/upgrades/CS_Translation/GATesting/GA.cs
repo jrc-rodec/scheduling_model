@@ -370,7 +370,7 @@ namespace GATesting
             b.Clear();
         }
         
-        public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple)
+        public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple, int collectInstances = 0)
         {
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
@@ -408,6 +408,10 @@ namespace GATesting
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
             history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
+
+            List<Individual> collection = new List<Individual>();
+
+
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
@@ -586,6 +590,10 @@ namespace GATesting
                 }
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
+                if (collectInstances > 0 && generation % collectInstances == 0)
+                {
+                    collection.Add(_population[0]);
+                }
                 ++generation;
             }
             if (_output)
@@ -593,6 +601,11 @@ namespace GATesting
                 Debug_Report(generation, overallBest, currentBest, restarts, improvement, match);
             }
             history.Result = new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
+            if(collectInstances > 0 && !collection.Contains(overallBest[0]))
+            {
+                collection.Add(overallBest[0]);
+            }
+            history.Collection = collection;
             return history;
         }
     }
