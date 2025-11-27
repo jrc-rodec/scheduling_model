@@ -403,16 +403,19 @@ namespace UncertaintyExperiments
 
         private void AddChild(Node current, List<Node> openList, List<Node> closedList)
         {
-            if (openList.Contains(current) || closedList.Contains(current))
+            if (current == null || openList.Contains(current) || closedList.Contains(current))
             {
                 return;
             }
 
             foreach (Node parent in current.Parents)
             {
-                if (!openList.Contains(parent) && !closedList.Contains(parent))
+                if(parent != null)
                 {
-                    AddChild(parent, openList, closedList);
+                    if (!openList.Contains(parent) && !closedList.Contains(parent))
+                    {
+                        AddChild(parent, openList, closedList);
+                    }
                 }
             }
             openList.Add(current);
@@ -430,7 +433,10 @@ namespace UncertaintyExperiments
                 closedList.Add(current);
                 foreach (Node child in current.Children)
                 {
-                    AddChild(child, openList, closedList);
+                    if(child != null){
+
+                        AddChild(child, openList, closedList);
+                    }
                 }
                 current.UpdateValues();
             }
@@ -440,61 +446,6 @@ namespace UncertaintyExperiments
                 _endingTimes[i] = _nodes[i].End;
                 _buffers[i] = _nodes[i].Buffer;
             }
-        }
-
-        private void AddChildFirst(Node current, List<Node> openList, List<Node> closedList)
-        {
-            if (openList.Contains(current) || closedList.Contains(current))
-            {
-                return;
-            }
-
-            foreach (Node parent in current.Parents)
-            {
-                if (!openList.Contains(parent) && !closedList.Contains(parent))
-                {
-                    AddChildFirst(parent, openList, closedList);
-                }
-            }
-            openList.Insert(0, current);
-            //openList.Add(current);
-        }
-
-        public void PrintAll(Node current, List<Node> openList, List<Node> closedList)
-        {
-            openList.Remove(current);
-            closedList.Add(current);
-            if (_roots.Contains(current))
-            {
-                Console.Write("End at: " + current.End);
-                Console.WriteLine("\nNEW ROOT:");
-            }
-            Console.Write(current.Operation + "->");
-
-            foreach (Node child in current.Children)
-            {
-                AddChildFirst(child, openList, closedList);
-            }
-            if (openList.Count > 0)
-            {
-                current = openList[0];
-                PrintAll(current, openList, closedList);
-            }
-            else
-            {
-                Console.WriteLine("End at: " + current.End);
-                Console.WriteLine("\nFinished.");
-            }
-
-        }
-
-        public void PrintPaths()
-        {
-            List<Node> openList = new List<Node>();
-            openList.AddRange(_roots);
-            List<Node> closedList = new List<Node>();
-            Node current = openList[0];
-            PrintAll(current, openList, closedList);
         }
 
         private List<List<Tuple<float, float>>> GenerateEvents(float[,] parameters)
@@ -711,15 +662,23 @@ namespace UncertaintyExperiments
                 Update();
                 foreach (Node parent in current.Parents)
                 {
-                    if (!closedList.Contains(parent))
+                    if(parent != null)
                     {
-                        throw new InvalidDataException("Invalid graph data - a parent of a node was not in the closed list already.");
+                        if (!closedList.Contains(parent))
+                        {
+                            throw new InvalidDataException("Invalid graph data - a parent of a node was not in the closed list already.");
+                        }
+
                     }
                 }
 
                 foreach (Node child in current.Children)
                 {
-                    AddChild(child, openList, closedList);
+                    if (child != null)
+                    {
+                        AddChild(child, openList, closedList);
+
+                    }
                 }
             }
 
@@ -952,7 +911,10 @@ namespace UncertaintyExperiments
             List<float> parentEndTimes = new List<float>();
             foreach (Node parent in Parents)
             {
-                parentEndTimes.Add(parent.End + parent.BufferTime);
+                if(parent != null)
+                {
+                    parentEndTimes.Add(parent.End + parent.BufferTime);
+                }
             }
 
             return parentEndTimes;

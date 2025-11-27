@@ -57,8 +57,8 @@ namespace UncertaintyExperiments
         {
             //Test();
             
-            try
-            {
+            //try
+            //{
                 string inputString = args[0];
                 FileStream stream = File.OpenRead(inputString);
                 Dictionary<string, string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
@@ -163,11 +163,11 @@ namespace UncertaintyExperiments
                 {
                     EndFile(filename);
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error during input parsing or GA execution: " + e.Message);
-            }
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine("Error during input parsing or GA execution: " + e.Message);
+            //}
             
         }
     }

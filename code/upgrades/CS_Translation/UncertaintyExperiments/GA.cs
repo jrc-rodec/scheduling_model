@@ -374,8 +374,8 @@ namespace UncertaintyExperiments
         {
             if (true) // TODO
             {
-                EvaluateGraphSequence(individual);
-                //EvaluateGraph(individual);
+                //EvaluateGraphSequence(individual);
+                EvaluateGraph(individual);
             }else if (_simulateUncertainty)
             {
                 List<float> results = new List<float>(); // NOTE: unused
