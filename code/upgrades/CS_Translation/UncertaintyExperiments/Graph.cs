@@ -48,7 +48,7 @@ namespace UncertaintyExperiments
         public float[,,] Durations
         {
             get => _durations;
-            set => _durations = value ?? throw new ArgumentNullException(nameof(value));
+            //set => _durations = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public float[] Buffers
@@ -73,7 +73,7 @@ namespace UncertaintyExperiments
         private int[] _machines;
         private int[] _workers;
         private int[] _jobSequence;
-        private float[,,] _durations;
+        private readonly float[,,] _durations;
         private float[] _buffers;
         private bool _leftShift;
         private List<Node> _nodes;
@@ -99,6 +99,175 @@ namespace UncertaintyExperiments
         private List<Node> _roots;
         private List<Node> _leafs;
 
+        public Graph(int[] s, int[] m, int[] w, int[] js, float[,,] d, float[] b, bool leftShift = false) 
+        {
+            _jobSequence = new int[js.Length];
+            js.CopyTo(_jobSequence, 0);
+
+            _startingTimes = new float[s.Length];
+            _endingTimes = new float[s.Length];
+            _machines = new int[m.Length];
+            m.CopyTo(_machines, 0);
+            _workers = new int[w.Length];
+            w.CopyTo(_workers, 0);
+            _durations = d;
+            _buffers = new float[s.Length];
+            if (b.Length == 0)
+            {
+                for (int i = 0; i < b.Length; i++)
+                {
+                    _buffers[i] = 0.0f;
+                }
+            }
+            else
+            {
+                b.CopyTo(_buffers, 0);
+            }
+            _leftShift = leftShift;
+            Node.LeftShift = leftShift;
+
+            Node[] mLast = new Node[_durations.GetLength(1)];
+            for(int i = 0; i < mLast.Length; i++)
+            {
+                mLast[i] = null;
+            }
+            List<List<Node>> workerWindows = new List<List<Node>>();
+            for(int i = 0; i < w.Max() + 1; i++)
+            {
+                workerWindows.Add(new List<Node>());
+            }
+            int[] operation = new int[_jobSequence.Length];
+            _nodes = new List<Node>();
+            List<int> jobStartIndices = new List<int>();
+            for(int i = 0; i < _jobSequence.Max()+1; i++)
+            {
+                jobStartIndices.Add(Array.IndexOf(_jobSequence, i));
+            }
+            for(int i = 0; i < s.Length; i++)
+            {
+                _nodes.Add(null);
+            }
+            for(int i = 0; i < s.Length; i++)
+            {
+                Node operationParent = null;
+                Node machineParent = null;
+                Node workerParent = null;
+                int current = s[i];
+                int operationIndex = jobStartIndices[current] + operation[current];
+                float operationTime = 0.0f;
+                if (operation[current] > 0)
+                {
+                    operationTime = _nodes[operationIndex - 1].End;
+                    operationParent = _nodes[operationIndex - 1];
+                }
+                operation[current]++;
+                int machine = _machines[operationIndex];
+                int worker = _workers[operationIndex];
+                float machineTime = 0.0f;// mLast[machine].End;
+                if (mLast[machine] != null)
+                {
+                    machineTime = mLast[machine].End;
+                    machineParent = mLast[machine];
+                }
+                float workerTime = 0.0f;
+                if (workerWindows[worker].Count > 0)
+                {
+                    if (workerWindows[worker].Count == 1)
+                    {
+                        if (workerWindows[worker][0].Start < _durations[operationIndex,machine,worker])
+                        {
+                            workerTime = workerWindows[worker][0].End;
+                            workerParent = workerWindows[worker][0];
+                        }
+                    } else
+                    {
+                        List<Node> sortedWindows = new List<Node>();
+                        workerWindows[worker].Sort((a, b) => a.End.CompareTo(b.End));
+                        foreach(Node node in workerWindows[worker])
+                        {
+                            if(node.End >= Math.Max(operationTime, machineTime))
+                            {
+                                sortedWindows.Add(node);
+                            }
+                        }
+                        if(sortedWindows.Count > 0)
+                        {
+                            //sortedWindows.Sort((a, b) => a.End.CompareTo(b.End));
+                            Node window = null;
+                            if (sortedWindows[0].Start < _durations[operationIndex, machine, worker])
+                            {
+                                for(int j = 1; j < sortedWindows.Count; j++)
+                                {
+                                    if (sortedWindows[j].Start - sortedWindows[j-1].End >= _durations[operationIndex, machine, worker])
+                                    {
+                                        window = sortedWindows[j];
+                                    }
+                                    break;
+                                }
+                            }
+                            if(window != null)
+                            {
+                                workerTime = window.End;
+                                workerParent = window;
+                            } else
+                            {
+                                if (sortedWindows[0].Start < _durations[operationIndex, machine, worker])
+                                {
+                                    workerTime = sortedWindows.Last().End;
+                                    workerParent = sortedWindows.Last();
+                                }
+                            }
+                        } else
+                        {
+                            workerTime = workerWindows[worker].Last().End;// sortedWindows.Last().End;
+                            workerParent = workerWindows[worker].Last();// sortedWindows.Last();
+                        }
+                    }
+                }
+                float startTime = Math.Max(operationTime, Math.Max(machineTime, workerTime));
+                float endTime = startTime + _durations[operationIndex, machine, worker];
+                _startingTimes[operationIndex] = startTime;
+                _endingTimes[operationIndex] = endTime;
+                _nodes[operationIndex] = new Node(_startingTimes, _endingTimes, _machines, _workers, _jobSequence, _buffers, operationIndex);
+                mLast[machine] = _nodes[operationIndex];
+                workerWindows[worker].Add(_nodes[operationIndex]);
+                _nodes[operationIndex].OperationParent = operationParent;
+                _nodes[operationIndex].MachineParent = machineParent;
+                _nodes[operationIndex].WorkerParent = workerParent;
+
+                if(machineParent != null)
+                {
+                    if(machineParent.MachineChild != null)
+                    {
+                        throw new Exception("Tried to register a wrong child!");
+                    }
+                    machineParent.MachineChild = _nodes[operationIndex];
+                }
+                if(workerParent != null)
+                {
+                    if (workerParent.WorkerChild != null)
+                    {
+                        _nodes[operationIndex].WorkerChild = workerParent.WorkerChild;
+                        _nodes[operationIndex].WorkerChild.WorkerParent = _nodes[operationIndex];
+                    }
+                    workerParent.WorkerChild = _nodes[operationIndex];
+                }
+            }
+            _roots = new List<Node>();
+            _leafs = new List<Node>();
+            foreach(Node n in _nodes)
+            {
+                if(n.OperationParent == null && n.MachineParent == null && n.WorkerParent == null) 
+                {
+                    _roots.Add(n);
+                }
+                if(n.OperationChild == null && n.MachineChild == null && n.WorkerChild == null)
+                {
+                    _leafs.Add(n);
+                }
+            }
+        }
+
         public Graph(float[] s, float[] e, int[] m, int[] w, int[] js, float[,,] d, float[] b, bool leftShift = false)
         {
             _startingTimes = new float[s.Length];
@@ -111,7 +280,8 @@ namespace UncertaintyExperiments
             w.CopyTo(_workers, 0);
             _jobSequence = new int[js.Length];
             js.CopyTo(_jobSequence, 0);
-            _durations = new float[s.Length, m.Max() + 1, w.Max() + 1];
+            _durations = d;
+            /*_durations = new float[s.Length, m.Max() + 1, w.Max() + 1];
             for (int i = 0; i < _durations.GetLength(0); i++)
             {
                 for (int j = 0; j < _durations.GetLength(1); j++)
@@ -121,18 +291,19 @@ namespace UncertaintyExperiments
                         _durations[i, j, k] = d[i, j, k];
                     }
                 }
-            }
+            }*/
             //d.CopyTo(_durations, 0);
+            _buffers = new float[s.Length];
             if (b.Length == 0)
             {
-                b = new float[s.Length];
                 for (int i = 0; i < b.Length; i++)
                 {
-                    b[i] = 0.0f;
+                    _buffers[i] = 0.0f;
                 }
+            } else
+            {
+                b.CopyTo(_buffers, 0);
             }
-            _buffers = new float[b.Length];
-            b.CopyTo(_buffers, 0);
             _leftShift = leftShift;
             Node.LeftShift = leftShift;
             _nodes = new List<Node>();
@@ -633,21 +804,27 @@ namespace UncertaintyExperiments
             get => _operation;
             set => _operation = value;
         }
+        public Node OperationParent { get => _operationParent; set => _operationParent = value; }
+        public Node MachineParent { get => _machineParent; set => _machineParent = value; }
+        public Node WorkerParent { get => _workerParent; set => _workerParent = value; }
+        public Node OperationChild { get => _operationChild; set => _operationChild = value; }
+        public Node MachineChild { get => _machineChild; set => _machineChild = value; }
+        public Node WorkerChild { get => _workerChild; set => _workerChild = value; }
 
         public List<Node> Parents
         {
-            get => _parents;
-            set => _parents = value ?? throw new ArgumentNullException(nameof(value));
+            get => new List<Node> { _operationParent, _machineParent, _workerParent };// _parents;
+            //set => _parents = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public List<Node> Children
         {
-            get => _children;
-            set => _children = value ?? throw new ArgumentNullException(nameof(value));
+            get => new List<Node> { _operationChild, _machineChild, _workerChild };// _children;
+            //set => _children = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        private List<Node> _parents;
-        private List<Node> _children;
+        //private List<Node> _parents;
+        //private List<Node> _children;
 
         private float _start;
         private float _end;
@@ -656,6 +833,13 @@ namespace UncertaintyExperiments
         private int _worker;
         private float _buffer;
         private int _operation;
+
+        private Node _operationParent = null;
+        private Node _machineParent = null;
+        private Node _workerParent = null;
+        private Node _operationChild = null;
+        private Node _machineChild = null;
+        private Node _workerChild = null;
 
         public Node(float[] startingTimes, float[] endingTimes, int[] machines, int[] workers, int[] jobSequence, float[] buffers, int operation)
         {
@@ -666,8 +850,9 @@ namespace UncertaintyExperiments
             _worker = workers[operation];
             _buffer = buffers[operation];
             _operation = operation;
-            _parents = new List<Node>();
-            _children = new List<Node>();
+            //_parents = new List<Node>();
+            //_children = new List<Node>();
+
         }
 
         public float Buffer
@@ -681,6 +866,7 @@ namespace UncertaintyExperiments
             get => _buffer * (_end - _start);
         }
 
+
         public static bool LeftShift;
 
         public void AddNeighbours(int[] machines, int[] workers, int[] jobSequence, List<Node> nodes, int operation)
@@ -688,12 +874,14 @@ namespace UncertaintyExperiments
             // job dependencies
             if (operation > 0 && jobSequence[operation - 1] == jobSequence[operation])
             {
-                _parents.Add(nodes[operation - 1]);
+                //_parents.Add(nodes[operation - 1]);
+                _operationParent = nodes[operation-1];
             }
 
             if (operation + 1 < jobSequence.Length && jobSequence[operation + 1] == jobSequence[operation])
             {
-                _children.Add(nodes[operation + 1]);
+                //_children.Add(nodes[operation + 1]);
+                _operationChild = nodes[operation + 1];
             }
             // machine dependencies
             List<int> onMachine = new List<int>();
@@ -717,12 +905,14 @@ namespace UncertaintyExperiments
 
                 if (Math.Abs(nodes[onMachine[index]].Start - nodes[onMachine[machineIndex]].Start) > eps)
                 {
-                    _parents.Add(nodes[onMachine[index]]);
+                    _machineParent = nodes[onMachine[index]];
+                    //_parents.Add(nodes[onMachine[index]]);
                 }
             }
             if (machineIndex + 1 < onMachine.Count)
             {
-                _children.Add(nodes[onMachine[machineIndex + 1]]);
+                _machineChild = nodes[onMachine[machineIndex + 1]];
+                //_children.Add(nodes[onMachine[machineIndex + 1]]);
             }
             // worker dependencies
             List<int> sameWorker = new List<int>();
@@ -745,20 +935,22 @@ namespace UncertaintyExperiments
 
                 if (Math.Abs(nodes[sameWorker[index]].Start - nodes[sameWorker[workerIndex]].Start) > eps)
                 {
-                    _parents.Add(nodes[sameWorker[index]]);
+                    _workerParent = nodes[sameWorker[index]];
+                    //_parents.Add(nodes[sameWorker[index]]);
                 }
             }
 
             if (workerIndex + 1 < sameWorker.Count)
             {
-                _children.Add(nodes[sameWorker[workerIndex + 1]]);
+                _workerChild = nodes[sameWorker[workerIndex + 1]];
+                //_children.Add(nodes[sameWorker[workerIndex + 1]]);
             }
         }
 
         private List<float> GetParentEndTimes()
         {
             List<float> parentEndTimes = new List<float>();
-            foreach (Node parent in _parents)
+            foreach (Node parent in Parents)
             {
                 parentEndTimes.Add(parent.End + parent.BufferTime);
             }
@@ -805,7 +997,7 @@ namespace UncertaintyExperiments
         public List<Node> GetPredecessors()
         {
             List<Node> openList = new List<Node>();
-            openList.AddRange(_parents);
+            openList.AddRange(Parents);
             List<Node> closedList = new List<Node>();
             while (openList.Count > 0)
             {
@@ -831,7 +1023,7 @@ namespace UncertaintyExperiments
         public List<Node> GetSuccessors()
         {
             List<Node> openList = new List<Node>();
-            openList.AddRange(_children);
+            openList.AddRange(Children);
             List<Node> closedList = new List<Node>();
             while (openList.Count > 0)
             {
