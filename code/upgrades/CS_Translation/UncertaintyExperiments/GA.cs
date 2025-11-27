@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using MathNet.Numerics.Distributions;
@@ -38,6 +39,7 @@ namespace UncertaintyExperiments
 
         protected bool _output = false;
         private int[,,] _workerDurations;
+        private float[,,] _durations;
         private GAConfiguration _configuration;
 
 
@@ -66,6 +68,17 @@ namespace UncertaintyExperiments
             Individual.RECOMBINATIONMETHOD = _recombinationMethod;
             _mutationRateChangeMethod = mutationRateChangeMethod;
             _workerDurations = workerDurations;
+            _durations = new float[_workerDurations.GetLength(0), _workerDurations.GetLength(1), _workerDurations.GetLength(2)];
+            for(int i = 0; i < _workerDurations.GetLength(0); i++)
+            {
+                for(int j = 0; j < _workerDurations.GetLength(1); j++)
+                {
+                    for(int k = 0; k < _workerDurations.GetLength(2); k++)
+                    {
+                        _durations[i, j, k] = (float)_workerDurations[i, j, k];
+                    }
+                }
+            }
             _simulateUncertainty = simulateUncertainty;
             _nSimulations = nSimulations;
             if (uncertaintyParameters == null)
@@ -77,7 +90,7 @@ namespace UncertaintyExperiments
                  * beta = 0.5 * random.random()
                  */
                 float alphaValue = 0.1f; // just example values
-                float betaValue = 0.5f;
+                float betaValue = 10 * alphaValue;//0.5f;
                 Random random = new Random();
                 for (int i = 0; i < configuration.NWorkers; ++i)
                 {
@@ -226,11 +239,125 @@ namespace UncertaintyExperiments
             _functionEvaluations++;
         }
 
+        private int FirstIndex(int[] values, int value)
+        {
+            for (int i = 0; i < values.Length; ++i)
+            {
+                if (values[i] == value)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private void EvaluateGraph(Individual individual)
+        {
+            int[] sequence = individual.Sequence;
+            int[] machines = individual.Assignments;
+            int[] workers = individual.Workers;
+
+            int nJobs = sequence.Max() + 1;
+            int nMachines = machines.Max() + 1;
+            int nWorkers = workers.Max() + 1;
+            int nOperations = sequence.Length;
+
+            int[] jobSequence = new int[nOperations];
+            sequence.CopyTo(jobSequence, 0);
+            Array.Sort(jobSequence);
+            int[] jobStartIndices = new int[nJobs];
+            for (int i = 0; i < jobStartIndices.Length; ++i)
+            {
+                int index = FirstIndex(jobSequence, i);
+                if (index == -1)
+                {
+                    throw new InvalidDataException("Invalid job sequence - job " + i + " is missing from the sequence.");
+                }
+                jobStartIndices[i] = index;
+            }
+
+            int[] nextOperation = new int[nJobs];
+            List<TimeSlot>[] endOnMachines = new List<TimeSlot>[nMachines];
+            for (int i = 0; i < endOnMachines.Length; ++i)
+            {
+                endOnMachines[i] = new List<TimeSlot>();
+                endOnMachines[i].Add(new TimeSlot(0, 0));
+            }
+            List<TimeSlot>[] endOfWorkers = new List<TimeSlot>[nWorkers];
+            for (int i = 0; i < endOfWorkers.Length; ++i)
+            {
+                endOfWorkers[i] = new List<TimeSlot>();
+                endOfWorkers[i].Add(new TimeSlot(0, 0));
+            }
+
+            float[] endTimes = new float[nOperations];
+            float[] startTimes = new float[nOperations];
+            for (int i = 0; i < nOperations; ++i)
+            {
+                int job = sequence[i];
+                int operation = nextOperation[job];
+                ++nextOperation[job];
+                int startIndex = jobStartIndices[job] + operation;
+                int machine = machines[startIndex];
+
+                int worker = workers[startIndex];
+
+                float duration = _durations[startIndex, machine, worker];
+                if (duration == 0.0f)
+                {
+                    Console.WriteLine("0 DURATION, INVALID ASSIGNMENT!");
+                }
+                float offset = 0;
+
+                if (operation > 0)
+                {
+                    if (endTimes[startIndex - 1] > offset)
+                    {
+                        // need to wait for previous operation to finish
+                        offset = endTimes[startIndex - 1];
+                    }
+                }
+                if (endOnMachines[machine].Count > 0 && endOnMachines[machine].Last().End >= offset)
+                {
+                    // need to wait for machine to be available
+                    offset = endOnMachines[machine].Last().End;
+                }
+                if (endOfWorkers[worker].Count > 0)
+                {
+                    TimeSlot workerEarliest = EarliestFit(endOfWorkers[worker], new TimeSlot(offset, offset + duration));
+                    if (workerEarliest.End >= offset)
+                    {
+                        // need to wait for worker to be ready
+                        offset = workerEarliest.End;
+                    }
+                }
+                endTimes[startIndex] = offset + duration;
+                startTimes[startIndex] = offset;
+                endOnMachines[machine].Add(new TimeSlot(offset, offset + duration));
+                endOfWorkers[worker].Add(new TimeSlot(offset, offset + duration));
+                endOfWorkers[worker] = endOfWorkers[worker].OrderBy(o => o.Start).ToList();
+
+            }
+            Graph g;
+            float makespan = 0.0f;
+            for (int i = 0; i < _nSimulations; i++)
+            {
+                g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+                g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
+                makespan += g.EndingTimes.Max();
+                _functionEvaluations++;
+            }
+            individual.Fitness[Criteria.Makespan] = makespan/_nSimulations;
+            individual.Fitness[Criteria.OriginalMakespan] = endTimes.Max();
+        }
 
 
         private void Evaluate(Individual individual)
         {
-            if (_simulateUncertainty)
+            if (true) // TODO
+            {
+                EvaluateGraph(individual);
+            }else if (_simulateUncertainty)
             {
                 List<float> results = new List<float>(); // NOTE: unused
                 float avg = 0.0f;
@@ -247,6 +374,7 @@ namespace UncertaintyExperiments
                 // just redirect for now
                 EvaluateSlots(individual);
             }
+            //_functionEvaluations++;
         }
 
         protected Individual TournamentSelection(int tournamentSize)
@@ -444,9 +572,9 @@ namespace UncertaintyExperiments
             bool improvement = false;
             bool match = false;
             UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
+            history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
-                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
                     if (_mutationRateChangeMethod == "s")
@@ -625,6 +753,7 @@ namespace UncertaintyExperiments
                 }
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
+                history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
             }
             if (_output)
             {

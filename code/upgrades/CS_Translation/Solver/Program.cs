@@ -78,7 +78,7 @@ namespace Solver
 
             bool skip = false;
             WFJSSPGA.SORT = true;
-            string outPath = "C:\\Users\\dhutt\\Desktop\\experiment\\results\\restart_tracking\\fjssp-w\\";
+            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\10minExperiments\\ga0sim\\";
 
             //if (localSearch)
             //{
@@ -112,7 +112,7 @@ namespace Solver
             string[] instances = Directory.GetFiles(basepath);
             foreach (string instance in instances)
             {
-                Console.ForegroundColor = _colors[index - 1];
+                Console.ForegroundColor = _colors[index];
                 string instanceName = instance.Split("\\").Last();
 
                 /*if (dict.ContainsKey(instanceName))
@@ -158,142 +158,20 @@ namespace Solver
             }
         }
 
-        private class TestObject
-        {
-            public List<int> a;
-            public List<int> b;
-            public string name;
-
-
-            public TestObject(List<int> c, List<int> d, string n)
-            {
-                a = c;
-                b = d;
-                name = n;
-            }
-
-            public override bool Equals(object? other)
-            {
-                TestObject o = (TestObject)other;
-                if (a.Count != o.a.Count() || b.Count != o.b.Count() || name != o.name)
-                {
-                    return false;
-                }
-                for (int i = 0; i < a.Count; ++i)
-                {
-                    if (a[i] != o.a[i])
-                    {
-                        return false;
-                    }
-                }
-                for (int i = 0; i < b.Count; ++i)
-                {
-                    if (b[i] != o.b[i])
-                    {
-                        return false;
-                    }
-                }
-                return true;
-                //return GetHashCode() == other.GetHashCode();
-            }
-
-            public override int GetHashCode()
-            {
-                return 0;//a[0] * 10 + b[b.Count - 1] + name.GetHashCode();//a.AsReadOnly().GetHashCode() ^ b.AsReadOnly().GetHashCode() ^ name.GetHashCode();
-            }
-        }
-
         static void Main(string[] args)
         {
-            /*HashSet<int> list = new HashSet<int>();
-            List<int> a = new(){ 1, 2, 3, 4, 5 };
-            List<int> b = new() { 4, 5, 6, 7, 8 };
-            List<int> c = new() { 1, 5, 6, 9, 0 };
-
-            list.UnionWith(a);
-            list.UnionWith(b);
-            list.UnionWith(c);
-            for(int i = 0; i < list.Count; ++i)
-            {
-                Console.Write(list.ElementAt(i));
-            }
-
-            HashSet<TestObject> list1 = new HashSet<TestObject>();
-            TestObject ta = new TestObject(a, b, "a");
-            TestObject tb = new TestObject(b, a, "b");
-            TestObject tc = new TestObject(a, b, "a");
-            TestObject td = new TestObject(a, c, "c");
-            TestObject te = new TestObject(b, c, "d");
-            TestObject tf = new TestObject(c, b, "e");
-            TestObject tg = new TestObject(c, b, "f");
-
-            list1.Add(ta);
-            list1.Add(tb);
-            list1.Add(tc);
-            list1.Add(td);
-            list1.Add(te);
-            list1.Add(tf);
-            list1.Add(tg);
-            Console.WriteLine();
-
-            for (int i = 0; i < list1.Count; ++i)
-            {
-                Console.Write(list1.ElementAt(i).name);
-            }
-            
-            Dictionary<TestObject, int> testDict = new Dictionary<TestObject, int>();
-            if (!testDict.ContainsKey(ta))
-            {
-                testDict.Add(ta, 1);
-            }
-            if (!testDict.ContainsKey(tb))
-            {
-                testDict.Add(tb, 1);
-            }
-            if (!testDict.ContainsKey(tc))
-            {
-                testDict.Add(tc, 1);
-            }
-            if (!testDict.ContainsKey(td))
-            {
-                testDict.Add(td, 1);
-            }
-            if (!testDict.ContainsKey(te))
-            {
-                testDict.Add(te, 1);
-            }
-            if (!testDict.ContainsKey(tf))
-            {
-                testDict.Add(tf, 1);
-            }
-            if (!testDict.ContainsKey(tg))
-            {
-                testDict.Add(tg, 1);
-            }
-
-            Console.WriteLine();
-
-            foreach(TestObject t in testDict.Keys)
-            {
-                Console.Write(t.name);
-            }
-            */
-
-            //string path = "C:\\Users\\localadmin\\Desktop\\experiments\\comparison\\benchmarks_no_workers\\"; // DEBUG
-            //string path = "C:\\Users\\huda\\Documents\\GitHub\\scheduling_model_jrc\\code\\upgrades\\benchmarks"; // DEBUG
-            string path = "C:\\Users\\localadmin\\Downloads\\benchmarks_with_workers\\benchmarks_with_workers\\";
             int maxGenerations = 0;
-            int timeLimit = 0;// 1200;// 300;// 1200;//1200;//300; // in seconds
+            int timeLimit = 600;// 1200;// 300;// 1200;//1200;//300; // in seconds
             //float targetFitness = 1196.0f;
             float targetFitness = 0.0f;
-            int maxFunctionEvaluations = 1000000;
+            int maxFunctionEvaluations = 0;// 1000000;
             string mode = "FJSSP-W";
             if (args.Length > 0)
             {
                 //path = args[0];
                 int.TryParse(args[0], out index);
-                Console.ForegroundColor = _colors[index-1];
-                string criteria = args[1];
+                Console.ForegroundColor = _colors[index];
+                /*string criteria = args[1];
                 if (criteria == "feval")
                 {
                     int.TryParse(args[2], out maxFunctionEvaluations);
@@ -301,7 +179,7 @@ namespace Solver
                 {
                     float.TryParse(args[2], out targetFitness);
                 }
-                mode = args[3];
+                mode = args[3];*/
             }
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0};
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -317,7 +195,7 @@ namespace Solver
 
             for(int i = 0; i < nExperiments; ++i) // assuming 5 instances
             {
-                if (mode == "FJSSP") 
+                /*if (mode == "FJSSP") 
                 {
                     path = "C:\\Users\\dhutt\\Desktop\\experiment\\no_worker\\";
                     RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
@@ -327,10 +205,10 @@ namespace Solver
                 //RunExperiment(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, i);
                 //} else
                 //{
-                else {
-                    path = "C:\\Users\\dhutt\\Desktop\\experiment\\worker\\";
+                else {*/
+                    string path = "C:\\Users\\localadmin\\Desktop\\experiments\\10minExperiments\\subset\\";
                     RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i, adjustmentStep);
-                }
+                //}
             }
         }
     }

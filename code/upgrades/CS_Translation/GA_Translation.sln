@@ -15,10 +15,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSO", "PSO\PSO.csproj", "{8
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GAWorkerProcess", "GAWorkerProcess\GAWorkerProcess.csproj", "{F55695B7-E998-4435-ACE3-0CB81807A1B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GATesting", "GATesting\GATesting.csproj", "{745FB101-1910-41FD-A294-CEB0AB926E07}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GATesting", "GATesting\GATesting.csproj", "{745FB101-1910-41FD-A294-CEB0AB926E07}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1CA43776-8415-4CED-9CF7-C9C4EEC4CE20} = {1CA43776-8415-4CED-9CF7-C9C4EEC4CE20}
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UncertaintyExperiments", "UncertaintyExperiments\UncertaintyExperiments.csproj", "{13B67A52-B3F9-4C0F-AB88-5A8564575B7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,6 +56,10 @@ Global
 		{745FB101-1910-41FD-A294-CEB0AB926E07}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{745FB101-1910-41FD-A294-CEB0AB926E07}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{745FB101-1910-41FD-A294-CEB0AB926E07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13B67A52-B3F9-4C0F-AB88-5A8564575B7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13B67A52-B3F9-4C0F-AB88-5A8564575B7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13B67A52-B3F9-4C0F-AB88-5A8564575B7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13B67A52-B3F9-4C0F-AB88-5A8564575B7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

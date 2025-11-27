@@ -171,7 +171,14 @@ namespace UncertaintyExperiments
                 bool simulateUncertainty = (bool)bool.Parse(data["simulateUncertainty"]);
                 List<Tuple<float, float>> uncertaintyParameters = new List<Tuple<float, float>>();
                 int nSimulations = (int)int.Parse(data["nSimulations"]);
-
+                Random random = new Random();
+                for (int i = 0; i < config.NWorkers; ++i)
+                {
+                    float alpha = (float)random.NextDouble();
+                    float beta = 10.0f * alpha;
+                    Tuple<float, float> values = new Tuple<float, float>(alpha, beta);
+                    uncertaintyParameters.Add(values);
+                }
 
                 GA ga = new GA(config, true, encoding.Durations, recombinationMethod: recombinationMethod, mutationMethod: mutationMethod, mutationRateChangeMethod: mutationGrowthMethod, simulateUncertainty:simulateUncertainty, uncertaintyParameters:uncertaintyParameters, nSimulations: nSimulations);
                 ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);

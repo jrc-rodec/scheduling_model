@@ -9,7 +9,7 @@ namespace UncertaintyExperiments
 
     public enum Criteria
     {
-        Makespan, IdleTime, QueueTime, Tardiness, JRMSE
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE, OriginalMakespan
     }
 
     public class Individual : IEquatable<Individual> //: Individual
