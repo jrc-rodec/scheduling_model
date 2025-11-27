@@ -351,12 +351,31 @@ namespace UncertaintyExperiments
             individual.Fitness[Criteria.OriginalMakespan] = endTimes.Max();
         }
 
+        private void EvaluateGraphSequence(Individual individual)
+        {
+            Graph g;
+            float makespan = 0.0f;
+            float originalMakespan = 0.0f;
+            for (int i = 0; i < _nSimulations; i++)
+            {
+                g = new Graph(individual.Sequence, individual.Assignments, individual.Workers, _configuration.JobSequence, _durations, new float[individual.Sequence.Length]);
+                originalMakespan = g.Makespan;
+                //g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+                g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
+                makespan += g.EndingTimes.Max();
+                _functionEvaluations++;
+            }
+            individual.Fitness[Criteria.Makespan] = makespan / _nSimulations;
+            individual.Fitness[Criteria.OriginalMakespan] = originalMakespan;
+        }
+
 
         private void Evaluate(Individual individual)
         {
             if (true) // TODO
             {
-                EvaluateGraph(individual);
+                EvaluateGraphSequence(individual);
+                //EvaluateGraph(individual);
             }else if (_simulateUncertainty)
             {
                 List<float> results = new List<float>(); // NOTE: unused
