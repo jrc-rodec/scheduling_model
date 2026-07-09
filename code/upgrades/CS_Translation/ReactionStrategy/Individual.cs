@@ -284,9 +284,16 @@ namespace ReactionStrategy
             Random random = new Random();
             JobSequence.CopyTo(_sequence, 0);
             ShuffleSequence();
+            int fixed = 0;
+            for (int i = 0; i < FixedOperations.Length; ++i){
+                if(FixedOperations[i]){
+                    fixed++;
+                }
+            }
+            double p = 1.0 / (_assignments.Length - fixed);
             for (int i = 0; i < _assignments.Length; ++i)
             {
-                if(!FixedOperations[i]){
+                if(!FixedOperations[i] && random.NextDouble() < p){
                     _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];
                 } else {
                     _assignments[i] = StartAssignments[i];
@@ -295,7 +302,7 @@ namespace ReactionStrategy
             _workers = new int[JobSequence.Length];
             for (int i = 0; i < _workers.Length; ++i)
             {
-                if(!FixedOperations[i]){
+                if(!FixedOperations[i] && random.NextDouble() < p){
                     _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(0, AvailableWorkers[i][_assignments[i]].Count)];
                 } else {
                     _workers[i] = StartWorkers[i];
