@@ -117,8 +117,11 @@ namespace ReactionStrategy
             configuration.MutationProbability = 1.0f / (configuration.NOperations * 3.0f);
 
             _startSequence = startSequence;
+            Individual.StartSeqnece = _startSequence;
             _startAssignments = startAssignments;
+            Individual.StartAssignments = _startAssignments;
             _startWorkers = startWorkers;
+            Individual.StartWorkers = _startWorkers;
             _fixedOperations = fixedOperations;
             _machineBlocks = machineBlocks;
             _workerBlocks = workerBlocks;
@@ -480,13 +483,16 @@ namespace ReactionStrategy
         protected void CreatePopulation(int populationSize)
         {
             _population = new List<Individual>();
-            for (int i = 0; i < populationSize; ++i)
+            Individual baseIndividual = new Individual(_startSequence, _startAssignments, _startWorkers, 1.0 / _startSequence.Count)
+            _population.Add(baseIndividual)
+            for (int i = 0; i < populationSize+1; ++i)
             {
                 Individual individual = new Individual(_population);
                 Evaluate(individual);
                 //CheckIndividual(individual);
                 _population.Add(individual);
             }
+            _population.RemoveAt(0);
             _population.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan]));
         }
 
@@ -569,6 +575,7 @@ namespace ReactionStrategy
 
         public History Run(int maxGeneration, int timeLimit, float targetFitness, int maxFunctionEvaluations, bool keepMultiple)
         {
+            Individual.UseDissimilarity = false;
             CreatePopulation(_configuration.PopulationSize);
             List<Individual> offspring = new List<Individual>();
             // Setup all required parameters using the decision variables

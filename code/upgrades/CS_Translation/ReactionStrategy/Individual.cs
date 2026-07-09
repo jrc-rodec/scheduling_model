@@ -17,6 +17,9 @@ namespace ReactionStrategy
         private int[] _workers;
         public static List<List<List<int>>> AvailableWorkers;
         public static int[,,] Durations;
+        public static int[] StartSequence;
+        public static int[] StartAssignments;
+        public static int[] StartWorkers;
         protected int[] _sequence;
         protected int[] _assignments;
         protected Dictionary<Criteria, float> _fitness;
@@ -87,6 +90,8 @@ namespace ReactionStrategy
             }
             else
             {
+                population[0].Assignments.CopyTo(_assignments, 0);
+                population[0].Assignments.CopyTo(_workers, 0);
                 //NOTE: code duplication
                 float minDistance = MaxDissimilarity;
                 int attempts = 0;
@@ -263,10 +268,14 @@ namespace ReactionStrategy
             Random random = new Random();
             for (int i = 0; i < _sequence.Length; ++i)
             {
-                int index = random.Next(_sequence.Length);
-                int tmp = _sequence[index];
-                _sequence[index] = _sequence[i];
-                _sequence[i] = tmp;
+                if(FixedOperations[i]){
+                    _sequence[i] = StartSequence[i];
+                } else {
+                    int index = random.Next(_sequence.Length);
+                    int tmp = _sequence[index];
+                    _sequence[index] = _sequence[i];
+                    _sequence[i] = tmp;
+                }
             }
         }
 
@@ -277,12 +286,20 @@ namespace ReactionStrategy
             ShuffleSequence();
             for (int i = 0; i < _assignments.Length; ++i)
             {
-                _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];
+                if(!FixedOperations[i]){
+                    _assignments[i] = AvailableMachines[i][random.Next(0, AvailableMachines[i].Count)];
+                } else {
+                    _assignments[i] = StartAssignments[i];
+                }
             }
             _workers = new int[JobSequence.Length];
             for (int i = 0; i < _workers.Length; ++i)
             {
-                _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(0, AvailableWorkers[i][_assignments[i]].Count)];
+                if(!FixedOperations[i]){
+                    _workers[i] = AvailableWorkers[i][_assignments[i]][random.Next(0, AvailableWorkers[i][_assignments[i]].Count)];
+                } else {
+                    _workers[i] = StartWorkers[i];
+                }
             }
         }
 
