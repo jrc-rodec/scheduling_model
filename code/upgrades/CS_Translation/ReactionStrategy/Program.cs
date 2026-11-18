@@ -38,10 +38,10 @@ namespace ReactionStrategy
             Dictionary<string, string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
             //JsonNode data = JsonArray.Parse(inputString);
             string basepath = (string)data["path"];
-            int maxGenerations = (int)int.Parse(data["maxGenerations"]);
-            int timeLimit = (int)int.Parse(data["timeLimit"]);
-            float targetFitness = (float)float.Parse(data["targetFitness"]);
-            int maxFunctionEvaluations = (int)int.Parse(data["maxFevals"]);
+            int maxGenerations = 0;//(int)int.Parse(data["maxGenerations"]);
+            int timeLimit = 60;// (int)int.Parse(data["timeLimit"]);
+            float targetFitness = 0.0f;// (float)float.Parse(data["targetFitness"]);
+            int maxFunctionEvaluations = 0;// (int)int.Parse(data["maxFevals"]);
 
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0 };
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -50,44 +50,49 @@ namespace ReactionStrategy
                 return;
             }
 
-            bool keepMultiple = (bool)bool.Parse(data["keepMultiple"]);
-            string instance = (string)data["instanceName"];
-            string experimentName = (string)data["name"];
+            bool keepMultiple = false;// (bool)bool.Parse(data["keepMultiple"]);
+            //string instance = (string)data["instanceName"];
+            //string experimentName = (string)data["name"];
 
             string outPath = (string)data["outputPath"];
-            int nExperiments = (int)int.Parse(data["nExperiments"]);
+            int nExperiments = 1;// (int)int.Parse(data["nExperiments"]);
 
-            int iteration = int.Parse(args[1]);
+            //int iteration = int.Parse(args[1]);
 
-            int populationSize = (int)int.Parse(data["populationSize"]);
-            int offspringAmount = (int)int.Parse(data["offspringAmount"]);
-            float populationSizeGrowthRate = (float)float.Parse(data["populationGrowthRate"]);
-            int maxPopulationSize = (int)int.Parse(data["maxPopulationSize"]);
-            float offspringRate = (float)float.Parse(data["offspringRate"]);
-            float mutationProbability = (float)float.Parse(data["mutationProbability"]);
-            bool adaptMutationProbability = (bool)bool.Parse(data["adaptMutationProbability"]);
-            float maxMutationProbability = (float)float.Parse(data["maxMutationProbability"]);
-            float elitismRate = (float)float.Parse(data["elitismRate"]);
-            int tournamentSize = (int)int.Parse(data["tournamentSize"]);
+            int populationSize = 5;// (int)int.Parse(data["populationSize"]);
+            int offspringAmount = 20;// (int)int.Parse(data["offspringAmount"]);
+            float populationSizeGrowthRate = 1.1f;// (float)float.Parse(data["populationGrowthRate"]);
+            int maxPopulationSize = 100;// (int)int.Parse(data["maxPopulationSize"]);
+            float offspringRate = 4.0f;//;(float)float.Parse(data["offspringRate"]);
+            bool adaptMutationProbability = true;// (bool)bool.Parse(data["adaptMutationProbability"]);
+            float maxMutationProbability = 1.0f;// (float)float.Parse(data["maxMutationProbability"]);
+            float elitismRate = 0.1f;// (float)float.Parse(data["elitismRate"]);
+            int tournamentSize = 2;// (int)int.Parse(data["tournamentSize"]);
             //bool adaptRates = (bool)data["adaptRates"];
-            bool adaptTournamentSize = (bool)bool.Parse(data["adaptTournamentSize"]);
-            bool adaptElitismRate = (bool)bool.Parse(data["adaptElitismRate"]);
-            float maxElitism = (float)float.Parse(data["maxElitism"]);
-            float maxTournament = (float)float.Parse(data["maxTournamentRate"]);
-            bool doRestarts = (bool)bool.Parse(data["doRestarts"]);
-            int restartGenerations = (int)int.Parse(data["restartGenerations"]);
+            bool adaptTournamentSize = true;//(bool)bool.Parse(data["adaptTournamentSize"]);
+            bool adaptElitismRate = true;// (bool)bool.Parse(data["adaptElitismRate"]);
+            float maxElitism = 2;// (float)float.Parse(data["maxElitism"]);
+            float maxTournament = 5;// (float)float.Parse(data["maxTournamentRate"]);
+            bool doRestarts = true;// (bool)bool.Parse(data["doRestarts"]);
+            int restartGenerations = 10;// (int)int.Parse(data["restartGenerations"]);
 
-            string mutationMethod = (string)data["mutationMethod"];
-            string recombinationMethod = (string)data["recombinationMethod"];
-            string mutationGrowthMethod = (string)data["mutationGrowthMethod"];
+            string mutationMethod = "sr";// (string)data["mutationMethod"];
+            string recombinationMethod = "u";// (string)data["recombinationMethod"];
+            string mutationGrowthMethod = "s";// (string)data["mutationGrowthMethod"];
 
             string fixedIndices = (string)data["fixedIndices"];
             string[] fI = fixedIndices.Split(',');
             bool[] fixedOperations = new bool[fI.Length];
+            int count = 0;
             for(int i = 0; i < fI.Length; i++)
             {
                 fixedOperations[i] = fI[i].Contains("True");
+                if (fixedOperations[i])
+                {
+                    count++;
+                }
             }
+            float mutationProbability = 1.0f / count;// (float)float.Parse(data["mutationProbability"]);
             string startSequence = (string)data["sequence"];
             string[] sS = startSequence.Split(",");
             string startAssignments = (string)data["assignments"];
@@ -103,7 +108,7 @@ namespace ReactionStrategy
                 assignments[i] = int.Parse(sA[i]);
                 workers[i] = int.Parse(sW[i]);
             }
-            string machineStartBlocks = (string)data["machineBlocks"];
+            /*string machineStartBlocks = (string)data["machineBlocks"];
             string[] mSB = machineStartBlocks.Split(",");
             int[] machineBlocks = new int[mSB.Length];
             for(int i = 0; i < mSB.Length; i++)
@@ -116,7 +121,7 @@ namespace ReactionStrategy
             for(int i = 0; i < wSB.Length; i++)
             {
                 workerBlocks[i] = int.Parse(wSB[i]);
-            }
+            }*/
 
             GA.SORT = true;
             WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
@@ -143,9 +148,9 @@ namespace ReactionStrategy
             //config.AdaptRates = adaptRates;
             config.DoRestarts = doRestarts;
 
-            bool simulateUncertainty = (bool)bool.Parse(data["simulateUncertainty"]);
+            bool simulateUncertainty = true;// (bool)bool.Parse(data["simulateUncertainty"]);
             List<Tuple<float, float>> uncertaintyParameters = new List<Tuple<float, float>>();
-            int nSimulations = (int)int.Parse(data["nSimulations"]);
+            int nSimulations = 10;// (int)int.Parse(data["nSimulations"]);
             Random random = new Random();
             for (int i = 0; i < config.NWorkers; ++i)
             {
@@ -155,11 +160,11 @@ namespace ReactionStrategy
                 uncertaintyParameters.Add(values);
             }
 
-            GA ga = new GA(config, sequence, assignments, workers,fixedOperations, machineBlocks, workerBlocks, true, encoding.Durations, recombinationMethod: recombinationMethod, mutationMethod: mutationMethod, mutationRateChangeMethod: mutationGrowthMethod, simulateUncertainty: simulateUncertainty, uncertaintyParameters: uncertaintyParameters, nSimulations: nSimulations);
+            GA ga = new GA(config, sequence, assignments, workers,fixedOperations, count, true, encoding.Durations, recombinationMethod: recombinationMethod, mutationMethod: mutationMethod, mutationRateChangeMethod: mutationGrowthMethod, simulateUncertainty: simulateUncertainty, uncertaintyParameters: uncertaintyParameters, nSimulations: nSimulations);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);
             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple);
-
-            gaResult.Name = experimentName;
+            File.AppendAllText(outPath, basepath + ";" + gaResult.OverallBestFitness[gaResult.OverallBestFitness.Count - 1] + ";" + gaResult.Result.Best[0].Sequence.ToString() + ";" + gaResult.Result.Best[0].Assignments.ToString() + ";" + gaResult.Result.Best[0].Workers.ToString() +"\n");
+            /*gaResult.Name = experimentName;
             string filename = outPath + gaResult.Name + ".json";
             gaResult.ToFile(filename);
             if (iteration == 0)
@@ -173,7 +178,7 @@ namespace ReactionStrategy
             else
             {
                 EndFile(filename);
-            }
+            }*/
             //}
             //catch (Exception e)
             //{

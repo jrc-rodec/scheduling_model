@@ -42,7 +42,7 @@ namespace UncertaintyExperiments
         private float[,,] _durations;
         private GAConfiguration _configuration;
 
-
+        private List<Criteria> _criteria;
         private bool _simulateUncertainty = false;
         private Tuple<float, float>[] _uncertaintyParameters;
         private int _nSimulations = 30;
@@ -58,6 +58,7 @@ namespace UncertaintyExperiments
 
         public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30)// : base(configuration, output)
         {
+            _criteria = new List<Criteria> { Criteria.Makespan };
             _configuration = configuration;
             _output = output;
             Reset();
@@ -395,6 +396,7 @@ namespace UncertaintyExperiments
             }
             //_functionEvaluations++;
         }
+
 
         protected Individual TournamentSelection(int tournamentSize)
         {

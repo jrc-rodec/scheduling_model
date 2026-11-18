@@ -78,7 +78,7 @@ namespace Solver
 
             bool skip = false;
             WFJSSPGA.SORT = true;
-            string outPath = "C:\\Users\\localadmin\\Desktop\\experiments\\10minExperiments\\ga0sim\\";
+            string outPath = "C:\\Users\\huda\\Desktop\\COMPARISON_RESULTS\\ga0sim\\";
 
             //if (localSearch)
             //{
@@ -187,7 +187,7 @@ namespace Solver
                 Console.WriteLine("No valid stopping criteria was set!");
                 return;
             }
-            int nExperiments = 5;
+            int nExperiments = 30;
             bool keepMultiple = false;
             bool localSearch = false;
             bool adjustmentStep = false;
@@ -206,7 +206,7 @@ namespace Solver
                 //} else
                 //{
                 else {*/
-                    string path = "C:\\Users\\localadmin\\Desktop\\experiments\\10minExperiments\\subset\\";
+                    string path = "C:\\Users\\huda\\Documents\\GitHub\\FJSSP-W-Benchmarking\\instances\\Example_Instances_FJSSP-WF\\";
                     RunExperimentWorkers(path, criteriaStatus, maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple, localSearch, i, adjustmentStep);
                 //}
             }

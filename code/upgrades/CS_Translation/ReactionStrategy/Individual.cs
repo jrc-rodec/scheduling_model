@@ -20,6 +20,7 @@ namespace ReactionStrategy
         public static int[] StartSequence;
         public static int[] StartAssignments;
         public static int[] StartWorkers;
+        public static int FixedCount;
         protected int[] _sequence;
         protected int[] _assignments;
         protected Dictionary<Criteria, float> _fitness;
@@ -284,13 +285,13 @@ namespace ReactionStrategy
             Random random = new Random();
             JobSequence.CopyTo(_sequence, 0);
             ShuffleSequence();
-            int fixed = 0;
+            int fixeds = 0;
             for (int i = 0; i < FixedOperations.Length; ++i){
                 if(FixedOperations[i]){
-                    fixed++;
+                    fixeds++;
                 }
             }
-            double p = 1.0 / (_assignments.Length - fixed);
+            double p = 1.0 / (_assignments.Length - fixeds);
             for (int i = 0; i < _assignments.Length; ++i)
             {
                 if(!FixedOperations[i] && random.NextDouble() < p){

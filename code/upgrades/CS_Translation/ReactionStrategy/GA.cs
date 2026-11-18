@@ -52,7 +52,7 @@ namespace ReactionStrategy
         private bool _simulateUncertainty = false;
         private Tuple<float, float>[] _uncertaintyParameters;
         private int _nSimulations = 30;
-
+        private int _fixedCount;
         public static bool SORT = true;
 
         public void Reset()
@@ -62,7 +62,7 @@ namespace ReactionStrategy
             _functionEvaluations = 0;
         }
 
-        public GA(GAConfiguration configuration, int[] startSequence, int[] startAssignments, int[] startWorkers, bool[] fixedOperations, int[] machineBlocks, int[] workerBlocks, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30)// : base(configuration, output)
+        public GA(GAConfiguration configuration, int[] startSequence, int[] startAssignments, int[] startWorkers, bool[] fixedOperations, int fixedCount, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30)// : base(configuration, output)
         {
             _configuration = configuration;
             _output = output;
@@ -117,14 +117,16 @@ namespace ReactionStrategy
             configuration.MutationProbability = 1.0f / (configuration.NOperations * 3.0f);
 
             _startSequence = startSequence;
-            Individual.StartSeqnece = _startSequence;
+            Individual.StartSequence = _startSequence;
             _startAssignments = startAssignments;
             Individual.StartAssignments = _startAssignments;
             _startWorkers = startWorkers;
             Individual.StartWorkers = _startWorkers;
             _fixedOperations = fixedOperations;
-            _machineBlocks = machineBlocks;
-            _workerBlocks = workerBlocks;
+            _fixedCount = fixedCount;
+            Individual.FixedCount = _fixedCount;
+            //_machineBlocks = machineBlocks;
+            //_workerBlocks = workerBlocks;
             Individual.FixedOperations = _fixedOperations;
         }
 
@@ -483,8 +485,8 @@ namespace ReactionStrategy
         protected void CreatePopulation(int populationSize)
         {
             _population = new List<Individual>();
-            Individual baseIndividual = new Individual(_startSequence, _startAssignments, _startWorkers, 1.0 / _startSequence.Count)
-            _population.Add(baseIndividual)
+            Individual baseIndividual = new Individual(_startSequence, _startAssignments, _startWorkers, 1.0f / _startSequence.Length);
+            _population.Add(baseIndividual);
             for (int i = 0; i < populationSize+1; ++i)
             {
                 Individual individual = new Individual(_population);
@@ -722,7 +724,7 @@ namespace ReactionStrategy
                 {
                     _population.Add(pool[i]);
                 }
-
+                // TODO: change best history
                 if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
                 {
                     if (keepMultiple)

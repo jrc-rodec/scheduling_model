@@ -16,9 +16,10 @@ import collections
 from ortools.sat.python import cp_model
 
 #import localsolver
+#import hexaly as localsolver
 
 
-TIME_LIMIT_IN_SECONDS = 60#1200
+TIME_LIMIT_IN_SECONDS = 600#1200
 #RANDOM_SEED = 1
 CALLBACK = True
 
@@ -34,8 +35,8 @@ def run_gurobi(path):
     resources = [(0, 0)]
 
     def SolutionListener(model, where):
-        cpu, ram = get_cpu_ram_stats()
-        resources.append((cpu, ram))
+        #cpu, ram = get_cpu_ram_stats()
+        #resources.append((cpu, ram))
         if where == gp.GRB.Callback.MIPSOL:
             time = model.cbGet(gp.GRB.Callback.RUNTIME)
             obj_best = model.cbGet(gp.GRB.Callback.MIPSOL_OBJBST)
@@ -180,17 +181,17 @@ def run_gurobi(path):
     m.update()
     #m.display()
     m.Params.TimeLimit = TIME_LIMIT_IN_SECONDS
-    m.Params.Seed = RANDOM_SEED
+    #m.Params.Seed = RANDOM_SEED
     m.Params.LogToConsole = 0
     # NOTE: FOR TESTING PURPOSES ONLY
     # TODO: REMOVE
-    m.Params.Presolve = 0
+    #m.Params.Presolve = 0
     #---------- ohne solution listener--------
     #m.optimize()
     #---------- mit solution listener--------
-    m._solution_count = 0
+    #m._solution_count = 0
     # Bei Abbruch wenn known_best erreicht
-    m._known_best = 0 # 884
+    #m._known_best = 0 # 884
     if CALLBACK:
         m.optimize(SolutionListener)
     else:
@@ -411,7 +412,7 @@ def run_cplex_lp(path):
     # Solve model
     
     mdl.parameters.timelimit = TIME_LIMIT_IN_SECONDS
-    mdl.parameters.randomseed = RANDOM_SEED
+    #mdl.parameters.randomseed = RANDOM_SEED
     #mdl.parameters.mip.strategy.variableselect = 3 # TODO: double check
     if CALLBACK:
         mdl.add_progress_listener(SolutionPrinter())
@@ -421,7 +422,7 @@ def run_cplex_lp(path):
     #mdl.set_results_stream(None)
     #mdl.log_output = True
     #C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe
-    res = mdl.solve(execfile = r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex.exe")
+    res = mdl.solve()
     #res = mdl.solve()
     #res = mdl.solve()
     if res:
@@ -596,7 +597,7 @@ def run_cplex_cp(path):
     #mdl.parameters.SolutionLimit = 1000000
     #mdl.parameters.mip.limits.node.set(1000000)# = 1000000
     #mdl.set_parameters()
-    res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", SolutionLimit = 1000, TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
+    res = mdl.solve(TimeLimit = TIME_LIMIT_IN_SECONDS, LogVerbosity = 'Quiet')
     #res = mdl.solve(execfile=r"C:\Program Files\IBM\ILOG\CPLEX_Studio2211\cpoptimizer\bin\x64_win64\cpoptimizer.exe", TimeLimit = TIME_LIMIT_IN_SECONDS, RandomSeed=RANDOM_SEED, LogVerbosity = 'Quiet')#
     #print('Solution:')
     #res.print_solution()
@@ -844,7 +845,7 @@ def run_ortools(path):
     return solver.status_name(status), solver.objective_value, lower_bound, solver.wall_time, start_times, assignments, workers, resources, history
 
 def run_hexaly(path):
-    import localsolver
+    import hexaly.optimizer as localsolver
     history = []
     resources = [(0,0)]
 
@@ -852,8 +853,8 @@ def run_hexaly(path):
         def __init__(self):
             history.append((0, float('inf'), -float('inf')))
         def my_callback(self, ls, cb_type):
-            cpu, ram = get_cpu_ram_stats()
-            resources.append((cpu, ram))
+            #cpu, ram = get_cpu_ram_stats()
+            #resources.append((cpu, ram))
             time = ls.statistics.running_time
             obj = ls.model.objectives[0].value
             bnd = ls.solution.get_objective_bound(0)
@@ -937,7 +938,7 @@ def run_hexaly(path):
     # Build the model
     #-----------------------------------------------------------------------------
 
-    with localsolver.LocalSolver() as ls: 
+    with localsolver.HexalyOptimizer() as ls: 
         # Declare the optimization model
         model = ls.model
         
@@ -1015,7 +1016,7 @@ def run_hexaly(path):
         # Parameterize the solver
         ls.param.time_limit = TIME_LIMIT_IN_SECONDS
         ls.param.verbosity = 0 #1 defaul 0 quiet 2 detailed
-        ls.param.seed = RANDOM_SEED
+        #ls.param.seed = RANDOM_SEED
         
         #---------- ohne solution listener--------
         #ls.solve()
@@ -1024,7 +1025,7 @@ def run_hexaly(path):
         ls.param.time_between_ticks = 1 # default 1sec INT!!
         cb = SolutionListener()
         if CALLBACK:
-            ls.add_callback(localsolver.LSCallbackType.TIME_TICKED, cb.my_callback)
+            ls.add_callback(localsolver.HxCallbackType.TIME_TICKED, cb.my_callback)
         ls.solve()
         #----------------------------------------
         
@@ -1066,9 +1067,9 @@ if __name__ == '__main__':
     selected_solver = sys.argv[1] if len(sys.argv) > 1 else 'cplex_cp'
     shutdown_when_finished = False
     # TODO: include all paths, all instances
-    BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\benchmarks\fjssp-w'
+    BENCHMARK_PATH = r'C:\Users\huda\Documents\GitHub\FJSSP-W-Benchmarking\instances\Example_Instances_FJSSP-WF'
     #BENCHMARK_PATH = r'C:\Users\localadmin\Desktop\experiments\comparison\benchmarks'
-    OUTPUT_PATH = r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\cplex\repeat\fjssp-w' if selected_solver == 'cplex_cp' else r'C:\Users\localadmin\Desktop\experiments\GA_COMPARISON\ortools\fjssp-w'
+    OUTPUT_PATH = r'C:\Users\huda\Desktop\COMPARISON_RESULTS'
     # test fjssp first, then wfjssp 
     #solvers = ['cplex_cp', 'ortools', 'hexaly', 'cplex_lp', 'gurobi']
     #runs = [['cplex_cp', 'ortools', 'hexaly'], ['cplex_lp', 'gurobi']] # split to allow MILP to run on small instances only
@@ -1120,6 +1121,18 @@ if __name__ == '__main__':
     'HurinkVdata30.fjs']
     """
     all_instances = os.listdir(BENCHMARK_PATH)
+    if selected_solver == 'ortools':
+        idx = all_instances.index('Hurinkvdata12.fjs')
+        all_instances = all_instances[idx:]
+    elif selected_solver == 'gurobi':
+        idx = all_instances.index('Behnke54.fjs')+1 # NOTE: Behnke 55 - 60 (inkl. 7, 8,...)
+        if idx < len(all_instances):
+            all_instances = all_instances[idx:idx+1]
+        else:
+            all_instances = []
+    elif selected_solver == 'hexaly':
+        idx = all_instances.index('Hurinkvdata28.fjs')
+        all_instances = all_instances[idx:]
     """selected_instances = ['3_DPpaulli_5',
     '6_Fattahi_14',
     '3_DPpaulli_9',
@@ -1158,6 +1171,7 @@ if __name__ == '__main__':
                 break"""
     #runs = [[selected_solver]]
     runs = [[selected_solver]]
+    
     for i in range(len(runs)):
         solvers = runs[i]
         #if i == 0 and False:
