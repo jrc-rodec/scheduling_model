@@ -93,7 +93,7 @@ namespace MultiObjective
         public List<int> NEqualResetBestSolutions { get => _nEqualResetBestSolutions; }
         public List<float> MutationProbability { get => _mutationProbability; }
         public List<int> PopulationSize { get => _populationSize; }
-        public List<float> AveragePopulationFitness { get => _averagePopulationFitness; }
+        public List<Dictionary<Criteria, float>> AveragePopulationFitness { get => _averagePopulationFitness; }
         public Result Result { get => _result; set => _result = value; }
         public string Name { get => _name; set => _name = value; }
         public List<int> Restarts { get => _restarts; set => _restarts = value; }
