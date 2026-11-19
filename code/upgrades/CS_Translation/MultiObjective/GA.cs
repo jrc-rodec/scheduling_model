@@ -56,9 +56,9 @@ namespace MultiObjective
             _functionEvaluations = 0;
         }
 
-        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30)// : base(configuration, output)
+        public GA(GAConfiguration configuration, bool output, int[,,] workerDurations, string selectionMethod = "ts", string recombinationMethod = "u", string mutationMethod = "sr", string mutationRateChangeMethod = "s", bool simulateUncertainty = false, List<Tuple<float, float>> uncertaintyParameters = null, int nSimulations = 30, List<Criteria> evaluationCriteria = null)// : base(configuration, output)
         {
-            _criteria = new List<Criteria> { Criteria.Makespan };
+            _criteria = evaluationCriteria;
             _configuration = configuration;
             _output = output;
             Reset();
@@ -341,15 +341,19 @@ namespace MultiObjective
             }
             Graph g;
             float makespan = 0.0f;
+            float originalMakespan = 0.0f;
+            //g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+            //originalMakespan = g.EndingTimes.Max();
             for (int i = 0; i < _nSimulations; i++)
             {
                 g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+                originalMakespan = g.Makespan;
                 g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
-                makespan += g.EndingTimes.Max();
+                makespan += g.Makespan;
                 _functionEvaluations++;
             }
             individual.Fitness[Criteria.Makespan] = makespan / _nSimulations;
-            individual.Fitness[Criteria.OriginalMakespan] = endTimes.Max();
+            individual.Fitness[Criteria.OriginalMakespan] = originalMakespan;
         }
 
         private void EvaluateGraphSequence(Individual individual)
@@ -360,7 +364,7 @@ namespace MultiObjective
             for (int i = 0; i < _nSimulations; i++)
             {
                 g = new Graph(individual.Sequence, individual.Assignments, individual.Workers, _configuration.JobSequence, _durations, new float[individual.Sequence.Length]);
-                originalMakespan = g.Makespan;
+                originalMakespan = g.EndingTimes.Max();
                 //g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
                 g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
                 makespan += g.EndingTimes.Max();
@@ -416,8 +420,8 @@ namespace MultiObjective
         protected List<List<Individual>> GetParetoFronts(List<Individual> individuals)
         {
             //List<Individual> individuals = _population.ToList();
-            Dictionary<Individual, List<Individual>> dominates = individuals.ToDictionary(x => x, _ => new List<Individual>());
-            Dictionary<Individual, int> dominationCount = individuals.ToDictionary(x => x, _ => 0);
+            Dictionary<Individual, List<Individual>> dominates = individuals.Distinct().ToDictionary(x => x, _ => new List<Individual>());
+            Dictionary<Individual, int> dominationCount = individuals.Distinct().ToDictionary(x => x, _ => 0);
             List<List<Individual>> fronts = new List<List<Individual>>();
 
             foreach (Individual p in individuals)
@@ -440,7 +444,7 @@ namespace MultiObjective
 
             while (currentFront.Count > 0)
             {
-                fronts.Add(currentFront);
+                fronts.Add(currentFront.Distinct().ToList()) ;
                 List<Individual> nextFront = new List<Individual>();
 
                 foreach (Individual p in currentFront)
@@ -714,7 +718,7 @@ namespace MultiObjective
             _functionEvaluations = 0;
             _startTime = DateTime.Now;
 
-            _output = false;
+            //_output = false;
 
             History history = new History();
             bool improvement = false;
@@ -786,6 +790,7 @@ namespace MultiObjective
                         //overallBest.Add(localMinimum);
                         match = true;
                     }
+                    
                     if (_output)
                     {
                         Debug_Report(generation - 1, overallBest, currentBest, restarts, improvement, match);
@@ -817,6 +822,7 @@ namespace MultiObjective
                 }
 
                 CreateOffspring(offspring, offspringAmount, tournamentSize, mutationProbability);
+ 
                 //offspring.Sort((a, b) => a.Fitness[Criteria.Makespan].CompareTo(b.Fitness[Criteria.Makespan])); // pool gets sorted anyway
                 List<Individual> pool = offspring; // NOTE: since no copy is made, could just use offspring as list
                 for (int i = 0; i < elitism; ++i)

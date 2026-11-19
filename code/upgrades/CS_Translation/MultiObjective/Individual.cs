@@ -9,7 +9,7 @@ namespace MultiObjective
 
     public enum Criteria
     {
-        Makespan, IdleTime, QueueTime, Tardiness, JRMSE, OriginalMakespan
+        Makespan, IdleTime, QueueTime, Tardiness, JRMSE, OriginalMakespan, Robustness
     }
 
     public class IndividualSummary
