@@ -12,6 +12,27 @@ namespace MultiObjective
         Makespan, IdleTime, QueueTime, Tardiness, JRMSE, OriginalMakespan
     }
 
+    public class IndividualSummary
+    {
+        private int[] sequence;
+        private int[] machines;
+        private int[] workers;
+        private Dictionary<Criteria, float> fitness;
+
+        public IndividualSummary(int[] sequence, int[] machines, int[] workers, Dictionary<Criteria, float> fitness)
+        {
+            Sequence = sequence;
+            Machines = machines;
+            Workers = workers;
+            Fitness = fitness;
+        }
+
+        public int[] Sequence { get => sequence; set => sequence = value; }
+        public int[] Machines { get => machines; set => machines = value; }
+        public int[] Workers { get => workers; set => workers = value; }
+        public Dictionary<Criteria, float> Fitness { get => fitness; set => fitness = value; }
+    }
+
     public class Individual : IEquatable<Individual> //: Individual
     {
         private int[] _workers;
@@ -385,6 +406,11 @@ namespace MultiObjective
                 }
             }
             return true;
+        }
+
+        public IndividualSummary ToSummary()
+        {
+            return new IndividualSummary(_sequence, _assignments, _workers, _fitness);
         }
     }
 }

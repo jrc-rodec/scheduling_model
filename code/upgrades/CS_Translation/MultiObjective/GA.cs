@@ -863,6 +863,16 @@ namespace MultiObjective
                     _population.Add(pool[i]);
                 }*/
                 // TODO: current best logging and stopping criteria
+                List<Individual> bestPool = currentBest.ToList();
+                bestPool.AddRange(_population.ToList());
+                List<List<Individual>> bestFronts = GetParetoFronts(bestPool);
+                currentBest = bestFronts[0];
+                bestPool.Clear();
+                bestPool.AddRange(_population.ToList());
+                bestPool.AddRange(overallBest.ToList());
+                bestFronts = GetParetoFronts(bestPool);
+                overallBest = bestFronts[0];
+                /*
                 if (currentBest.Count == 0 || _population[0].Fitness[Criteria.Makespan] < currentBest[0].Fitness[Criteria.Makespan])
                 {
                     if (keepMultiple)
@@ -930,7 +940,8 @@ namespace MultiObjective
                             }
                         }
                     }
-                }
+                }*/
+                // TODO: Stopping Criteria, History 
                 UpdateStoppingCriteria(generation, overallBest[0].Fitness[Criteria.Makespan], maxGeneration, _functionEvaluations, maxFunctionEvaluations, timeLimit, targetFitness);
                 ++generation;
                 history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
