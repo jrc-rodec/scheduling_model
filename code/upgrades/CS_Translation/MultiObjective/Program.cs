@@ -28,11 +28,11 @@ namespace MultiObjective
             //FileStream stream = File.OpenRead(inputString);
             //Dictionary<string, string> data = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
             //JsonNode data = JsonArray.Parse(inputString);
-            string basepath = "C:\\Users\\huda\\Documents\\GitHub\\FJSSP-W-Benchmarking\\instances\\Example_Instances_FJSSP-WF\\Fattahi14.fjs";// (string)data["path"];
+            string basepath = args[1];// "C:\\Users\\huda\\Documents\\GitHub\\FJSSP-W-Benchmarking\\instances\\Example_Instances_FJSSP-WF\\Fattahi14.fjs";// (string)data["path"];
             int maxGenerations = 0;// (int)int.Parse(data["maxGenerations"]);
             int timeLimit = 0;// (int)int.Parse(data["timeLimit"]);
             float targetFitness = 0.0f;// (float)float.Parse(data["targetFitness"]);
-            int maxFunctionEvaluations = 1000;// (int)int.Parse(data["maxFevals"]);
+            int maxFunctionEvaluations = 5000000;// (int)int.Parse(data["maxFevals"]);
 
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0 };
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -42,30 +42,30 @@ namespace MultiObjective
             }
 
             bool keepMultiple = true;// (bool)bool.Parse(data["keepMultiple"]);
-            string instance = "Fattahi14.fjs";// (string)data["instanceName"];
-            string experimentName = "Test1";// (string)data["name"];
+            string instance = basepath.Split('\\')[^1].Split('.')[0];// (string)data["instanceName"];
+            string experimentName = instance + args[0];// (string)data["name"];
 
-            string outPath = "C:\\Users\\huda\\Desktop\\MOFJSSP\\Testing\\";// (string)data["outputPath"];
+            string outPath = "C:\\Users\\huda\\Desktop\\MOFJSSP\\results\\";// (string)data["outputPath"];
             int nExperiments = 1;// (int)int.Parse(data["nExperiments"]);
 
-            int iteration = 0;// int.Parse(args[1]);
+            int iteration = (int)int.Parse(args[0]);// int.Parse(args[1]);
 
             int populationSize = 5;// (int)int.Parse(data["populationSize"]);
             int offspringAmount = 20;// (int)int.Parse(data["offspringAmount"]);
             float populationSizeGrowthRate = 1.1f;// (float)float.Parse(data["populationGrowthRate"]);
-            int maxPopulationSize = 20;// (int)int.Parse(data["maxPopulationSize"]);
+            int maxPopulationSize = 100;// (int)int.Parse(data["maxPopulationSize"]);
             float offspringRate = 4;// (float)float.Parse(data["offspringRate"]);
             float mutationProbability = 0.1f;// (float)float.Parse(data["mutationProbability"]);
             bool adaptMutationProbability = true;// (bool)bool.Parse(data["adaptMutationProbability"]);
-            float maxMutationProbability = 0.5f;// (float)float.Parse(data["maxMutationProbability"]);
+            float maxMutationProbability = 1.0f;// (float)float.Parse(data["maxMutationProbability"]);
             float elitismRate = 0.1f;// (float)float.Parse(data["elitismRate"]);
             int tournamentSize = 2;// (int)int.Parse(data["tournamentSize"]);
             //bool adaptRates = (bool)data["adaptRates"];
-            bool adaptTournamentSize = false;// (bool)bool.Parse(data["adaptTournamentSize"]);
+            bool adaptTournamentSize = true;// (bool)bool.Parse(data["adaptTournamentSize"]);
             bool adaptElitismRate = false;// (bool)bool.Parse(data["adaptElitismRate"]);
             float maxElitism = 0.1f;// (float)float.Parse(data["maxElitism"]);
-            float maxTournament = 4;// (float)float.Parse(data["maxTournamentRate"]);
-            bool doRestarts = false;// true;// (bool)bool.Parse(data["doRestarts"]);
+            float maxTournament = 0.2f;// (float)float.Parse(data["maxTournamentRate"]);
+            bool doRestarts = true;// true;// (bool)bool.Parse(data["doRestarts"]);
             int restartGenerations = 10;// (int)int.Parse(data["restartGenerations"]);
 
             string mutationMethod = "sr";//;(string)data["mutationMethod"];
@@ -76,7 +76,8 @@ namespace MultiObjective
             WorkerBenchmarkParser parser = new WorkerBenchmarkParser();
             WorkerEncoding encoding = parser.ParseBenchmark(basepath);
             WorkerDecisionVariables variables = new WorkerDecisionVariables(encoding);
-
+            mutationProbability = 1.0f / (3.0f* encoding.NOperations);
+            
             GAConfiguration config = new GAConfiguration(encoding, variables);
             config.PopulationSize = populationSize;
             config.OffspringAmount = offspringAmount;
@@ -99,7 +100,7 @@ namespace MultiObjective
 
             bool simulateUncertainty = true;// (bool)bool.Parse(data["simulateUncertainty"]);
             List<Tuple<float, float>> uncertaintyParameters = new List<Tuple<float, float>>();
-            int nSimulations = 1;// (int)int.Parse(data["nSimulations"]);
+            int nSimulations = 10;// (int)int.Parse(data["nSimulations"]);
             Random random = new Random();
             for (int i = 0; i < config.NWorkers; ++i)
             {
@@ -111,26 +112,28 @@ namespace MultiObjective
             List<Criteria> evaluationCriteria = new List<Criteria>();
             evaluationCriteria.Add(Criteria.Makespan);
             evaluationCriteria.Add(Criteria.OriginalMakespan);
+            evaluationCriteria.Add(Criteria.IdleTime);
             
             GA ga = new GA(config, true, encoding.Durations, recombinationMethod: recombinationMethod, mutationMethod: mutationMethod, mutationRateChangeMethod: mutationGrowthMethod, simulateUncertainty: simulateUncertainty, uncertaintyParameters: uncertaintyParameters, nSimulations: nSimulations, evaluationCriteria: evaluationCriteria);
             ga.SetStoppingCriteriaStatus(criteriaStatus[0], criteriaStatus[1], criteriaStatus[3], criteriaStatus[2]);
             History gaResult = ga.Run(maxGenerations, timeLimit, targetFitness, maxFunctionEvaluations, keepMultiple);
 
             gaResult.Name = experimentName;
-            string filename = outPath + gaResult.Name + ".json";
+            string filename = outPath + instance + ".json";
+            
+            //if (iteration == 0)
+            //{
+            //    PrepareFile(filename);
+            //}
             gaResult.ToFile(filename);
-            if (iteration == 0)
-            {
-                PrepareFile(filename);
-            }
             if (iteration != nExperiments)
             {
                 DelimitRun(filename);
             }
-            else
-            {
-                EndFile(filename);
-            }
+            //else
+            //{
+            //    EndFile(filename);
+            //}
         }
     }
 }

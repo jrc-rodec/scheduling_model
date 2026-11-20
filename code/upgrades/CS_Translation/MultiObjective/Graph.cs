@@ -315,7 +315,16 @@ namespace MultiObjective
             for (int i = 0; i < _nodes.Count; i++)
             {
                 _nodes[i].AddNeighbours(_machines, _workers, _jobSequence, _nodes, i);
-                if (_nodes[i].Parents.Count == 0)
+                bool parentFound = false;
+                foreach(Node parent in _nodes[i].Parents)
+                {
+                    if (parent != null)
+                    {
+                        parentFound = true;
+                        break;
+                    }
+                }
+                if (!parentFound)
                 {
                     _roots.Add(_nodes[i]);
                 }
@@ -325,7 +334,15 @@ namespace MultiObjective
             for (int i = 0; i < _nodes.Count; i++)
             {
                 _nodes[i].AddNeighbours(_machines, _workers, _jobSequence, _nodes, i);
-                if (_nodes[i].Children.Count == 0)
+                bool childFound = false;
+                foreach(Node child in _nodes[i].Children)
+                {
+                    if(child != null)
+                    {
+                        childFound = true;
+                    }
+                }
+                if (!childFound)
                 {
                     _leafs.Add(_nodes[i]);
                 }
@@ -704,7 +721,7 @@ namespace MultiObjective
                 //Update();
             }
 
-            //Update();
+            Update();
         }
 
         public bool IsInCriticalPath(Node node)

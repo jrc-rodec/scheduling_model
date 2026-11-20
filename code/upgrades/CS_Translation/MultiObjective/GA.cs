@@ -352,8 +352,24 @@ namespace MultiObjective
                 makespan += g.Makespan;
                 _functionEvaluations++;
             }
+            float idleTime = 0.0f;
+            for(int i = 0; i < endOfWorkers.Length; i++)
+            {
+                for(int j = 0; j < endOfWorkers[i].Count; j++)
+                {
+                    // should be sorted
+                    if (j == 0)
+                    {
+                        idleTime += endOfWorkers[i][j].Start;
+                    } else
+                    {
+                        idleTime += endOfWorkers[i][j].Start - endOfWorkers[i][j - 1].End;
+                    }
+                }
+            }
             individual.Fitness[Criteria.Makespan] = makespan / _nSimulations;
             individual.Fitness[Criteria.OriginalMakespan] = originalMakespan;
+            individual.Fitness[Criteria.IdleTime] = idleTime;
         }
 
         private void EvaluateGraphSequence(Individual individual)
@@ -660,7 +676,7 @@ namespace MultiObjective
             return (float)p + (((float)(generation - lastProgress) / (float)maxWait) * (maxP - p));
         }
 
-        public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match)
+        public void Debug_Report(int generation, List<Individual> best, List<Individual> currentBest, int restarts, bool improvement, bool match, int fevals, int maxFevals)
         {
             if (improvement)
             {
@@ -670,7 +686,8 @@ namespace MultiObjective
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
             }
-            Console.WriteLine("Generation " + generation + " Overall Best: " + best[0].Fitness[Criteria.Makespan] + " (" + best.Count + " equal solutions), Current Run Best " + currentBest[0].Fitness[Criteria.Makespan] + " (" + currentBest.Count + " equal solutions) - " + restarts + " restarts" + ")");
+            float remaining = 100.0f - ((float)fevals / maxFevals) * 100.0f;
+            Console.WriteLine("Generation " + generation + "|" + remaining + "% of fevals left Overall Best: " + best.Count + " solutions in the front, Current Run Best " + currentBest.Count + " solutions in the front - " + restarts + " restarts" + ")");
             Console.ResetColor();
         }
 
@@ -708,10 +725,10 @@ namespace MultiObjective
             int maxWait = _configuration.RestartGenerations;
             int restarts = 0;
             List<Individual> overallBest = new List<Individual>();
-            List<Individual> overallTemp = GetAllEqual(_population[0], _population);
+            List<Individual> overallTemp = GetParetoFronts(_population)[0];// (_population[0], _population);
             Merge(overallBest, overallTemp);
             List<Individual> currentBest = new List<Individual>();
-            List<Individual> currentTemp = GetAllEqual(_population[0], _population);
+            List<Individual> currentTemp = GetParetoFronts(_population)[0]; GetAllEqual(_population[0], _population);
             Merge(currentBest, currentTemp);
             int lastProgress = 0;
             int generation = 0;
@@ -727,6 +744,7 @@ namespace MultiObjective
             history.Update(overallBest, currentBest, mutationProbability, _population, DateTime.Now.Subtract(_startTime), restarts, _functionEvaluations);
             while (!_generationStop && !_fevalStop && !_fitnessStop && !_timeStop)
             {
+                //Console.WriteLine(generation);
                 if (_configuration.AdaptMutationProbability && generation > 0 && lastProgress < generation - 1)
                 {
                     if (_mutationRateChangeMethod == "s")
@@ -745,7 +763,13 @@ namespace MultiObjective
                 }
                 if (_configuration.DoRestarts && mutationProbability > maxMutationProbability)
                 {
-                    Individual localMinimum = currentBest[0];
+                    List<Individual> best = currentBest.ToList();
+                    best.AddRange(overallBest.ToList());
+                    best = best.Distinct().ToList();
+                    best = GetParetoFronts(best)[0];
+                    overallBest = best;
+                    //currentBest.Clear();
+                    /*Individual localMinimum = currentBest[0];
                     // Note: shouldn't technically be necessary
                     if (localMinimum.Fitness[Criteria.Makespan] < overallBest[0].Fitness[Criteria.Makespan])
                     {
@@ -789,11 +813,11 @@ namespace MultiObjective
                         Merge(overallBest, overallTemp);
                         //overallBest.Add(localMinimum);
                         match = true;
-                    }
+                    }*/
                     
                     if (_output)
                     {
-                        Debug_Report(generation - 1, overallBest, currentBest, restarts, improvement, match);
+                        Debug_Report(generation - 1, overallBest, currentBest, restarts, improvement, match, _functionEvaluations, maxFunctionEvaluations);
                     }
                     int maxPopulationSize = _configuration.MaxPopulationSize;
                     int maxOffspringAmount = (int)(maxPopulationSize * _configuration.OffspringRate);
@@ -816,6 +840,7 @@ namespace MultiObjective
                     match = false;
                     // NOTE: also sorts the population
                     CreatePopulation(populationSize);
+                    currentBest = GetParetoFronts(_population)[0];
                     mutationProbability = _configuration.MutationProbability;
                     lastProgress = generation;
                     restarts++;
@@ -872,6 +897,16 @@ namespace MultiObjective
                 List<Individual> bestPool = currentBest.ToList();
                 bestPool.AddRange(_population.ToList());
                 List<List<Individual>> bestFronts = GetParetoFronts(bestPool);
+
+                foreach(Individual individual in bestFronts[0])
+                {
+                    if (!currentBest.Contains(individual))
+                    {
+                        lastProgress = generation;
+                        break;
+                    }
+                }
+
                 currentBest = bestFronts[0];
                 bestPool.Clear();
                 bestPool.AddRange(_population.ToList());
@@ -954,7 +989,7 @@ namespace MultiObjective
             }
             if (_output)
             {
-                Debug_Report(generation, overallBest, currentBest, restarts, improvement, match);
+                Debug_Report(generation, overallBest, currentBest, restarts, improvement, match, _functionEvaluations, maxFunctionEvaluations);
             }
             history.Result = new Result(overallBest, _configuration, generation - 1, _functionEvaluations, DateTime.Now.Subtract(_startTime).TotalSeconds, [_generationStop, _fevalStop, _fitnessStop, _timeStop], restarts);
             return history;
