@@ -533,13 +533,16 @@ namespace MultiObjective
                                 .OrderBy(_ => _random.Next())
                                 .Take(tournamentSize)
                                 .ToList();*/
+            int maxAttempts = 100;
             while (participants.Count < tournamentSize)
             {
                 int index;
+                int attempts = 0;
                 do
                 {
                     index = _random.Next(_population.Count);
-                } while (participants.Contains(_population[index]));
+                    attempts++;
+                } while (participants.Contains(_population[index]) && attempts < maxAttempts);
                 participants.Add(_population[index]);
             }
             List<List<Individual>> fronts = GetParetoFronts(participants);
