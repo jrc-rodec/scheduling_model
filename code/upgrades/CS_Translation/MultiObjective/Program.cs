@@ -32,7 +32,7 @@ namespace MultiObjective
             int maxGenerations = 0;// (int)int.Parse(data["maxGenerations"]);
             int timeLimit = 0;// (int)int.Parse(data["timeLimit"]);
             float targetFitness = 0.0f;// (float)float.Parse(data["targetFitness"]);
-            int maxFunctionEvaluations = 5000000;// (int)int.Parse(data["maxFevals"]);
+            int maxFunctionEvaluations = 1000000;// (int)int.Parse(data["maxFevals"]);
 
             bool[] criteriaStatus = { maxGenerations > 0, timeLimit > 0, targetFitness > 0.0f, maxFunctionEvaluations > 0 };
             if (!(criteriaStatus[0] || criteriaStatus[1] || criteriaStatus[2] || criteriaStatus[3]))
@@ -43,6 +43,7 @@ namespace MultiObjective
 
             bool keepMultiple = true;// (bool)bool.Parse(data["keepMultiple"]);
             string instance = basepath.Split('\\')[^1].Split('.')[0];// (string)data["instanceName"];
+            instance = instance.Split('/')[^1];
             string experimentName = instance + args[0];// (string)data["name"];
 
             string outPath = "C:\\Users\\huda\\Desktop\\MOFJSSP\\results\\";// (string)data["outputPath"];
