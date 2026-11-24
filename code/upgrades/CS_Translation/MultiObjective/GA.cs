@@ -339,37 +339,48 @@ namespace MultiObjective
                 endOfWorkers[worker] = endOfWorkers[worker].OrderBy(o => o.Start).ToList();
 
             }
-            Graph g;
-            float makespan = 0.0f;
-            float originalMakespan = 0.0f;
-            //g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
-            //originalMakespan = g.EndingTimes.Max();
-            for (int i = 0; i < _nSimulations; i++)
+            if (_criteria.Contains(Criteria.Makespan))
             {
-                g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
-                originalMakespan = g.Makespan;
-                g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
-                makespan += g.Makespan;
-                _functionEvaluations++;
-            }
-            float idleTime = 0.0f;
-            for(int i = 0; i < endOfWorkers.Length; i++)
-            {
-                for(int j = 0; j < endOfWorkers[i].Count; j++)
+
+                Graph g;
+                float makespan = 0.0f;
+                float originalMakespan = 0.0f;
+                //g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+                //originalMakespan = g.EndingTimes.Max();
+                for (int i = 0; i < _nSimulations; i++)
                 {
-                    // should be sorted
-                    if (j == 0)
+                    g = new Graph(startTimes, endTimes, machines, workers, jobSequence, _durations, new float[startTimes.Length]);
+                    originalMakespan = g.Makespan;
+                    g.Simulate(_durations, _uncertaintyParameters, processingTimes: true, machineBreakdowns: true, workerUnavailabilities: true);
+                    makespan += g.Makespan;
+                    _functionEvaluations++;
+                }
+                individual.Fitness[Criteria.Makespan] = makespan / _nSimulations;
+                individual.Fitness[Criteria.OriginalMakespan] = originalMakespan;
+            } else
+            {
+                individual.Fitness[Criteria.OriginalMakespan] = endTimes.Max();
+            }
+            if (_criteria.Contains(Criteria.IdleTime))
+            {
+
+                float idleTime = 0.0f;
+                for(int i = 0; i < endOfWorkers.Length; i++)
+                {
+                    for(int j = 0; j < endOfWorkers[i].Count; j++)
                     {
-                        idleTime += endOfWorkers[i][j].Start;
-                    } else
-                    {
-                        idleTime += endOfWorkers[i][j].Start - endOfWorkers[i][j - 1].End;
+                        // should be sorted
+                        if (j == 0)
+                        {
+                            idleTime += endOfWorkers[i][j].Start;
+                        } else
+                        {
+                            idleTime += endOfWorkers[i][j].Start - endOfWorkers[i][j - 1].End;
+                        }
                     }
                 }
+                individual.Fitness[Criteria.IdleTime] = idleTime;
             }
-            individual.Fitness[Criteria.Makespan] = makespan / _nSimulations;
-            individual.Fitness[Criteria.OriginalMakespan] = originalMakespan;
-            individual.Fitness[Criteria.IdleTime] = idleTime;
         }
 
         private void EvaluateGraphSequence(Individual individual)
